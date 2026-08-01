@@ -44,14 +44,14 @@ export function Header() {
         <div className="hidden items-center gap-3 lg:flex">
           <button
             onClick={() => toast("Личный кабинет появится на следующем этапе разработки")}
-            className="inline-flex items-center gap-2 border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-2 border border-border px-4 py-2.5 text-sm font-medium whitespace-nowrap text-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <UserRound className="size-4" />
             Личный кабинет
           </button>
           <a
             href="#search"
-            className="bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent"
+            className="bg-primary px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors hover:bg-accent"
           >
             Подобрать помещение
           </a>
