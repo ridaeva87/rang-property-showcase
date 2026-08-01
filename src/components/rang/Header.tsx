@@ -23,22 +23,23 @@ export function Header() {
       <div className="container-rang flex h-20 items-center justify-between gap-6">
         <a href="#top" className="flex flex-col leading-none">
           <span className="font-display text-2xl font-extrabold tracking-tight text-primary">РАНГ</span>
-          <span className="mt-1 text-[0.65rem] tracking-[0.14em] text-muted-foreground uppercase">
+          <span className="mt-1 hidden text-[0.62rem] whitespace-nowrap tracking-[0.12em] text-muted-foreground uppercase sm:block">
             Коммерческая недвижимость с 1993 года
           </span>
         </a>
 
-        <nav className="hidden items-center gap-6 xl:flex">
+        <nav className="hidden items-center gap-5 xl:flex">
           {NAV.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+              className="text-sm font-medium whitespace-nowrap text-foreground/80 transition-colors hover:text-primary"
             >
               {item.label}
             </a>
           ))}
         </nav>
+
 
         <div className="hidden items-center gap-3 lg:flex">
           <button
