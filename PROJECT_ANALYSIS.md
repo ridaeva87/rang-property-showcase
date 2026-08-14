@@ -5,7 +5,7 @@
 Исходная ветка: `main`  
 Проверенный commit: `582635a` (`Update plan`)  
 Production: https://rangpro.ru/  
-Этап: 0 — анализ проекта и подготовка к разработке
+Этап: 0–0.1 — анализ проекта и синхронизация deployment-конфигурации
 
 ## 1. Итог
 
@@ -15,7 +15,15 @@ RANG сейчас является демонстрационным полноэ
 
 Исходники полностью объясняют наблюдаемое поведение production. Хэши клиентских ресурсов локальной сборки совпали с production (`index-BvwQ1TT8.js`, `routes-mQ1Kd110.js`, `styles-D4oLO9ml.css` и изображения), что является сильным подтверждением соответствия предоставленного `main` развёрнутому сайту.
 
-Критически важно: неизменённая сборка успешно завершается, но фактический Nitro preset — `cloudflare-module`. Это прямо противоречит целевому требованию сохранять production как node-server. Перед Этапом 1 нужно отдельно согласовать исправление deployment target; оно является архитектурно-инфраструктурным изменением и в рамках Этапа 0 не выполнялось.
+На Этапе 0.1 deployment-конфигурация синхронизирована с фактической production-архитектурой Timeweb Cloud: Nitro preset явно закреплён как `node-server`, а в `package.json` добавлена команда запуска уже собранного приложения. Cloudflare больше не является production target репозитория.
+
+Целевая и фактически используемая схема:
+
+```text
+Internet → Nginx → 127.0.0.1:3000 → Node.js 22.23.2 / TanStack Start / Nitro → PM2 (rang)
+```
+
+Production размещён на VPS Timeweb Cloud под Ubuntu 24.04. HTTPS завершается в Nginx через Certbot / Let's Encrypt; PM2 восстанавливает процесс после перезагрузки VPS.
 
 ## 2. Методика и выполненные проверки
 
@@ -113,11 +121,12 @@ SSR request
 - `dev`: `vite dev`;
 - `build`: `vite build`;
 - `build:dev`: `vite build --mode development`;
+- `start`: `node .output/server/index.mjs`;
 - `preview`: `vite preview`;
 - `lint`: `eslint .`;
 - `format`: `prettier --write .`.
 
-Отдельных `test`, `typecheck`, `start`, migration, seed или database scripts нет.
+Отдельных `test`, `typecheck`, migration, seed или database scripts нет.
 
 ## 5. Структура директорий
 
@@ -327,24 +336,32 @@ Hero содержит UI-фильтр по типу, площади от/до и
 
 ## 13. Конфигурация сборки и deployment target
 
-`vite.config.ts` использует `@lovable.dev/vite-tanstack-config` и задаёт только custom server entry. Комментарий самого файла сообщает, что preset включает Nitro с Cloudflare как default target.
+`vite.config.ts` использует `@lovable.dev/vite-tanstack-config`. В исходном состоянии preset не был задан явно, поэтому Lovable-конфигурация выбирала Cloudflare по умолчанию.
 
-Фактическая проверка `vite build` на неизменённом коде завершилась успешно и показала:
+На Этапе 0.1 в существующий `defineConfig` добавлено минимальное поддерживаемое переопределение:
 
-```text
-[nitro] Building [Nitro] (preset: cloudflare-module)
-Generated .output/server/wrangler.json
-Generated .wrangler/deploy/config.json
+```ts
+nitro: {
+  preset: "node-server",
+}
 ```
 
-Следовательно:
+Настройка передаётся Lovable preset непосредственно в `nitro()` и не дублирует plugins TanStack Start, React, Tailwind или Nitro. Custom server entry `src/server.ts` сохранён.
 
-- текущая репозиторная конфигурация **не является node-server build**;
-- build генерирует Cloudflare Worker/module artifacts;
-- в `package.json` нет production `start` команды для Node;
-- развертывание на Timeweb Cloud либо использует несохранённую внешнюю конфигурацию/override, либо production запускает Cloudflare-target build нестандартным способом, либо утверждение о node-server не соответствует репозиторию.
+Production build теперь должен создавать стандартный Node entry `.output/server/index.mjs`. Команда запуска закреплена как `npm start`, которая выполняет `node .output/server/index.mjs`.
 
-Это главный блокер перед Этапом 1. На Этапе 0 preset не изменялся согласно запрету менять архитектуру без подтверждения.
+Целевая production-архитектура:
+
+```text
+Internet
+  → HTTPS / Nginx reverse proxy
+  → 127.0.0.1:3000
+  → Node.js 22.23.2
+  → TanStack Start / Nitro node-server
+  → PM2 process: rang
+```
+
+Deployment выполняется на VPS Timeweb Cloud под Ubuntu 24.04, не в Cloudflare Workers. Cloudflare/Wrangler deployment не является частью проекта и не должен добавляться в последующих этапах.
 
 ## 14. SEO
 
@@ -456,8 +473,8 @@ Production-аудит ранее показал те же метаданные �
 
 ## 18. Рекомендуемая техническая последовательность
 
-1. Отдельно согласовать и зафиксировать node-server deployment target для Timeweb Cloud; не начинать прикладные этапы на Cloudflare preset.
-2. Получить фактическую server/deploy-конфигурацию Timeweb, Node/Bun version, start command, env names, reverse proxy и rollback procedure.
+1. Сохранять явно закреплённый node-server deployment target для Timeweb Cloud и проверять preset после изменений зависимостей.
+2. Поддерживать документированные build/start команды, env names, reverse proxy и rollback procedure.
 3. Создать staging, воспроизводимый build/start и smoke test.
 4. Согласовать доменную модель: object, premise, media, availability, price, feature, application, tenant, user, role.
 5. Затем выбрать совместимый с текущей архитектурой persistence/auth подход; изменение оформить отдельным ADR и получить подтверждение.
@@ -471,38 +488,48 @@ Production-аудит ранее показал те же метаданные �
 
 ### Критические
 
-1. Фактический build preset — `cloudflare-module`, а целевая production-среда требует node-server.
-2. В репозитории нет start-команды и документированного Timeweb deployment.
-3. Цифровые подсистемы не имеют backend/БД/auth основы.
+1. Цифровые подсистемы не имеют backend/БД/auth основы.
 
 ### Высокие
 
-4. Все бизнес-данные являются demo/static и не имеют ID/relations/publication workflow.
-5. Формы создают визуальное впечатление приёма заявки, но ничего не отправляют и не сохраняют.
-6. Нет consent/ПДн-процесса для будущих реальных заявок.
-7. Нет тестов, staging-конфигурации, CI и миграционной стратегии в репозитории.
-8. Нет tenant isolation/RBAC/audit log.
-9. Production содержит нулевой телефон, `example.ru`, карту-заглушку и демонстрационную оговорку.
+2. Все бизнес-данные являются demo/static и не имеют ID/relations/publication workflow.
+3. Формы создают визуальное впечатление приёма заявки, но ничего не отправляют и не сохраняют.
+4. Нет consent/ПДн-процесса для будущих реальных заявок.
+5. Нет тестов, staging-конфигурации, CI и миграционной стратегии в репозитории.
+6. Нет tenant isolation/RBAC/audit log.
+7. Production содержит нулевой телефон, `example.ru`, карту-заглушку и демонстрационную оговорку.
 
 ### Средние
 
-10. ESLint не проходит: 22 Prettier errors и 6 React Refresh warnings. На Этапе 0 не исправлялось.
-11. Нет отдельного typecheck/test script.
-12. Единственная index page ограничивает SEO каталога.
-13. `lang=en`, неполные social metadata, нет sitemap/canonical/JSON-LD.
-14. `Sections.tsx` объединяет 16 секций и локальные data collections.
-15. `package.json` использует широкие ranges; установка не через Bun lock получает отличающиеся версии.
-16. Nitro — beta-версия.
-17. Внешние Google Fonts влияют на privacy/performance/availability.
-18. Client bundle `index` около 376 KB (около 118 KB gzip); бюджет производительности не задан.
+8. ESLint не проходит: 22 Prettier errors и 6 React Refresh warnings. На Этапе 0 не исправлялось.
+9. Нет отдельного typecheck/test script.
+10. Единственная index page ограничивает SEO каталога.
+11. `lang=en`, неполные social metadata, нет sitemap/canonical/JSON-LD.
+12. `Sections.tsx` объединяет 16 секций и локальные data collections.
+13. `package.json` использует широкие ranges; установка не через Bun lock получает отличающиеся версии.
+14. Nitro — beta-версия.
+15. Внешние Google Fonts влияют на privacy/performance/availability.
+16. Client bundle `index` около 376 KB (около 118 KB gzip); бюджет производительности не задан.
 
 ## 20. Результаты проверок
 
 ### Build
 
-`vite build` успешно завершился. Получены client, SSR и Nitro artifacts. Клиентские asset hashes совпали с production.
+На Этапе 0 исходный `vite build` успешно завершился и подтвердил прежний Cloudflare default. На Этапе 0.1 после явного закрепления preset выполнена чистая production-сборка из dependency tree, установленного командой `npm install --package-lock=false`:
 
-Важно: для локальной проверки использовался доступный Node 24 и временная установка через pnpm без lock-файла pnpm. Поэтому доказательством зафиксированных dependency versions остаётся `bun.lock`, а не временное `node_modules`. Сам build обнаружил Cloudflare target независимо от этого ограничения.
+- `npm install` завершился успешно: 412 packages, 0 vulnerabilities;
+- `vite build` завершился успешно;
+- Nitro сообщил `preset: node-server`;
+- создан `.output/server/index.mjs`;
+- `.output/server/wrangler.json` не создан;
+- каталог `.wrangler` не создан;
+- файлов с именами `wrangler`, `cloudflare` или `worker` в `.output` не обнаружено.
+
+Локальная проверка выполнена доступным Node 24; production runtime по предоставленной серверной конфигурации — Node.js 22.23.2. Зафиксированные версии исходного dependency tree по-прежнему определяются `bun.lock`; новый npm lock-файл намеренно не добавлялся.
+
+### Start smoke test
+
+Команда `node .output/server/index.mjs` успешно запустила сервер на `127.0.0.1:3000`. HTTP-запрос к `/` вернул `200`, `content-type: text/html; charset=utf-8` и SSR-разметку с заголовком «Коммерческие помещения для вашего бизнеса». После проверки процесс корректно остановлен.
 
 ### Lint
 
@@ -536,30 +563,25 @@ ESLint завершился с ошибкой:
 
 До начала Этапа 1 нужны:
 
-1. Read-only схема текущего Timeweb Cloud deployment.
-2. Фактические build/start команды и runtime version.
-3. Подтверждение, каким процессом обслуживается `.output` и почему repo build имеет Cloudflare target.
-4. CI/CD или ручной deployment регламент.
-5. Staging и rollback/backup регламент.
-6. Перечень env variable names без секретных значений.
-7. Реальные помещения, объекты, цены, availability, фото и правила публикации.
-8. Реальные контакты, карта, видео и юридические документы.
-9. Согласованная модель заявок, статусы, SLA и ответственные.
-10. Сценарии арендатора и матрица ролей сотрудников.
-11. Требования по ПДн и срокам хранения.
-12. Конфигурация и тестовый контур 1С, описание обмена и master data.
-13. Каналы уведомлений и аналитические цели.
-14. Источники знаний, ограничения и handoff AI-помощника.
+1. CI/CD или ручной deployment регламент.
+2. Staging и rollback/backup регламент.
+3. Перечень env variable names без секретных значений.
+4. Реальные помещения, объекты, цены, availability, фото и правила публикации.
+5. Реальные контакты, карта, видео и юридические документы.
+6. Согласованная модель заявок, статусы, SLA и ответственные.
+7. Сценарии арендатора и матрица ролей сотрудников.
+8. Требования по ПДн и срокам хранения.
+9. Конфигурация и тестовый контур 1С, описание обмена и master data.
+10. Каналы уведомлений и аналитические цели.
+11. Источники знаний, ограничения и handoff AI-помощника.
 
 Секреты нельзя передавать в Git, коде или этом документе. Нужны секрет-хранилище/переменные окружения и минимальные права.
 
 ## 23. Готовность к Этапу 1
 
-**Условно готов как frontend-прототип, но не готов к безопасному началу Этапа 1 до решения deployment blocker.**
+**Готов к началу Этапа 1 после подтверждения результатов Этапа 0.1 заказчиком.**
 
-Причина остановки: репозиторий фактически собирается под `cloudflare-module`, тогда как обязательное требование — node-server на Timeweb Cloud. Исправление preset является конфигурационным/архитектурным изменением и требует отдельного подтверждения заказчика после проверки реального сервера.
-
-После подтверждения node-server стратегии, staging/rollback и scope Этапа 1 существующий frontend можно развивать без переписывания и без изменения фирменного стиля.
+Deployment blocker снят на уровне репозитория: production target явно закреплён как Nitro `node-server`, а стандартная start-команда запускает `.output/server/index.mjs`. Существующий frontend можно развивать без переписывания и без изменения фирменного стиля.
 
 ## 24. Ограничения для следующих этапов
 
