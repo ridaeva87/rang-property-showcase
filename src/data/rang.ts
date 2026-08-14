@@ -50,7 +50,9 @@ export const FREE_PREMISES = [
     object: "АК 153А",
     type: "Склад",
     area: "133 м²",
+    areaSqm: 133,
     price: "от 900 ₽/м²",
+    pricePerSqm: 900,
     features: ["Отдельный вход", "Подъезд для грузового транспорта", "Круглосуточный доступ"],
     image: typeWarehouse,
   },
@@ -59,7 +61,9 @@ export const FREE_PREMISES = [
     object: "Толбухина 15-2",
     type: "Офис",
     area: "48 м²",
+    areaSqm: 48,
     price: "цена по запросу",
+    pricePerSqm: null,
     features: ["Отделка выполнена", "Интернет", "Парковка"],
     image: typeOffice,
   },
@@ -68,16 +72,20 @@ export const FREE_PREMISES = [
     object: "Толбухина 19",
     type: "Офис + склад",
     area: "212 м²",
+    areaSqm: 212,
     price: "цена по запросу",
+    pricePerSqm: null,
     features: ["Офисный блок", "Складская зона", "Ворота"],
     image: typeCombined,
   },
   {
     title: "Помещение №5",
     object: "Патриса Лумумбы 28Б",
-    type: "Другое",
+    type: "Другое помещение",
     area: "76 м²",
+    areaSqm: 76,
     price: "цена по запросу",
+    pricePerSqm: null,
     features: ["Отдельный вход", "Технические коммуникации", "Закрытая территория"],
     image: typeOther,
   },
@@ -115,7 +123,24 @@ export const PREMISE_TYPES = [
   { title: "Склады", text: "Хранение, комплектация, отгрузка", image: typeWarehouse },
   { title: "Офис + склад", text: "Один адрес для офиса и склада", image: typeCombined },
   { title: "Другие помещения", text: "Под задачи вашего направления", image: typeOther },
+  { title: "Земельные участки", text: "Варианты для задач вашего бизнеса", image: objLumumby },
 ];
+
+export type PremiseFilters = {
+  type: string;
+  areaFrom: string;
+  areaTo: string;
+  object: string;
+  cost: "all" | "up-to-1000" | "on-request";
+};
+
+export const INITIAL_PREMISE_FILTERS: PremiseFilters = {
+  type: "",
+  areaFrom: "",
+  areaTo: "",
+  object: "",
+  cost: "all",
+};
 
 export const FAQ = [
   {

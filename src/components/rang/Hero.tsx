@@ -1,8 +1,19 @@
-import { toast } from "sonner";
 import heroImage from "@/assets/hero-property.jpg";
-import { OBJECTS } from "@/data/rang";
+import { OBJECTS, type PremiseFilters } from "@/data/rang";
 
-export function Hero() {
+export function Hero({
+  filters,
+  onFiltersChange,
+  onSearch,
+}: {
+  filters: PremiseFilters;
+  onFiltersChange: (filters: PremiseFilters) => void;
+  onSearch: () => void;
+}) {
+  const update = <K extends keyof PremiseFilters>(key: K, value: PremiseFilters[K]) => {
+    onFiltersChange({ ...filters, [key]: value });
+  };
+
   return (
     <section id="top" className="relative isolate min-h-[92vh] overflow-hidden bg-primary pt-20">
       <img
@@ -35,16 +46,23 @@ export function Hero() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              toast.success("Демо-режим: подбор помещений появится в рабочей версии сайта");
+              onSearch();
+              document.querySelector("#free")?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="grid gap-5 lg:grid-cols-[1.1fr_1.3fr_1.2fr_auto] lg:items-end"
+            className="grid gap-5 md:grid-cols-2 xl:grid-cols-[1fr_1.25fr_1.2fr_1fr_auto] xl:items-end"
           >
             <Field label="Тип помещения">
-              <select className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent">
-                <option>Офис</option>
-                <option>Склад</option>
-                <option>Офис + склад</option>
-                <option>Другое</option>
+              <select
+                value={filters.type}
+                onChange={(e) => update("type", e.target.value)}
+                className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent"
+              >
+                <option value="">Все типы</option>
+                <option value="Офис">Офис</option>
+                <option value="Склад">Склад</option>
+                <option value="Офис + склад">Офис + склад</option>
+                <option value="Другое помещение">Другое помещение</option>
+                <option value="Земельный участок">Земельный участок</option>
               </select>
             </Field>
 
@@ -52,33 +70,55 @@ export function Hero() {
               <div className="flex items-center gap-3">
                 <input
                   type="number"
+                  min="0"
                   placeholder="От"
+                  value={filters.areaFrom}
+                  onChange={(e) => update("areaFrom", e.target.value)}
                   className="h-12 w-full border border-input bg-background px-3 text-sm outline-none focus:border-accent"
                 />
                 <span className="text-muted-foreground">—</span>
                 <input
                   type="number"
+                  min="0"
                   placeholder="До"
+                  value={filters.areaTo}
+                  onChange={(e) => update("areaTo", e.target.value)}
                   className="h-12 w-full border border-input bg-background px-3 text-sm outline-none focus:border-accent"
                 />
               </div>
             </Field>
 
             <Field label="Объект / адрес">
-              <select className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent">
-                <option>Все объекты</option>
+              <select
+                value={filters.object}
+                onChange={(e) => update("object", e.target.value)}
+                className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent"
+              >
+                <option value="">Все объекты</option>
                 {OBJECTS.map((o) => (
-                  <option key={o.name}>{o.name}</option>
+                  <option key={o.name} value={o.name}>{`${o.name} — ${o.location}`}</option>
                 ))}
               </select>
             </Field>
 
-            <div className="flex flex-col gap-3 sm:flex-row lg:pb-0">
+            <Field label="Стоимость">
+              <select
+                value={filters.cost}
+                onChange={(e) => update("cost", e.target.value as PremiseFilters["cost"])}
+                className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent"
+              >
+                <option value="all">Любая стоимость</option>
+                <option value="up-to-1000">До 1 000 ₽/м²</option>
+                <option value="on-request">Цена по запросу</option>
+              </select>
+            </Field>
+
+            <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row xl:col-span-1">
               <button
                 type="submit"
                 className="h-12 bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent"
               >
-                Показать помещения
+                Подобрать помещение
               </button>
               <a
                 href="#cta"
