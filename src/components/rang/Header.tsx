@@ -17,12 +17,16 @@ export function Header() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? "border-b border-border bg-background/92 backdrop-blur-md" : "bg-background/70 backdrop-blur-sm"
+        scrolled
+          ? "border-b border-border bg-background/92 backdrop-blur-md"
+          : "bg-background/70 backdrop-blur-sm"
       }`}
     >
       <div className="container-rang flex h-20 items-center justify-between gap-6">
         <a href="#top" className="flex flex-col leading-none">
-          <span className="font-display text-2xl font-extrabold tracking-tight text-primary">РАНГ</span>
+          <span className="font-display text-2xl font-extrabold tracking-tight text-primary">
+            РАНГ
+          </span>
           <span className="mt-1 hidden text-[0.62rem] whitespace-nowrap tracking-[0.12em] text-muted-foreground uppercase sm:block">
             Коммерческая недвижимость с 1993 года
           </span>
@@ -40,14 +44,13 @@ export function Header() {
           ))}
         </nav>
 
-
         <div className="hidden items-center gap-3 lg:flex">
           <button
             onClick={() => toast("Личный кабинет появится на следующем этапе разработки")}
             className="inline-flex items-center gap-2 border border-border px-4 py-2.5 text-sm font-medium whitespace-nowrap text-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <UserRound className="size-4" />
-            Личный кабинет
+            Личный кабинет — скоро
           </button>
           <a
             href="#search"
@@ -87,7 +90,7 @@ export function Header() {
                 }}
                 className="border border-border px-4 py-3 text-sm font-medium"
               >
-                Личный кабинет
+                Личный кабинет — скоро
               </button>
               <a
                 href="#search"

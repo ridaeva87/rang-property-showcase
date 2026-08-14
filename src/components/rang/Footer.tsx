@@ -32,7 +32,7 @@ export function Footer() {
               onClick={() => toast("Личный кабинет появится на следующем этапе разработки")}
               className="text-left text-primary-foreground/75 transition-colors hover:text-accent"
             >
-              Личный кабинет
+              Личный кабинет — скоро
             </button>
           </nav>
           <ul className="space-y-3 text-sm">

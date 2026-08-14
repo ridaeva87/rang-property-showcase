@@ -23,34 +23,46 @@ function reply(input: string): Msg {
     return {
       role: "bot",
       text: "Есть несколько вариантов, которые могут вам подойти. Показать свободные помещения?",
-      action: { label: "Показать", toast: "Демо-режим: подборка помещений откроется в рабочей версии" },
+      action: {
+        label: "Показать",
+        toast: "Демо-режим: подборка помещений откроется в рабочей версии",
+      },
     };
   }
   if (t.includes("переоборуд") || t.includes("услуг") || t.includes("работ")) {
     return {
       role: "bot",
       text: "Для арендаторов предусмотрена возможность оставить заявку на необходимые работы.",
-      action: { label: "Оставить заявку", toast: "Спасибо! Заявка принята (демо-режим)" },
+      action: { label: "О заявках", toast: "Демонстрационный режим: заявки пока не отправляются" },
     };
   }
   if (t.includes("найти") || t.includes("помещен") || t.includes("склад") || t.includes("офис")) {
     return {
       role: "bot",
       text: "Подскажите тип помещения и желаемую площадь — предложу подходящие варианты.",
-      action: { label: "Показать свободные", toast: "Демо-режим: каталог откроется в рабочей версии" },
+      action: {
+        label: "Показать свободные",
+        toast: "Демо-режим: каталог откроется в рабочей версии",
+      },
     };
   }
   if (t.includes("услови") || t.includes("аренд") || t.includes("стоим") || t.includes("цен")) {
     return {
       role: "bot",
       text: "Условия зависят от выбранного помещения. Подробную информацию можно получить у сотрудника компании.",
-      action: { label: "Получить консультацию", toast: "Спасибо! Мы свяжемся с вами (демо-режим)" },
+      action: {
+        label: "О консультации",
+        toast: "Демонстрационный режим: запрос пока не отправляется",
+      },
     };
   }
   return {
     role: "bot",
     text: "Записал ваш вопрос. В рабочей версии помощник ответит подробно или передаст вопрос сотруднику компании.",
-    action: { label: "Передать вопрос сотруднику", toast: "Вопрос передан сотруднику (демо-режим)" },
+    action: {
+      label: "Передать вопрос сотруднику",
+      toast: "Демонстрационный режим: вопрос пока не передаётся",
+    },
   };
 }
 
@@ -101,7 +113,7 @@ export function AiAssistant({ open, setOpen }: { open: boolean; setOpen: (v: boo
                   {m.text}
                   {m.action && (
                     <button
-                      onClick={() => toast.success(m.action!.toast)}
+                      onClick={() => toast(m.action!.toast)}
                       className="mt-3 block w-fit bg-accent px-4 py-2 text-xs font-semibold text-accent-foreground"
                     >
                       {m.action.label}
@@ -147,7 +159,7 @@ export function AiAssistant({ open, setOpen }: { open: boolean; setOpen: (v: boo
               </button>
             </form>
             <button
-              onClick={() => toast.success("Вопрос передан сотруднику (демо-режим)")}
+              onClick={() => toast("Демонстрационный режим: вопрос пока не передаётся сотруднику")}
               className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary"
             >
               <Headset className="size-3.5" />

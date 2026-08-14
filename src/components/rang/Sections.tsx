@@ -26,14 +26,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { FAQ, FREE_PREMISES, OBJECTS, PREMISE_TYPES, SOON_PREMISES } from "@/data/rang";
-import { useState } from "react";
+import {
+  FAQ,
+  FREE_PREMISES,
+  OBJECTS,
+  PREMISE_TYPES,
+  SOON_PREMISES,
+  type PremiseFilters,
+} from "@/data/rang";
 import aboutImage from "@/assets/object-ak153.jpg";
 import videoWarehouse from "@/assets/type-warehouse.jpg";
 import videoTerritory from "@/assets/object-tolbuhina19.jpg";
 import videoCombined from "@/assets/type-combined.jpg";
 
-const demo = (message: string) => () => toast.success(message);
+const demo = (message: string) => () => toast(message);
 
 export function SectionHead({
   eyebrow,
@@ -70,7 +76,35 @@ export function SectionHead({
 }
 
 /* 5. Свободные помещения */
-export function FreePremises() {
+export function FreePremises({
+  filters,
+  onReset,
+}: {
+  filters: PremiseFilters;
+  onReset: () => void;
+}) {
+  const areaFrom = filters.areaFrom ? Number(filters.areaFrom) : 0;
+  const areaTo = filters.areaTo ? Number(filters.areaTo) : Number.POSITIVE_INFINITY;
+  const premises = FREE_PREMISES.filter((premise) => {
+    const matchesCost =
+      filters.cost === "all" ||
+      (filters.cost === "up-to-1000" &&
+        premise.pricePerSqm !== null &&
+        premise.pricePerSqm <= 1000) ||
+      (filters.cost === "on-request" && premise.pricePerSqm === null);
+
+    return (
+      (!filters.type || premise.type === filters.type) &&
+      premise.areaSqm >= areaFrom &&
+      premise.areaSqm <= areaTo &&
+      (!filters.object || premise.object === filters.object) &&
+      matchesCost
+    );
+  });
+  const isFiltered = Boolean(
+    filters.type || filters.areaFrom || filters.areaTo || filters.object || filters.cost !== "all",
+  );
+
   return (
     <section id="free" className="container-rang py-20 lg:py-28">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -88,8 +122,20 @@ export function FreePremises() {
         </button>
       </div>
 
+      {isFiltered && (
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border border-border bg-card px-5 py-4">
+          <p className="text-sm text-muted-foreground">
+            Найдено помещений:{" "}
+            <span className="font-semibold text-foreground">{premises.length}</span>
+          </p>
+          <button onClick={onReset} className="text-sm font-semibold text-primary">
+            Сбросить параметры
+          </button>
+        </div>
+      )}
+
       <div className="mt-12 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {FREE_PREMISES.map((p) => (
+        {premises.map((p) => (
           <article key={p.title} className="card-lift media-zoom flex flex-col bg-card shadow-card">
             <div className="relative aspect-[4/3] overflow-hidden">
               <img
@@ -129,6 +175,20 @@ export function FreePremises() {
           </article>
         ))}
       </div>
+      {premises.length === 0 && (
+        <div className="mt-12 border border-border bg-card p-8 text-center sm:p-12">
+          <h3 className="text-xl font-semibold">Подходящих помещений пока нет</h3>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Измените параметры подбора или посмотрите все доступные варианты.
+          </p>
+          <button
+            onClick={onReset}
+            className="mt-6 bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+          >
+            Показать все помещения
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -169,7 +229,7 @@ export function ComingSoon() {
                 </p>
                 <p className="mt-4 text-lg font-semibold text-primary-foreground">{p.area}</p>
                 <button
-                  onClick={demo("Спасибо! Предварительная заявка принята (демо-режим)")}
+                  onClick={demo("Демонстрационный режим: заявка не отправляется и не сохраняется")}
                   className="mt-6 w-full bg-accent py-3 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
                 >
                   Оставить заявку
@@ -224,7 +284,10 @@ export function Objects() {
         <SectionHead eyebrow="География" title="Наши объекты" />
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           {OBJECTS.map((o) => (
-            <article key={o.name} className="card-lift media-zoom flex flex-col bg-background shadow-card">
+            <article
+              key={o.name}
+              className="card-lift media-zoom flex flex-col bg-background shadow-card"
+            >
               <div className="aspect-[16/9] overflow-hidden">
                 <img src={o.image} alt={o.name} loading="lazy" className="size-full object-cover" />
               </div>
@@ -252,12 +315,20 @@ export function Objects() {
 
 /* 9. Аренда */
 const RENT_OPTIONS = [
-  { icon: CalendarRange, title: "Долгосрочная аренда", text: "Стабильные условия для развития бизнеса" },
+  {
+    icon: CalendarRange,
+    title: "Долгосрочная аренда",
+    text: "Стабильные условия для развития бизнеса",
+  },
   { icon: Clock, title: "Краткосрочная аренда", text: "Помещение на ограниченный срок" },
   { icon: Building2, title: "Офисы", text: "Рабочие пространства разной площади" },
   { icon: Warehouse, title: "Склады", text: "Хранение и обработка товара" },
   { icon: Layers, title: "Офис + склад", text: "Офис и склад в одном месте" },
-  { icon: SquareStack, title: "Аренда части помещения", text: "Площадь под фактическую потребность" },
+  {
+    icon: SquareStack,
+    title: "Аренда части помещения",
+    text: "Площадь под фактическую потребность",
+  },
 ];
 
 export function RentSection() {
@@ -269,7 +340,7 @@ export function RentSection() {
             <SectionHead
               eyebrow="Аренда"
               title="Аренда для бизнеса"
-              subtitle="Мы подбираем помещение под конкретные задачи: от небольшого офиса до складского блока с отдельным входом. Возможна аренда части помещения и комбинированные варианты."
+              subtitle="Мы предлагаем помещения под конкретные задачи: от небольшого офиса до складского блока с отдельным входом. Возможна аренда части помещения и комбинированные варианты."
               tone="dark"
             />
             <a
@@ -281,7 +352,10 @@ export function RentSection() {
           </div>
           <div className="grid gap-px bg-primary-foreground/12 sm:grid-cols-2">
             {RENT_OPTIONS.map((o) => (
-              <div key={o.title} className="bg-primary p-6 transition-colors hover:bg-primary-foreground/5">
+              <div
+                key={o.title}
+                className="bg-primary p-6 transition-colors hover:bg-primary-foreground/5"
+              >
                 <o.icon className="size-6 text-accent" />
                 <h3 className="mt-4 text-lg font-semibold text-primary-foreground">{o.title}</h3>
                 <p className="mt-2 text-sm text-primary-foreground/65">{o.text}</p>
@@ -301,7 +375,9 @@ export function SaleSection() {
       <div className="flex flex-col gap-8 border border-border bg-card p-8 lg:flex-row lg:items-center lg:justify-between lg:p-12">
         <div className="max-w-2xl">
           <p className="eyebrow">Продажа</p>
-          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">Продажа коммерческой недвижимости</h2>
+          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">
+            Продажа коммерческой недвижимости
+          </h2>
           <p className="mt-4 text-muted-foreground">
             Отдельные помещения и объекты коммерческого назначения. Условия и доступные варианты
             уточняются у сотрудника компании.
@@ -340,14 +416,17 @@ export function Services() {
         />
         <div className="mt-12 grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
           {SERVICES.map((s) => (
-            <div key={s.title} className="group bg-surface p-7 transition-colors hover:bg-background">
+            <div
+              key={s.title}
+              className="group bg-surface p-7 transition-colors hover:bg-background"
+            >
               <s.icon className="size-6 text-accent transition-transform duration-500 group-hover:-translate-y-1" />
               <h3 className="mt-5 text-base font-semibold">{s.title}</h3>
             </div>
           ))}
           <div className="flex items-center bg-primary p-7">
             <button
-              onClick={demo("Спасибо! Заявка на работы принята (демо-режим)")}
+              onClick={demo("Демонстрационный режим: заявка на работы пока не отправляется")}
               className="text-left text-base font-semibold text-primary-foreground"
             >
               Оставить заявку
@@ -404,10 +483,26 @@ export function Videos() {
 
 /* 12. Бизнесы арендаторов */
 const TENANTS = [
-  { name: "Автосервис", category: "Услуги для автомобилей", text: "Ремонт и обслуживание автомобилей на территории объекта." },
-  { name: "Мебельное производство", category: "Производство", text: "Изготовление мебели на заказ в собственном цехе." },
-  { name: "Логистическая компания", category: "Логистика", text: "Складская обработка и доставка грузов." },
-  { name: "Оптовая компания", category: "Оптовая торговля", text: "Складские остатки и отгрузка партий товара." },
+  {
+    name: "Автосервис",
+    category: "Услуги для автомобилей",
+    text: "Ремонт и обслуживание автомобилей на территории объекта.",
+  },
+  {
+    name: "Мебельное производство",
+    category: "Производство",
+    text: "Изготовление мебели на заказ в собственном цехе.",
+  },
+  {
+    name: "Логистическая компания",
+    category: "Логистика",
+    text: "Складская обработка и доставка грузов.",
+  },
+  {
+    name: "Оптовая компания",
+    category: "Оптовая торговля",
+    text: "Складские остатки и отгрузка партий товара.",
+  },
 ];
 
 export function Tenants() {
@@ -421,7 +516,10 @@ export function Tenants() {
         />
         <div className="mt-12 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {TENANTS.map((t) => (
-            <article key={t.name} className="card-lift flex flex-col border border-border bg-background p-6">
+            <article
+              key={t.name}
+              className="card-lift flex flex-col border border-border bg-background p-6"
+            >
               <div className="flex size-14 items-center justify-center border border-border bg-surface font-display text-lg font-bold text-primary">
                 {t.name.slice(0, 2).toUpperCase()}
               </div>
@@ -445,7 +543,7 @@ export function Tenants() {
             Новым арендаторам — первый месяц размещения информации о бизнесе на сайте бесплатно
           </p>
           <button
-            onClick={demo("Спасибо! Заявка принята (демо-режим)")}
+            onClick={demo("Демонстрационный режим: заявка пока не отправляется")}
             className="w-fit bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
           >
             Разместить бизнес
@@ -483,7 +581,9 @@ export function About() {
             </div>
             <div className="bg-background p-6">
               <p className="font-display text-4xl font-bold text-primary">4 объекта</p>
-              <p className="mt-2 text-sm text-muted-foreground">коммерческой недвижимости в Казани</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                коммерческой недвижимости в Казани
+              </p>
             </div>
           </div>
           <button
@@ -502,7 +602,11 @@ export function About() {
 const STEPS = [
   { n: "01", title: "Выберите помещение", text: "Посмотрите доступные варианты и характеристики." },
   { n: "02", title: "Запишитесь на просмотр", text: "Оставьте заявку на удобное время." },
-  { n: "03", title: "Обсудите условия", text: "Сотрудник компании ответит на вопросы и согласует детали." },
+  {
+    n: "03",
+    title: "Обсудите условия",
+    text: "Сотрудник компании ответит на вопросы и согласует детали.",
+  },
   { n: "04", title: "Заключите договор", text: "После согласования условий оформляется аренда." },
 ];
 
@@ -549,7 +653,9 @@ export function Faq({ onAskAi }: { onAskAi: () => void }) {
               <AccordionTrigger className="py-5 text-left text-base font-semibold hover:no-underline">
                 {item.q}
               </AccordionTrigger>
-              <AccordionContent className="pb-5 text-sm text-muted-foreground">{item.a}</AccordionContent>
+              <AccordionContent className="pb-5 text-sm text-muted-foreground">
+                {item.a}
+              </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
@@ -558,71 +664,83 @@ export function Faq({ onAskAi }: { onAskAi: () => void }) {
   );
 }
 
+/* Переход к существующему AI-помощнику */
+export function AiTransition({ onOpen }: { onOpen: () => void }) {
+  return (
+    <section id="ai-assistant" className="bg-navy py-16 lg:py-20">
+      <div className="container-rang flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="eyebrow">Помощник Ранг</p>
+          <h2 className="mt-3 text-3xl font-semibold text-primary-foreground sm:text-4xl">
+            Поможем сориентироваться в помещениях
+          </h2>
+          <p className="mt-4 text-sm text-primary-foreground/70 sm:text-base">
+            Демонстрационный помощник ответит на базовые вопросы о помещениях, аренде и услугах.
+          </p>
+        </div>
+        <button
+          onClick={onOpen}
+          className="inline-flex w-fit items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground"
+        >
+          <Bot className="size-4" />
+          Открыть помощника
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /* 17. CTA */
 export function CtaForm() {
-  const [sent, setSent] = useState(false);
-
   return (
     <section id="cta" className="bg-primary py-20 lg:py-28">
       <div className="container-rang grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
         <SectionHead
           eyebrow="Заявка"
           title="Не нашли подходящее помещение?"
-          subtitle="Оставьте необходимые параметры. Мы сможем связаться с вами, когда появится подходящий вариант."
+          subtitle="Укажите необходимые параметры. Отправка заявки сотрудникам будет подключена на следующем этапе."
           tone="dark"
         />
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            setSent(true);
-            toast.success("Спасибо! Заявка принята.");
+            toast.info(
+              "Форма пока не отправляет данные. Система заявок будет подключена на следующем этапе.",
+            );
           }}
           className="bg-card p-6 shadow-card sm:p-8"
         >
-          {sent ? (
-            <div className="flex min-h-64 flex-col items-start justify-center">
-              <p className="text-2xl font-semibold text-primary">Спасибо! Заявка принята.</p>
-              <p className="mt-3 text-sm text-muted-foreground">
-                Это демонстрационная форма — данные не отправляются.
-              </p>
-              <button
-                onClick={() => setSent(false)}
-                type="button"
-                className="mt-6 border border-border px-5 py-3 text-sm font-semibold"
-              >
-                Заполнить ещё раз
-              </button>
-            </div>
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Input label="Имя" placeholder="Как к вам обращаться" />
-              <Input label="Телефон" placeholder="+7 ___ ___ __ __" />
-              <label className="block">
-                <Lbl>Тип помещения</Lbl>
-                <select className="h-12 w-full border border-input bg-background px-3 text-sm outline-none focus:border-accent">
-                  <option>Офис</option>
-                  <option>Склад</option>
-                  <option>Офис + склад</option>
-                  <option>Другое</option>
-                </select>
-              </label>
-              <Input label="Желаемая площадь, м²" placeholder="Например, 120" />
-              <label className="block sm:col-span-2">
-                <Lbl>Комментарий</Lbl>
-                <textarea
-                  rows={4}
-                  placeholder="Задачи, сроки, пожелания"
-                  className="w-full border border-input bg-background p-3 text-sm outline-none focus:border-accent"
-                />
-              </label>
-              <button
-                type="submit"
-                className="h-12 bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent sm:col-span-2"
-              >
-                Оставить заявку
-              </button>
-            </div>
-          )}
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Input label="Имя" placeholder="Как к вам обращаться" />
+            <Input label="Телефон" placeholder="+7 ___ ___ __ __" />
+            <label className="block">
+              <Lbl>Тип помещения</Lbl>
+              <select className="h-12 w-full border border-input bg-background px-3 text-sm outline-none focus:border-accent">
+                <option>Офис</option>
+                <option>Склад</option>
+                <option>Офис + склад</option>
+                <option>Другое</option>
+              </select>
+            </label>
+            <Input label="Желаемая площадь, м²" placeholder="Например, 120" />
+            <label className="block sm:col-span-2">
+              <Lbl>Комментарий</Lbl>
+              <textarea
+                rows={4}
+                placeholder="Задачи, сроки, пожелания"
+                className="w-full border border-input bg-background p-3 text-sm outline-none focus:border-accent"
+              />
+            </label>
+            <button
+              type="submit"
+              className="h-12 bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent sm:col-span-2"
+            >
+              Проверить параметры
+            </button>
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              Демонстрационная форма: данные не отправляются и не сохраняются.
+            </p>
+          </div>
         </form>
       </div>
     </section>
