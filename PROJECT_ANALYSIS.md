@@ -531,6 +531,24 @@ Production-аудит ранее показал те же метаданные �
 
 Команда `node .output/server/index.mjs` успешно запустила сервер на `127.0.0.1:3000`. HTTP-запрос к `/` вернул `200`, `content-type: text/html; charset=utf-8` и SSR-разметку с заголовком «Коммерческие помещения для вашего бизнеса». После проверки процесс корректно остановлен.
 
+### Проверка кроссбраузерности
+
+Кроссбраузерная проверка выполнена на реально запущенной production-сборке. Полный протокол находится в `CROSS_BROWSER_REPORT.md`.
+
+Автоматизированная матрица включала:
+
+- установленный Google Chrome 151: desktop 1440 px, tablet 768 px, mobile 390 px;
+- Firefox 141: desktop 1440 px и mobile 390 px;
+- WebKit 26: desktop 1440 px;
+- WebKit iPhone 13 emulation: 390 px;
+- WebKit iPad Mini emulation: 768 px;
+- Chromium Pixel 7/Android emulation: 412 px;
+- Chromium desktop как engine-level proxy для Microsoft Edge.
+
+Во всех конфигурациях подтверждены HTTP 200, SSR, hydration, 15 секций страницы, меню, hash-навигация, фильтр, форма, FAQ, AI-помощник, изображения, шрифты и responsive layout. Console/page errors, failed requests, HTTP 4xx/5xx assets и горизонтальный overflow отсутствовали. OKLCH, `backdrop-filter`, `aspect-ratio` и dynamic viewport units поддерживаются проверенными движками.
+
+Кроссбраузерных дефектов, требующих изменения кода, не найдено. Нативный Edge не установлен; нативный Safari WebDriver заблокирован выключенной настройкой `Allow remote automation`; iOS/Android проверены через device emulation, не физические устройства. Поэтому engine-level compatibility подтверждена, а полный physical-device sign-off остаётся отдельной ручной контрольной точкой.
+
 ### Lint
 
 ESLint завершился с ошибкой:
