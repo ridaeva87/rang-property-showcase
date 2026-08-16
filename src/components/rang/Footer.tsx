@@ -28,6 +28,12 @@ export function Footer() {
                 {item.label}
               </a>
             ))}
+            <a
+              href="/favorites"
+              className="text-primary-foreground/75 transition-colors hover:text-accent"
+            >
+              Избранное
+            </a>
             <button
               onClick={() => toast("Личный кабинет появится на следующем этапе разработки")}
               className="text-left text-primary-foreground/75 transition-colors hover:text-accent"

@@ -8,13 +8,13 @@ import obj19 from "@/assets/object-tolbuhina19.jpg";
 import objLumumby from "@/assets/object-lumumby.jpg";
 
 export const NAV = [
-  { label: "Помещения", href: "#free" },
-  { label: "Аренда", href: "#rent" },
-  { label: "Продажа", href: "#sale" },
-  { label: "Услуги", href: "#services" },
-  { label: "Арендаторам", href: "#tenants" },
-  { label: "О компании", href: "#about" },
-  { label: "Контакты", href: "#contacts" },
+  { label: "Каталог", href: "/properties" },
+  { label: "Аренда", href: "/#rent" },
+  { label: "Продажа", href: "/#sale" },
+  { label: "Услуги", href: "/#services" },
+  { label: "Арендаторам", href: "/#tenants" },
+  { label: "О компании", href: "/#about" },
+  { label: "Контакты", href: "/#contacts" },
 ];
 
 export const OBJECTS = [
@@ -44,103 +44,207 @@ export const OBJECTS = [
   },
 ];
 
-export const FREE_PREMISES = [
+export const PROPERTY_TYPES = [
+  "Офис",
+  "Склад",
+  "Офис + склад",
+  "Другое помещение",
+  "Земельный участок",
+] as const;
+
+export const PROPERTY_STATUSES = ["Свободно", "В резерве", "Сдано", "Скоро освободится"] as const;
+
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
+
+export type Property = {
+  id: string;
+  slug: string;
+  title: string;
+  type: PropertyType;
+  purposes: string[];
+  object: string;
+  address: string;
+  areaSqm?: number;
+  rentPriceLabel?: string;
+  rentPricePerSqm?: number;
+  status: PropertyStatus;
+  expectedRelease?: string;
+  accessMode?: string;
+  photos: string[];
+  mainFeatures: string[];
+  additionalFeatures: string[];
+};
+
+export const PROPERTIES: Property[] = [
   {
+    id: "property-001",
+    slug: "sklad-8-ak-153a",
     title: "Склад №8",
     object: "АК 153А",
+    address: "Казань, ул. Академика Королёва, 153А",
     type: "Склад",
-    area: "133 м²",
+    purposes: ["Хранение", "Комплектация", "Отгрузка"],
     areaSqm: 133,
-    price: "от 900 ₽/м²",
-    pricePerSqm: 900,
-    features: ["Отдельный вход", "Подъезд для грузового транспорта", "Круглосуточный доступ"],
-    image: typeWarehouse,
+    rentPriceLabel: "от 900 ₽/м²",
+    rentPricePerSqm: 900,
+    status: "Свободно",
+    accessMode: "Круглосуточный доступ",
+    photos: [typeWarehouse],
+    mainFeatures: ["Отдельный вход", "Подъезд для грузового транспорта"],
+    additionalFeatures: [],
   },
   {
+    id: "property-002",
+    slug: "ofis-2-14-tolbuhina-15-2",
     title: "Офис 2.14",
     object: "Толбухина 15-2",
+    address: "Казань, ул. Толбухина, 15, корп. 2",
     type: "Офис",
-    area: "48 м²",
+    purposes: ["Рабочее пространство"],
     areaSqm: 48,
-    price: "цена по запросу",
-    pricePerSqm: null,
-    features: ["Отделка выполнена", "Интернет", "Парковка"],
-    image: typeOffice,
+    rentPriceLabel: "Цена по запросу",
+    status: "Свободно",
+    photos: [typeOffice],
+    mainFeatures: ["Отделка выполнена"],
+    additionalFeatures: ["Интернет", "Парковка"],
   },
   {
+    id: "property-003",
+    slug: "ofis-sklad-3-tolbuhina-19",
     title: "Офис + склад №3",
     object: "Толбухина 19",
+    address: "Казань, ул. Толбухина, 19",
     type: "Офис + склад",
-    area: "212 м²",
+    purposes: ["Офис", "Хранение"],
     areaSqm: 212,
-    price: "цена по запросу",
-    pricePerSqm: null,
-    features: ["Офисный блок", "Складская зона", "Ворота"],
-    image: typeCombined,
+    rentPriceLabel: "Цена по запросу",
+    status: "Свободно",
+    photos: [typeCombined],
+    mainFeatures: ["Офисный блок", "Складская зона"],
+    additionalFeatures: ["Ворота"],
   },
   {
+    id: "property-004",
+    slug: "pomeshchenie-5-lumumby-28b",
     title: "Помещение №5",
     object: "Патриса Лумумбы 28Б",
+    address: "Казань, ул. Патриса Лумумбы, 28Б",
     type: "Другое помещение",
-    area: "76 м²",
+    purposes: ["Другое назначение"],
     areaSqm: 76,
-    price: "цена по запросу",
-    pricePerSqm: null,
-    features: ["Отдельный вход", "Технические коммуникации", "Закрытая территория"],
-    image: typeOther,
+    rentPriceLabel: "Цена по запросу",
+    status: "Свободно",
+    photos: [typeOther],
+    mainFeatures: ["Отдельный вход", "Технические коммуникации"],
+    additionalFeatures: ["Закрытая территория"],
   },
-];
-
-export const SOON_PREMISES = [
   {
+    id: "property-005",
+    slug: "sklad-12-tolbuhina-19",
     title: "Склад №12",
     object: "Толбухина 19",
+    address: "Казань, ул. Толбухина, 19",
     type: "Склад",
-    area: "150 м²",
-    status: "Освобождается 1 октября",
-    image: typeWarehouse,
+    purposes: ["Хранение", "Комплектация", "Отгрузка"],
+    areaSqm: 150,
+    status: "Скоро освободится",
+    expectedRelease: "1 октября",
+    photos: [typeWarehouse],
+    mainFeatures: [],
+    additionalFeatures: [],
   },
   {
+    id: "property-006",
+    slug: "ofis-1-05-ak-153a",
     title: "Офис 1.05",
     object: "АК 153А",
+    address: "Казань, ул. Академика Королёва, 153А",
     type: "Офис",
-    area: "64 м²",
-    status: "Освобождается в ноябре",
-    image: typeOffice,
+    purposes: ["Рабочее пространство"],
+    areaSqm: 64,
+    status: "Скоро освободится",
+    expectedRelease: "В ноябре",
+    photos: [typeOffice],
+    mainFeatures: [],
+    additionalFeatures: [],
   },
   {
+    id: "property-007",
+    slug: "ofis-sklad-7-tolbuhina-15-2",
     title: "Офис + склад №7",
     object: "Толбухина 15-2",
+    address: "Казань, ул. Толбухина, 15, корп. 2",
     type: "Офис + склад",
-    area: "185 м²",
-    status: "Дата уточняется",
-    image: typeCombined,
+    purposes: ["Офис", "Хранение"],
+    areaSqm: 185,
+    status: "Скоро освободится",
+    photos: [typeCombined],
+    mainFeatures: [],
+    additionalFeatures: [],
   },
 ];
 
 export const PREMISE_TYPES = [
-  { title: "Офисы", text: "Помещения для команд разного размера", image: typeOffice },
-  { title: "Склады", text: "Хранение, комплектация, отгрузка", image: typeWarehouse },
-  { title: "Офис + склад", text: "Один адрес для офиса и склада", image: typeCombined },
-  { title: "Другие помещения", text: "Под задачи вашего направления", image: typeOther },
-  { title: "Земельные участки", text: "Варианты для задач вашего бизнеса", image: objLumumby },
-];
+  { type: "Офис", title: "Офисы", text: "Помещения для команд разного размера", image: typeOffice },
+  {
+    type: "Склад",
+    title: "Склады",
+    text: "Хранение, комплектация, отгрузка",
+    image: typeWarehouse,
+  },
+  {
+    type: "Офис + склад",
+    title: "Офис + склад",
+    text: "Один адрес для офиса и склада",
+    image: typeCombined,
+  },
+  {
+    type: "Другое помещение",
+    title: "Другие помещения",
+    text: "Под задачи вашего направления",
+    image: typeOther,
+  },
+  {
+    type: "Земельный участок",
+    title: "Земельные участки",
+    text: "Варианты для задач вашего бизнеса",
+    image: objLumumby,
+  },
+] satisfies Array<{ type: PropertyType; title: string; text: string; image: string }>;
 
-export type PremiseFilters = {
+export type PropertyFilters = {
   type: string;
   areaFrom: string;
   areaTo: string;
   object: string;
   cost: "all" | "up-to-1000" | "on-request";
+  purpose: string;
+  accessMode: string;
+  feature: string;
+  status: string;
 };
 
-export const INITIAL_PREMISE_FILTERS: PremiseFilters = {
+export const INITIAL_PROPERTY_FILTERS: PropertyFilters = {
   type: "",
   areaFrom: "",
   areaTo: "",
   object: "",
   cost: "all",
+  purpose: "",
+  accessMode: "",
+  feature: "",
+  status: "",
 };
+
+export function getPropertyBySlug(slug: string) {
+  return PROPERTIES.find((property) => property.slug === slug);
+}
+
+export function getPropertiesByIds(ids: string[]) {
+  const idSet = new Set(ids);
+  return PROPERTIES.filter((property) => idSet.has(property.id));
+}
 
 export const FAQ = [
   {

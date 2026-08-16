@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { INITIAL_PREMISE_FILTERS, type PremiseFilters } from "@/data/rang";
+import { INITIAL_PROPERTY_FILTERS, type PropertyFilters } from "@/data/rang";
 import { Header } from "@/components/rang/Header";
 import { Hero } from "@/components/rang/Hero";
 import {
@@ -43,12 +43,12 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [draftFilters, setDraftFilters] = useState<PremiseFilters>(INITIAL_PREMISE_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState<PremiseFilters>(INITIAL_PREMISE_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
 
   const resetFilters = () => {
-    setDraftFilters(INITIAL_PREMISE_FILTERS);
-    setAppliedFilters(INITIAL_PREMISE_FILTERS);
+    setDraftFilters(INITIAL_PROPERTY_FILTERS);
+    setAppliedFilters(INITIAL_PROPERTY_FILTERS);
   };
 
   return (

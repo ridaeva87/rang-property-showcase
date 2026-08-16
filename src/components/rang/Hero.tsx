@@ -1,16 +1,16 @@
 import heroImage from "@/assets/hero-property.jpg";
-import { OBJECTS, type PremiseFilters } from "@/data/rang";
+import { OBJECTS, type PropertyFilters } from "@/data/rang";
 
 export function Hero({
   filters,
   onFiltersChange,
   onSearch,
 }: {
-  filters: PremiseFilters;
-  onFiltersChange: (filters: PremiseFilters) => void;
+  filters: PropertyFilters;
+  onFiltersChange: (filters: PropertyFilters) => void;
   onSearch: () => void;
 }) {
-  const update = <K extends keyof PremiseFilters>(key: K, value: PremiseFilters[K]) => {
+  const update = <K extends keyof PropertyFilters>(key: K, value: PropertyFilters[K]) => {
     onFiltersChange({ ...filters, [key]: value });
   };
 
@@ -104,7 +104,7 @@ export function Hero({
             <Field label="Стоимость">
               <select
                 value={filters.cost}
-                onChange={(e) => update("cost", e.target.value as PremiseFilters["cost"])}
+                onChange={(e) => update("cost", e.target.value as PropertyFilters["cost"])}
                 className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent"
               >
                 <option value="all">Любая стоимость</option>

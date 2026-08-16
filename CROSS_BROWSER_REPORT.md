@@ -99,3 +99,19 @@ WebKit/Chromium emulation проверяет движок, viewport, touch conte
 Production build Nitro `node-server` подтверждён как работоспособный в актуальных движках Chromium, Firefox и WebKit на desktop/tablet/mobile viewport. Критических JavaScript, SSR, hydration, resource-loading, Tailwind CSS 4 или responsive-layout проблем не обнаружено.
 
 Полное утверждение «проверено в нативном Edge, нативном Safari и на физических iOS/Android-устройствах» пока было бы некорректным. Для него требуется дополнительный device-level прогон, описанный выше.
+
+## 8. Повторная проверка после Этапа 2
+
+После добавления каталога, страниц помещений и избранного повторно запущена production-сборка Nitro `node-server` и выполнена браузерная матрица:
+
+- Google Chrome 151, desktop 1440 × 1000;
+- Chromium, desktop 1440 × 1000 — engine-level proxy для Edge;
+- Firefox, desktop 1440 × 1000;
+- WebKit, desktop 1440 × 1000;
+- WebKit, iPad 768 × 1024;
+- WebKit, iPhone 390 × 844;
+- Chromium, Android 412 × 915.
+
+На каждой конфигурации проверены `/`, `/properties`, прямая страница `/properties/sklad-8-ak-153a`, reload страницы помещения и `/favorites`. Подтверждены одиночные и комбинированные фильтры, пустой результат, сброс, добавление и удаление избранного, сохранение избранного после reload, мобильная навигация, быстрый подбор главной, CTA помещения со статусом «Скоро освободится» и вход в существующий AI-помощник.
+
+Результат: все сценарии прошли; Console errors, uncaught JavaScript errors, failed requests, HTTP 4xx/5xx ресурсов и горизонтальный overflow отсутствуют. Ограничения нативных Edge/Safari и физических устройств остаются теми же, что указаны в разделе 5.

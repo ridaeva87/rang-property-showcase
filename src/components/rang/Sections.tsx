@@ -26,14 +26,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  FAQ,
-  FREE_PREMISES,
-  OBJECTS,
-  PREMISE_TYPES,
-  SOON_PREMISES,
-  type PremiseFilters,
-} from "@/data/rang";
+import { FAQ, OBJECTS, PREMISE_TYPES, PROPERTIES, type PropertyFilters } from "@/data/rang";
+import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
+import { PropertyCard } from "@/components/rang/PropertyCard";
 import aboutImage from "@/assets/object-ak153.jpg";
 import videoWarehouse from "@/assets/type-warehouse.jpg";
 import videoTerritory from "@/assets/object-tolbuhina19.jpg";
@@ -80,30 +75,14 @@ export function FreePremises({
   filters,
   onReset,
 }: {
-  filters: PremiseFilters;
+  filters: PropertyFilters;
   onReset: () => void;
 }) {
-  const areaFrom = filters.areaFrom ? Number(filters.areaFrom) : 0;
-  const areaTo = filters.areaTo ? Number(filters.areaTo) : Number.POSITIVE_INFINITY;
-  const premises = FREE_PREMISES.filter((premise) => {
-    const matchesCost =
-      filters.cost === "all" ||
-      (filters.cost === "up-to-1000" &&
-        premise.pricePerSqm !== null &&
-        premise.pricePerSqm <= 1000) ||
-      (filters.cost === "on-request" && premise.pricePerSqm === null);
-
-    return (
-      (!filters.type || premise.type === filters.type) &&
-      premise.areaSqm >= areaFrom &&
-      premise.areaSqm <= areaTo &&
-      (!filters.object || premise.object === filters.object) &&
-      matchesCost
-    );
-  });
-  const isFiltered = Boolean(
-    filters.type || filters.areaFrom || filters.areaTo || filters.object || filters.cost !== "all",
+  const premises = filterProperties(
+    PROPERTIES.filter((property) => property.status === "Свободно"),
+    filters,
   );
+  const isFiltered = hasActivePropertyFilters(filters);
 
   return (
     <section id="free" className="container-rang py-20 lg:py-28">
@@ -113,13 +92,13 @@ export function FreePremises({
           title="Свободные помещения"
           subtitle="Помещения, доступные для аренды прямо сейчас"
         />
-        <button
-          onClick={demo("Демо-режим: каталог помещений появится в рабочей версии")}
+        <a
+          href="/properties"
           className="group inline-flex items-center gap-2 text-sm font-semibold text-primary"
         >
           Смотреть все помещения
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-        </button>
+        </a>
       </div>
 
       {isFiltered && (
@@ -135,44 +114,8 @@ export function FreePremises({
       )}
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {premises.map((p) => (
-          <article key={p.title} className="card-lift media-zoom flex flex-col bg-card shadow-card">
-            <div className="relative aspect-[4/3] overflow-hidden">
-              <img
-                src={p.image}
-                alt={`${p.title}, ${p.object}`}
-                loading="lazy"
-                className="size-full object-cover"
-              />
-              <span className="absolute top-4 left-4 bg-primary px-3 py-1.5 text-[0.7rem] font-semibold tracking-[0.08em] text-primary-foreground uppercase">
-                Свободно
-              </span>
-            </div>
-            <div className="flex flex-1 flex-col p-6">
-              <h3 className="text-xl font-semibold">{p.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {p.object} · {p.type}
-              </p>
-              <div className="mt-5 flex items-baseline justify-between border-y border-border py-4">
-                <span className="text-lg font-semibold">{p.area}</span>
-                <span className="text-sm text-accent">{p.price}</span>
-              </div>
-              <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <span className="mt-2 size-1.5 shrink-0 bg-accent" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={demo("Демо-режим: карточка помещения появится в рабочей версии")}
-                className="mt-6 w-full border border-border py-3 text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
-              >
-                Подробнее
-              </button>
-            </div>
-          </article>
+        {premises.map((property) => (
+          <PropertyCard key={property.id} property={property} />
         ))}
       </div>
       {premises.length === 0 && (
@@ -195,6 +138,8 @@ export function FreePremises({
 
 /* 6. Скоро освободятся */
 export function ComingSoon() {
+  const properties = PROPERTIES.filter((property) => property.status === "Скоро освободится");
+
   return (
     <section className="bg-graphite py-20 lg:py-28">
       <div className="container-rang">
@@ -205,37 +150,8 @@ export function ComingSoon() {
           tone="dark"
         />
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {SOON_PREMISES.map((p) => (
-            <article
-              key={p.title}
-              className="card-lift media-zoom flex flex-col border border-primary-foreground/12 bg-primary-foreground/5"
-            >
-              <div className="aspect-[16/10] overflow-hidden">
-                <img
-                  src={p.image}
-                  alt={`${p.title}, ${p.object}`}
-                  loading="lazy"
-                  className="size-full object-cover opacity-85"
-                />
-              </div>
-              <div className="flex flex-1 flex-col p-6">
-                <span className="inline-flex w-fit items-center gap-2 border border-accent/60 px-3 py-1.5 text-[0.7rem] font-semibold tracking-[0.08em] text-accent uppercase">
-                  <Clock className="size-3.5" />
-                  {p.status}
-                </span>
-                <h3 className="mt-5 text-xl font-semibold text-primary-foreground">{p.title}</h3>
-                <p className="mt-1 text-sm text-primary-foreground/65">
-                  {p.object} · {p.type}
-                </p>
-                <p className="mt-4 text-lg font-semibold text-primary-foreground">{p.area}</p>
-                <button
-                  onClick={demo("Демонстрационный режим: заявка не отправляется и не сохраняется")}
-                  className="mt-6 w-full bg-accent py-3 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
-                >
-                  Оставить заявку
-                </button>
-              </div>
-            </article>
+          {properties.map((property) => (
+            <PropertyCard key={property.id} property={property} dark />
           ))}
         </div>
       </div>
@@ -250,9 +166,9 @@ export function PremiseTypes() {
       <SectionHead eyebrow="Типы помещений" title="Подберите помещение под задачи бизнеса" />
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {PREMISE_TYPES.map((t) => (
-          <button
+          <a
             key={t.title}
-            onClick={demo("Демо-режим: раздел появится в рабочей версии сайта")}
+            href={`/properties?type=${encodeURIComponent(t.type)}`}
             className="media-zoom group relative isolate aspect-[3/4] overflow-hidden text-left"
           >
             <img
@@ -265,11 +181,14 @@ export function PremiseTypes() {
             <div className="relative flex size-full flex-col justify-end p-6">
               <h3 className="text-2xl font-semibold text-primary-foreground">{t.title}</h3>
               <p className="mt-2 text-sm text-primary-foreground/75">{t.text}</p>
+              <p className="mt-2 text-xs text-primary-foreground/60">
+                В каталоге: {PROPERTIES.filter((property) => property.type === t.type).length}
+              </p>
               <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-foreground opacity-0 transition-all duration-500 group-hover:opacity-100">
                 Смотреть <ArrowRight className="size-4" />
               </span>
             </div>
-          </button>
+          </a>
         ))}
       </div>
     </section>

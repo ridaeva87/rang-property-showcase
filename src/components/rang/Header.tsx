@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Menu, X, UserRound } from "lucide-react";
+import { Heart, Menu, X, UserRound } from "lucide-react";
 import { NAV } from "@/data/rang";
 import { toast } from "sonner";
+import { useFavorites } from "@/hooks/use-favorites";
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { favoriteIds, hydrated } = useFavorites();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -23,7 +25,7 @@ export function Header() {
       }`}
     >
       <div className="container-rang flex h-20 items-center justify-between gap-6">
-        <a href="#top" className="flex flex-col leading-none">
+        <a href="/" className="flex flex-col leading-none">
           <span className="font-display text-2xl font-extrabold tracking-tight text-primary">
             РАНГ
           </span>
@@ -45,6 +47,13 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <a
+            href="/favorites"
+            className="inline-flex items-center gap-2 border border-border px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <Heart className="size-4" />
+            Избранное{hydrated && favoriteIds.length > 0 ? ` · ${favoriteIds.length}` : ""}
+          </a>
           <button
             onClick={() => toast("Личный кабинет появится на следующем этапе разработки")}
             className="inline-flex items-center gap-2 border border-border px-4 py-2.5 text-sm font-medium whitespace-nowrap text-foreground transition-colors hover:border-primary hover:text-primary"
@@ -53,7 +62,7 @@ export function Header() {
             Личный кабинет — скоро
           </button>
           <a
-            href="#search"
+            href="/#search"
             className="bg-primary px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors hover:bg-accent"
           >
             Подобрать помещение
@@ -83,6 +92,14 @@ export function Header() {
               </a>
             ))}
             <div className="flex flex-col gap-3 py-4">
+              <a
+                href="/favorites"
+                onClick={() => setOpen(false)}
+                className="inline-flex items-center justify-center gap-2 border border-border px-4 py-3 text-sm font-medium"
+              >
+                <Heart className="size-4" />
+                Избранное{hydrated && favoriteIds.length > 0 ? ` · ${favoriteIds.length}` : ""}
+              </a>
               <button
                 onClick={() => {
                   setOpen(false);
@@ -93,7 +110,7 @@ export function Header() {
                 Личный кабинет — скоро
               </button>
               <a
-                href="#search"
+                href="/#search"
                 onClick={() => setOpen(false)}
                 className="bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground"
               >
