@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, MapPin } from "lucide-react";
-import type { Property } from "@/data/rang";
+import { Building2, Heart, MapPin } from "lucide-react";
+import { getPropertyObject, type Property } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
 
 export function PropertyCard({ property, dark = false }: { property: Property; dark?: boolean }) {
   const { hydrated, isFavorite, toggleFavorite } = useFavorites();
   const favorite = hydrated && isFavorite(property.id);
+  const object = getPropertyObject(property);
+  const mainPhoto = property.photos[0];
 
   return (
     <article
@@ -14,12 +16,25 @@ export function PropertyCard({ property, dark = false }: { property: Property; d
       }`}
     >
       <div className="relative aspect-[4/3] overflow-hidden">
-        <img
-          src={property.photos[0]}
-          alt={`${property.title}, ${property.object}`}
-          loading="lazy"
-          className={`size-full object-cover ${dark ? "opacity-85" : ""}`}
-        />
+        {mainPhoto ? (
+          <img
+            src={mainPhoto.src}
+            alt={mainPhoto.alt}
+            loading="lazy"
+            className={`size-full object-cover ${dark ? "opacity-85" : ""}`}
+          />
+        ) : (
+          <div
+            className={`flex size-full flex-col items-center justify-center gap-3 px-6 text-center ${
+              dark
+                ? "bg-primary-foreground/5 text-primary-foreground/60"
+                : "bg-surface text-muted-foreground"
+            }`}
+          >
+            <Building2 className="size-9 text-accent" />
+            <span className="text-sm">Фотографии помещения пока не предоставлены</span>
+          </div>
+        )}
         <span
           className={`absolute top-4 left-4 px-3 py-1.5 text-[0.7rem] font-semibold tracking-[0.08em] uppercase ${
             dark
@@ -49,7 +64,7 @@ export function PropertyCard({ property, dark = false }: { property: Property; d
           }`}
         >
           <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
-          {property.object} · {property.type}
+          {object?.name ?? "Объект уточняется"} · {property.type}
         </p>
         {property.expectedRelease && (
           <p className={`mt-3 text-sm font-semibold ${dark ? "text-accent" : "text-primary"}`}>
@@ -64,8 +79,8 @@ export function PropertyCard({ property, dark = false }: { property: Property; d
           <span className={`text-lg font-semibold ${dark ? "text-primary-foreground" : ""}`}>
             {property.areaSqm !== undefined ? `${property.areaSqm} м²` : "Площадь уточняется"}
           </span>
-          {property.rentPriceLabel && (
-            <span className="text-sm text-accent">{property.rentPriceLabel}</span>
+          {property.rentPricePerSqm !== undefined && (
+            <span className="text-sm text-accent">{property.rentPricePerSqm} ₽/м²</span>
           )}
         </div>
         {property.mainFeatures.length > 0 && (

@@ -1,5 +1,6 @@
 import {
   INITIAL_PROPERTY_FILTERS,
+  OBJECTS,
   PROPERTIES,
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
@@ -18,7 +19,9 @@ export function PropertyFilters({
 }) {
   const update = <K extends keyof PropertyFiltersValue>(key: K, value: PropertyFiltersValue[K]) =>
     onChange({ ...filters, [key]: value });
-  const objects = [...new Set(PROPERTIES.map((property) => property.object))];
+  const objects = OBJECTS.filter((object) =>
+    PROPERTIES.some((property) => property.objectId === object.id),
+  );
   const statuses = PROPERTY_STATUSES.filter((status) =>
     PROPERTIES.some((property) => property.status === status),
   );
@@ -71,7 +74,7 @@ export function PropertyFilters({
           >
             <option value="all">Любая стоимость</option>
             <option value="up-to-1000">До 1 000 ₽/м²</option>
-            <option value="on-request">Цена по запросу</option>
+            <option value="not-specified">Стоимость не указана</option>
           </select>
         </FilterField>
 
@@ -83,8 +86,8 @@ export function PropertyFilters({
           >
             <option value="">Все объекты</option>
             {objects.map((object) => (
-              <option key={object} value={object}>
-                {object}
+              <option key={object.id} value={object.id}>
+                {object.name} — {object.location}
               </option>
             ))}
           </select>
@@ -122,20 +125,22 @@ export function PropertyFilters({
           </FilterField>
         )}
 
-        <FilterField label="Характеристика">
-          <select
-            value={filters.feature}
-            onChange={(event) => update("feature", event.target.value)}
-            className="filter-control"
-          >
-            <option value="">Любая характеристика</option>
-            {PROPERTY_FILTER_OPTIONS.features.map((feature) => (
-              <option key={feature} value={feature}>
-                {feature}
-              </option>
-            ))}
-          </select>
-        </FilterField>
+        {PROPERTY_FILTER_OPTIONS.features.length > 0 && (
+          <FilterField label="Характеристика">
+            <select
+              value={filters.feature}
+              onChange={(event) => update("feature", event.target.value)}
+              className="filter-control"
+            >
+              <option value="">Любая характеристика</option>
+              {PROPERTY_FILTER_OPTIONS.features.map((feature) => (
+                <option key={feature} value={feature}>
+                  {feature}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+        )}
 
         <FilterField label="Статус">
           <select

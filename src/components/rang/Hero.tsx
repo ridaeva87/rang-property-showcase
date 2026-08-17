@@ -96,7 +96,7 @@ export function Hero({
               >
                 <option value="">Все объекты</option>
                 {OBJECTS.map((o) => (
-                  <option key={o.name} value={o.name}>{`${o.name} — ${o.location}`}</option>
+                  <option key={o.id} value={o.id}>{`${o.name} — ${o.location}`}</option>
                 ))}
               </select>
             </Field>
@@ -109,7 +109,7 @@ export function Hero({
               >
                 <option value="all">Любая стоимость</option>
                 <option value="up-to-1000">До 1 000 ₽/м²</option>
-                <option value="on-request">Цена по запросу</option>
+                <option value="not-specified">Стоимость не указана</option>
               </select>
             </Field>
 

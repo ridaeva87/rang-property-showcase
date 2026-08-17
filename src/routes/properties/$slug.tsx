@@ -4,11 +4,13 @@ import { Heart, MapPin } from "lucide-react";
 import { AiAssistant } from "@/components/rang/AiAssistant";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
+import { PropertyDetails } from "@/components/rang/PropertyDetails";
+import { PropertyGallery } from "@/components/rang/PropertyGallery";
 import {
   PropertyInterestForm,
   type PropertyInterestType,
 } from "@/components/rang/PropertyInterestForm";
-import { getPropertyBySlug } from "@/data/rang";
+import { getPropertyBySlug, getPropertyObject } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
 
 export const Route = createFileRoute("/properties/$slug")({
@@ -21,9 +23,11 @@ export const Route = createFileRoute("/properties/$slug")({
     if (!property) return {};
     const areaLabel =
       property.areaSqm === undefined ? "площадь уточняется" : `${property.areaSqm} м²`;
+    const object = getPropertyObject(property);
     const title = `${property.title}, ${areaLabel} — Ранг`;
-    const description = `${property.type} в объекте ${property.object}, ${property.address}. Статус: ${property.status}.`;
+    const description = `${property.type}${object ? ` в объекте ${object.name}, ${object.location}` : ""}. Статус: ${property.status}.`;
     const canonical = `https://rangpro.ru/properties/${property.slug}`;
+    const mainPhoto = property.photos[0];
     return {
       meta: [
         { title },
@@ -32,7 +36,7 @@ export const Route = createFileRoute("/properties/$slug")({
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { property: "og:url", content: canonical },
-        { property: "og:image", content: property.photos[0] },
+        ...(mainPhoto ? [{ property: "og:image", content: mainPhoto.src }] : []),
       ],
       links: [{ rel: "canonical", href: canonical }],
     };
@@ -48,7 +52,7 @@ function PropertyPage() {
   );
   const { hydrated, isFavorite, toggleFavorite } = useFavorites();
   const favorite = hydrated && isFavorite(property.id);
-  const allFeatures = [...property.mainFeatures, ...property.additionalFeatures];
+  const object = getPropertyObject(property);
 
   const selectInterest = (type: PropertyInterestType) => {
     setInterestType(type);
@@ -64,13 +68,7 @@ function PropertyPage() {
             ← Вернуться в каталог
           </a>
           <div className="mt-8 grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
-            <div className="aspect-[4/3] overflow-hidden bg-surface">
-              <img
-                src={property.photos[0]}
-                alt={`${property.title}, ${property.object}`}
-                className="size-full object-cover"
-              />
-            </div>
+            <PropertyGallery property={property} />
             <div>
               <span className="inline-flex bg-primary px-3 py-1.5 text-xs font-semibold tracking-[0.08em] text-primary-foreground uppercase">
                 {property.status}
@@ -78,45 +76,23 @@ function PropertyPage() {
               <h1 className="mt-5 text-4xl font-semibold sm:text-5xl">{property.title}</h1>
               <p className="mt-4 flex items-start gap-2 text-muted-foreground">
                 <MapPin className="mt-0.5 size-5 shrink-0 text-accent" />
-                {property.address}
+                {object?.location ?? "Адрес уточняется"}
               </p>
-              <dl className="mt-8 grid gap-px bg-border sm:grid-cols-2">
+              <dl className="mt-8 grid gap-3 sm:grid-cols-2">
                 {property.areaSqm !== undefined && (
                   <Detail label="Площадь" value={`${property.areaSqm} м²`} />
                 )}
                 <Detail label="Тип" value={property.type} />
-                {property.rentPriceLabel && (
-                  <Detail label="Стоимость аренды" value={property.rentPriceLabel} />
-                )}
                 {property.rentPricePerSqm !== undefined && (
-                  <Detail label="Стоимость за м²" value={`${property.rentPricePerSqm} ₽/м²`} />
+                  <Detail label="Ставка аренды" value={`${property.rentPricePerSqm} ₽/м²`} />
                 )}
-                {property.purposes.length > 0 && (
-                  <Detail label="Назначение" value={property.purposes.join(", ")} />
+                {property.totalMonthlyRent !== undefined && (
+                  <Detail label="Полная стоимость" value={`${property.totalMonthlyRent} ₽/месяц`} />
                 )}
-                {property.accessMode && (
-                  <Detail label="Режим доступа" value={property.accessMode} />
-                )}
-                {property.expectedRelease && (
+                {property.status === "Скоро освободится" && property.expectedRelease && (
                   <Detail label="Предполагаемое освобождение" value={property.expectedRelease} />
                 )}
               </dl>
-              {allFeatures.length > 0 && (
-                <div className="mt-8">
-                  <h2 className="text-xl font-semibold">Характеристики</h2>
-                  <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {allFeatures.map((feature) => (
-                      <li
-                        key={feature}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
-                      >
-                        <span className="mt-2 size-1.5 shrink-0 bg-accent" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
               <div className="mt-10 grid gap-3 sm:grid-cols-2">
                 <button
                   onClick={() => selectInterest("viewing")}
@@ -143,15 +119,26 @@ function PropertyPage() {
                   Задать вопрос
                 </button>
                 <button
+                  onClick={() => selectInterest("details")}
+                  className="border border-border px-5 py-3.5 text-sm font-semibold"
+                >
+                  Узнать подробности
+                </button>
+                <button
                   onClick={() => toggleFavorite(property.id)}
                   aria-pressed={favorite}
-                  className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3.5 text-sm font-semibold"
+                  className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3.5 text-sm font-semibold sm:col-span-2"
                 >
                   <Heart className={`size-4 ${favorite ? "fill-primary text-primary" : ""}`} />
                   {favorite ? "В избранном" : "Добавить в избранное"}
                 </button>
               </div>
             </div>
+          </div>
+        </section>
+        <section className="bg-surface py-16 lg:py-24">
+          <div className="container-rang">
+            <PropertyDetails property={property} />
           </div>
         </section>
         <PropertyInterestForm propertyId={property.id} interestType={interestType} />
@@ -164,7 +151,7 @@ function PropertyPage() {
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-card p-5">
+    <div className="border border-border bg-card p-5">
       <dt className="text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
         {label}
       </dt>

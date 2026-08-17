@@ -19,7 +19,7 @@ export function filterProperties(
       (filters.cost === "up-to-1000" &&
         property.rentPricePerSqm !== undefined &&
         property.rentPricePerSqm <= 1000) ||
-      (filters.cost === "on-request" && property.rentPricePerSqm === undefined);
+      (filters.cost === "not-specified" && property.rentPricePerSqm === undefined);
     const features = [...property.mainFeatures, ...property.additionalFeatures];
 
     return (
@@ -28,7 +28,7 @@ export function filterProperties(
         (property.areaSqm !== undefined &&
           property.areaSqm >= areaFrom &&
           property.areaSqm <= areaTo)) &&
-      (!filters.object || property.object === filters.object) &&
+      (!filters.object || property.objectId === filters.object) &&
       (!filters.purpose || property.purposes.includes(filters.purpose)) &&
       (!filters.accessMode || property.accessMode === filters.accessMode) &&
       (!filters.feature || features.includes(filters.feature)) &&

@@ -1,11 +1,12 @@
 import { toast } from "sonner";
 
-export type PropertyInterestType = "viewing" | "application" | "release-notification";
+export type PropertyInterestType = "viewing" | "application" | "release-notification" | "details";
 
 const LABELS: Record<PropertyInterestType, string> = {
   viewing: "Запись на просмотр",
   application: "Заявка по помещению",
   "release-notification": "Интерес к освобождению помещения",
+  details: "Подробности о помещении",
 };
 
 export function PropertyInterestForm({
