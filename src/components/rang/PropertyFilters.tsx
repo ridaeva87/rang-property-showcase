@@ -87,7 +87,7 @@ export function PropertyFilters({
             <option value="">Все объекты</option>
             {objects.map((object) => (
               <option key={object.id} value={object.id}>
-                {object.name} — {object.location}
+                {object.name} — {object.address}
               </option>
             ))}
           </select>

@@ -35,15 +35,17 @@ export function PropertyCard({ property, dark = false }: { property: Property; d
             <span className="text-sm">Фотографии помещения пока не предоставлены</span>
           </div>
         )}
-        <span
-          className={`absolute top-4 left-4 px-3 py-1.5 text-[0.7rem] font-semibold tracking-[0.08em] uppercase ${
-            dark
-              ? "border border-accent/60 bg-graphite text-accent"
-              : "bg-primary text-primary-foreground"
-          }`}
-        >
-          {property.status}
-        </span>
+        {property.status && (
+          <span
+            className={`absolute top-4 left-4 px-3 py-1.5 text-[0.7rem] font-semibold tracking-[0.08em] uppercase ${
+              dark
+                ? "border border-accent/60 bg-graphite text-accent"
+                : "bg-primary text-primary-foreground"
+            }`}
+          >
+            {property.status}
+          </span>
+        )}
         <button
           type="button"
           onClick={() => toggleFavorite(property.id)}

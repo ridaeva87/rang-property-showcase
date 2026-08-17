@@ -23,6 +23,7 @@ export function filterProperties(
     const features = [...property.mainFeatures, ...property.additionalFeatures];
 
     return (
+      property.offerType === "rent" &&
       (!filters.type || property.type === filters.type) &&
       (!hasAreaFilter ||
         (property.areaSqm !== undefined &&

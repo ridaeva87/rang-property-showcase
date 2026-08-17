@@ -9,53 +9,67 @@ import objLumumby from "@/assets/object-lumumby.jpg";
 
 export const NAV = [
   { label: "Каталог", href: "/properties" },
-  { label: "Аренда", href: "/#rent" },
-  { label: "Продажа", href: "/#sale" },
-  { label: "Услуги", href: "/#services" },
+  { label: "Аренда", href: "/rent" },
+  { label: "Продажа", href: "/sale" },
+  { label: "Услуги", href: "/services" },
+  { label: "Объекты", href: "/objects" },
   { label: "Арендаторам", href: "/#tenants" },
-  { label: "О компании", href: "/#about" },
+  { label: "О компании", href: "/about" },
   { label: "Контакты", href: "/#contacts" },
 ];
 
 export type PropertyObject = {
   id: string;
+  slug: string;
   name: string;
-  location: string;
-  info: string;
-  image: string;
+  address: string;
+  description?: string;
+  coordinates?: { latitude: number; longitude: number };
+  photos: Array<{ src: string; alt: string }>;
+  territoryFeatures: string[];
   parking?: string;
+  accessMode?: string;
 };
 
 export const OBJECTS: PropertyObject[] = [
   {
     id: "adelya-kutuya-153a",
+    slug: "adelya-kutuya-153a",
     name: "АК 153А",
-    location: "Казань, ул. Аделя Кутуя, 153А",
-    info: "Офисно-складской комплекс с закрытой территорией и подъездом для грузового транспорта.",
-    image: objAk,
+    address: "Казань, ул. Аделя Кутуя, 153А",
+    description:
+      "Офисно-складской комплекс с закрытой территорией и подъездом для грузового транспорта.",
+    photos: [{ src: objAk, alt: "Объект компании «Ранг» на Аделя Кутуя, 153А" }],
+    territoryFeatures: [],
     parking:
       "Парковка предназначена для арендаторов помещений и их гостей. На территории работает автоматизированная система пропуска транспортных средств с распознаванием государственных регистрационных знаков.",
   },
   {
     id: "tolbuhina-15-2",
+    slug: "tolbuhina-15-2",
     name: "Толбухина 15-2",
-    location: "Казань, ул. Толбухина, 15, корп. 2",
-    info: "Административно-складское здание: офисные и комбинированные помещения.",
-    image: obj15,
+    address: "Казань, ул. Толбухина, 15, корп. 2",
+    description: "Административно-складское здание: офисные и комбинированные помещения.",
+    photos: [{ src: obj15, alt: "Объект компании «Ранг» на Толбухина, 15, корпус 2" }],
+    territoryFeatures: [],
   },
   {
     id: "tolbuhina-19",
+    slug: "tolbuhina-19",
     name: "Толбухина 19",
-    location: "Казань, ул. Толбухина, 19",
-    info: "Складские помещения различной площади, погрузочная зона.",
-    image: obj19,
+    address: "Казань, ул. Толбухина, 19",
+    description: "Складские помещения различной площади, погрузочная зона.",
+    photos: [{ src: obj19, alt: "Объект компании «Ранг» на Толбухина, 19" }],
+    territoryFeatures: [],
   },
   {
     id: "patrisa-lumumby-28b",
+    slug: "patrisa-lumumby-28b",
     name: "Патриса Лумумбы 28Б",
-    location: "Казань, ул. Патриса Лумумбы, 28Б",
-    info: "Производственно-складская территория с помещениями под разные задачи.",
-    image: objLumumby,
+    address: "Казань, ул. Патриса Лумумбы, 28Б",
+    description: "Производственно-складская территория с помещениями под разные задачи.",
+    photos: [{ src: objLumumby, alt: "Объект компании «Ранг» на Патриса Лумумбы, 28Б" }],
+    territoryFeatures: [],
   },
 ];
 
@@ -71,11 +85,14 @@ export const PROPERTY_STATUSES = ["Свободно", "В резерве", "Сд
 
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
+export type OfferType = "rent" | "sale";
+export type SaleStatus = "Доступно к продаже" | "Переговоры" | "Продано";
 
 export type Property = {
   id: string;
   slug: string;
   title: string;
+  offerType: OfferType;
   type: PropertyType;
   purposes: string[];
   objectId: PropertyObject["id"];
@@ -83,8 +100,12 @@ export type Property = {
   usableAreaSqm?: number;
   rentPricePerSqm?: number;
   totalMonthlyRent?: number;
+  salePrice?: number;
+  saleStatus?: SaleStatus;
+  purchaseTerms?: string;
+  description?: string;
   utilityCosts?: string;
-  status: PropertyStatus;
+  status?: PropertyStatus;
   expectedRelease?: string;
   ceilingHeight?: string;
   heating?: string;
@@ -118,6 +139,7 @@ export const PROPERTIES: Property[] = [
     id: "property-001",
     slug: "sklad-8-ak-153a",
     title: "Склад №8",
+    offerType: "rent",
     objectId: "adelya-kutuya-153a",
     type: "Склад",
     purposes: ["Хранение", "Комплектация", "Отгрузка"],
@@ -143,6 +165,7 @@ export const PROPERTIES: Property[] = [
     id: "property-002",
     slug: "ofis-2-14-tolbuhina-15-2",
     title: "Офис 2.14",
+    offerType: "rent",
     objectId: "tolbuhina-15-2",
     type: "Офис",
     purposes: ["Рабочее пространство"],
@@ -156,6 +179,7 @@ export const PROPERTIES: Property[] = [
     id: "property-003",
     slug: "ofis-sklad-3-tolbuhina-19",
     title: "Офис + склад №3",
+    offerType: "rent",
     objectId: "tolbuhina-19",
     type: "Офис + склад",
     purposes: ["Офис", "Хранение"],
@@ -169,6 +193,7 @@ export const PROPERTIES: Property[] = [
     id: "property-004",
     slug: "pomeshchenie-5-lumumby-28b",
     title: "Помещение №5",
+    offerType: "rent",
     objectId: "patrisa-lumumby-28b",
     type: "Другое помещение",
     purposes: ["Другое назначение"],
@@ -182,6 +207,7 @@ export const PROPERTIES: Property[] = [
     id: "property-005",
     slug: "sklad-12-tolbuhina-19",
     title: "Склад №12",
+    offerType: "rent",
     objectId: "tolbuhina-19",
     type: "Склад",
     purposes: ["Хранение", "Комплектация", "Отгрузка"],
@@ -196,6 +222,7 @@ export const PROPERTIES: Property[] = [
     id: "property-006",
     slug: "ofis-1-05-ak-153a",
     title: "Офис 1.05",
+    offerType: "rent",
     objectId: "adelya-kutuya-153a",
     type: "Офис",
     purposes: ["Рабочее пространство"],
@@ -210,6 +237,7 @@ export const PROPERTIES: Property[] = [
     id: "property-007",
     slug: "ofis-sklad-7-tolbuhina-15-2",
     title: "Офис + склад №7",
+    offerType: "rent",
     objectId: "tolbuhina-15-2",
     type: "Офис + склад",
     purposes: ["Офис", "Хранение"],
@@ -280,6 +308,44 @@ export function getPropertyBySlug(slug: string) {
 export function getPropertyObject(property: Pick<Property, "objectId">) {
   return OBJECTS.find((object) => object.id === property.objectId);
 }
+
+export function getObjectBySlug(slug: string) {
+  return OBJECTS.find((object) => object.slug === slug);
+}
+
+export function getObjectProperties(objectId: PropertyObject["id"]) {
+  return PROPERTIES.filter((property) => property.objectId === objectId);
+}
+
+export type AdditionalService = {
+  id: string;
+  title: string;
+  description?: string;
+  price?: string;
+  terms?: string;
+};
+
+export const ADDITIONAL_SERVICES: AdditionalService[] = [
+  { id: "refit", title: "Переоборудование помещения" },
+  { id: "technical", title: "Технические работы" },
+  { id: "electrical", title: "Электромонтажные работы" },
+  { id: "plumbing", title: "Сантехнические работы" },
+  { id: "equipment", title: "Установка дополнительного оборудования" },
+  { id: "power", title: "Изменение или увеличение электрической мощности" },
+  { id: "loading", title: "Погрузочно-разгрузочные работы" },
+  { id: "other", title: "Другое" },
+];
+
+export const COMPANY_DOCUMENTS = [
+  {
+    id: "license-1994",
+    title: "Лицензия от 07.07.1994",
+    date: "07.07.1994",
+    kind: "Исторический документ",
+    previewUrl: "/documents/rang-license-1994-preview.png",
+    fileUrl: "/documents/rang-license-1994.pdf",
+  },
+] as const;
 
 export function getPropertiesByIds(ids: string[]) {
   const idSet = new Set(ids);

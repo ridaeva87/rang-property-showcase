@@ -96,7 +96,7 @@ export function Hero({
               >
                 <option value="">Все объекты</option>
                 {OBJECTS.map((o) => (
-                  <option key={o.id} value={o.id}>{`${o.name} — ${o.location}`}</option>
+                  <option key={o.id} value={o.id}>{`${o.name} — ${o.address}`}</option>
                 ))}
               </select>
             </Field>

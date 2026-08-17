@@ -26,7 +26,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { FAQ, OBJECTS, PREMISE_TYPES, PROPERTIES, type PropertyFilters } from "@/data/rang";
+import {
+  ADDITIONAL_SERVICES,
+  FAQ,
+  OBJECTS,
+  PREMISE_TYPES,
+  PROPERTIES,
+  type PropertyFilters,
+} from "@/data/rang";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { PropertyCard } from "@/components/rang/PropertyCard";
 import aboutImage from "@/assets/object-ak153.jpg";
@@ -207,22 +214,31 @@ export function Objects() {
               key={o.name}
               className="card-lift media-zoom flex flex-col bg-background shadow-card"
             >
-              <div className="aspect-[16/9] overflow-hidden">
-                <img src={o.image} alt={o.name} loading="lazy" className="size-full object-cover" />
-              </div>
+              {o.photos[0] && (
+                <div className="aspect-[16/9] overflow-hidden">
+                  <img
+                    src={o.photos[0].src}
+                    alt={o.photos[0].alt}
+                    loading="lazy"
+                    className="size-full object-cover"
+                  />
+                </div>
+              )}
               <div className="flex flex-1 flex-col p-6 lg:p-8">
                 <h3 className="text-2xl font-semibold">{o.name}</h3>
                 <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
                   <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
-                  {o.location}
+                  {o.address}
                 </p>
-                <p className="mt-4 text-sm text-foreground/75">{o.info}</p>
-                <button
-                  onClick={demo("Демо-режим: помещения объекта появятся в рабочей версии")}
+                {o.description && (
+                  <p className="mt-4 text-sm text-foreground/75">{o.description}</p>
+                )}
+                <a
+                  href={`/objects/${o.slug}`}
                   className="mt-6 w-fit border border-border px-5 py-3 text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
                 >
-                  Посмотреть помещения
-                </button>
+                  Подробнее об объекте
+                </a>
               </div>
             </article>
           ))}
@@ -263,10 +279,10 @@ export function RentSection() {
               tone="dark"
             />
             <a
-              href="#search"
+              href="/rent"
               className="mt-8 inline-flex bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
             >
-              Подобрать помещение
+              Условия и подбор
             </a>
           </div>
           <div className="grid gap-px bg-primary-foreground/12 sm:grid-cols-2">
@@ -302,27 +318,19 @@ export function SaleSection() {
             уточняются у сотрудника компании.
           </p>
         </div>
-        <button
-          onClick={demo("Демо-режим: раздел продажи появится в рабочей версии")}
+        <a
+          href="/sale"
           className="w-fit bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent"
         >
-          Узнать о продаже
-        </button>
+          Раздел продажи
+        </a>
       </div>
     </section>
   );
 }
 
 /* 10. Дополнительные услуги */
-const SERVICES = [
-  { icon: Wrench, title: "Переоборудование помещения" },
-  { icon: Zap, title: "Электромонтажные работы" },
-  { icon: Droplets, title: "Сантехнические работы" },
-  { icon: Gauge, title: "Дополнительные электрические мощности" },
-  { icon: Cog, title: "Установка оборудования" },
-  { icon: Truck, title: "Погрузочно-разгрузочные работы" },
-  { icon: Plus, title: "Другие работы" },
-];
+const SERVICE_ICONS = [Wrench, Cog, Zap, Droplets, Plus, Gauge, Truck, Plus];
 
 export function Services() {
   return (
@@ -334,23 +342,26 @@ export function Services() {
           subtitle="Помимо помещений компания помогает арендаторам с техническими работами и подготовкой площади под задачи бизнеса."
         />
         <div className="mt-12 grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
-          {SERVICES.map((s) => (
-            <div
-              key={s.title}
-              className="group bg-surface p-7 transition-colors hover:bg-background"
-            >
-              <s.icon className="size-6 text-accent transition-transform duration-500 group-hover:-translate-y-1" />
-              <h3 className="mt-5 text-base font-semibold">{s.title}</h3>
-            </div>
-          ))}
+          {ADDITIONAL_SERVICES.map((service, index) => {
+            const Icon = SERVICE_ICONS[index] ?? Plus;
+            return (
+              <div
+                key={service.id}
+                className="group bg-surface p-7 transition-colors hover:bg-background"
+              >
+                <Icon className="size-6 text-accent transition-transform duration-500 group-hover:-translate-y-1" />
+                <h3 className="mt-5 text-base font-semibold">{service.title}</h3>
+              </div>
+            );
+          })}
           <div className="flex items-center bg-primary p-7">
-            <button
-              onClick={demo("Демонстрационный режим: заявка на работы пока не отправляется")}
+            <a
+              href="/services"
               className="text-left text-base font-semibold text-primary-foreground"
             >
-              Оставить заявку
+              Подробнее об услугах
               <ArrowRight className="mt-3 size-5 text-accent" />
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -505,12 +516,12 @@ export function About() {
               </p>
             </div>
           </div>
-          <button
-            onClick={demo("Демо-режим: страница о компании появится в рабочей версии")}
+          <a
+            href="/about"
             className="mt-10 border border-border px-6 py-3.5 text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
           >
-            Подробнее о компании
-          </button>
+            История компании
+          </a>
         </div>
       </div>
     </section>
@@ -713,7 +724,7 @@ export function Contacts() {
                 <li key={o.name} className="flex items-start gap-2">
                   <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
                   <span>
-                    {o.name} — <span className="text-muted-foreground">{o.location}</span>
+                    {o.name} — <span className="text-muted-foreground">{o.address}</span>
                   </span>
                 </li>
               ))}

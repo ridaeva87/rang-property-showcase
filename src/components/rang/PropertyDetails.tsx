@@ -7,7 +7,7 @@ export function PropertyDetails({ property }: { property: Property }) {
   const object = getPropertyObject(property);
   const main: DetailItem[] = compact([
     object && { label: "Объект", value: object.name },
-    object && { label: "Адрес", value: object.location },
+    object && { label: "Адрес", value: object.address },
     property.areaSqm !== undefined && { label: "Общая площадь", value: `${property.areaSqm} м²` },
     property.usableAreaSqm !== undefined && {
       label: "Полезная площадь",
@@ -27,7 +27,7 @@ export function PropertyDetails({ property }: { property: Property }) {
       value: `${formatNumber(property.totalMonthlyRent)} ₽/месяц`,
     },
     property.utilityCosts && { label: "Коммунальные расходы", value: property.utilityCosts },
-    { label: "Статус", value: property.status },
+    property.status && { label: "Статус аренды", value: property.status },
     property.status === "Скоро освободится" &&
       property.expectedRelease && {
         label: "Предполагаемое освобождение",

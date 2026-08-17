@@ -25,7 +25,8 @@ export const Route = createFileRoute("/properties/$slug")({
       property.areaSqm === undefined ? "площадь уточняется" : `${property.areaSqm} м²`;
     const object = getPropertyObject(property);
     const title = `${property.title}, ${areaLabel} — Ранг`;
-    const description = `${property.type}${object ? ` в объекте ${object.name}, ${object.location}` : ""}. Статус: ${property.status}.`;
+    const statusLabel = property.status ? ` Статус аренды: ${property.status}.` : "";
+    const description = `${property.type}${object ? ` в объекте ${object.name}, ${object.address}` : ""}.${statusLabel}`;
     const canonical = `https://rangpro.ru/properties/${property.slug}`;
     const mainPhoto = property.photos[0];
     return {
@@ -70,13 +71,15 @@ function PropertyPage() {
           <div className="mt-8 grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
             <PropertyGallery property={property} />
             <div>
-              <span className="inline-flex bg-primary px-3 py-1.5 text-xs font-semibold tracking-[0.08em] text-primary-foreground uppercase">
-                {property.status}
-              </span>
+              {property.status && (
+                <span className="inline-flex bg-primary px-3 py-1.5 text-xs font-semibold tracking-[0.08em] text-primary-foreground uppercase">
+                  {property.status}
+                </span>
+              )}
               <h1 className="mt-5 text-4xl font-semibold sm:text-5xl">{property.title}</h1>
               <p className="mt-4 flex items-start gap-2 text-muted-foreground">
                 <MapPin className="mt-0.5 size-5 shrink-0 text-accent" />
-                {object?.location ?? "Адрес уточняется"}
+                {object?.address ?? "Адрес уточняется"}
               </p>
               <dl className="mt-8 grid gap-3 sm:grid-cols-2">
                 {property.areaSqm !== undefined && (
