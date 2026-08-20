@@ -146,3 +146,15 @@ Production build Nitro `node-server` собран успешно. Для `/`, `/
 Во всех конфигурациях проверены `/`, `/rent`, `/sale`, `/services`, `/objects`, `/objects/adelya-kutuya-153a` и `/about`; дополнительно проверены переход аренды в отфильтрованный `/properties`, мобильное меню, открытие увеличенного превью лицензии, прямой URL и reload объекта, текст парковки АК 153А и наличие единственного `h1`. Все сценарии прошли. Console errors, uncaught JavaScript errors, локальные failed Network requests, HTTP 4xx/5xx ресурсов и горизонтальный overflow отсутствуют. Интерактивные действия после SSR подтверждают успешную клиентскую гидратацию.
 
 Нативный Microsoft Edge не установлен и проверен через общий Chromium engine. Safari проверен через WebKit engine, а iPad/iPhone/Android — через device emulation; ограничения physical-device sign-off из раздела 5 остаются актуальными.
+
+## 11. Контрольная проверка после Этапа 5
+
+Frontend-компоненты и визуальные стили на Этапе 5 не изменялись; добавлен изолированный server/database слой, который пока не подключён к публичным route loaders до разрешённого создания production-БД. Поэтому выполнен пропорциональный контрольный прогон локальной production-сборки Nitro `node-server` во встроенном Chromium-браузере:
+
+- desktop 1280 px: `/properties`, 7 карточек, корректный H1, без overflow;
+- карточка `/properties/sklad-8-ak-153a`: hydration подтверждена переключением локального избранного `aria-pressed=false → true`;
+- tablet 768 × 1024: `/objects/adelya-kutuya-153a`, без overflow;
+- mobile 390 × 844: `/about`, без overflow;
+- Console warning/error во всех проверках: 0.
+
+Дополнительно полный SSR GET smoke-test проверил `/`, `/properties`, карточку помещения, `/favorites`, `/rent`, `/sale`, `/services`, `/objects`, карточку объекта и `/about`: HTTP 200, `lang=ru`, один H1. PDF лицензии вернул HTTP 200 и 1 043 984 байта. Полная междвижковая матрица не повторялась, так как клиентский код не менялся; актуальными остаются результаты Этапа 4.

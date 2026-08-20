@@ -86,24 +86,24 @@ SSR request
 
 ### 4.1 Основной стек
 
-| Область | Технология | Диапазон в `package.json` | Зафиксировано в `bun.lock` |
-|---|---|---:|---:|
-| Runtime UI | React | `^19.2.0` | `19.2.8` |
-| DOM | React DOM | `^19.2.0` | `19.2.8` |
-| Full-stack framework | TanStack Start | `^1.168.32` | `1.168.32` |
-| Routing | TanStack React Router | `^1.170.18` | `1.170.18` |
-| Server state | TanStack React Query | `^5.101.1` | `5.101.4` |
-| Build | Vite | `^8.1.5` | `8.1.5` |
-| Server build/runtime | Nitro | exact `3.0.260603-beta` | `3.0.260603-beta` |
-| Language | TypeScript | `^5.8.3` | `5.9.3` |
-| CSS | Tailwind CSS | `^4.2.1` | `4.3.3` |
-| Vite/TanStack preset | Lovable config | exact `2.12.0` | `2.12.0` |
-| Forms available | React Hook Form | `^7.71.2` | `7.83.0` |
-| Validation available | Zod | `^3.24.2` | `3.25.76` |
-| Notifications | Sonner | `^2.0.7` | `2.0.7` |
-| Icons | Lucide React | `^0.575.0` | `0.575.0` |
-| UI primitives | Radix UI packages | разные | зафиксированы в lock |
-| UI scaffolding | shadcn/ui style `new-york` | config | локальные компоненты |
+| Область              | Технология                 | Диапазон в `package.json` | Зафиксировано в `bun.lock` |
+| -------------------- | -------------------------- | ------------------------: | -------------------------: |
+| Runtime UI           | React                      |                 `^19.2.0` |                   `19.2.8` |
+| DOM                  | React DOM                  |                 `^19.2.0` |                   `19.2.8` |
+| Full-stack framework | TanStack Start             |               `^1.168.32` |                 `1.168.32` |
+| Routing              | TanStack React Router      |               `^1.170.18` |                 `1.170.18` |
+| Server state         | TanStack React Query       |                `^5.101.1` |                  `5.101.4` |
+| Build                | Vite                       |                  `^8.1.5` |                    `8.1.5` |
+| Server build/runtime | Nitro                      |   exact `3.0.260603-beta` |          `3.0.260603-beta` |
+| Language             | TypeScript                 |                  `^5.8.3` |                    `5.9.3` |
+| CSS                  | Tailwind CSS               |                  `^4.2.1` |                    `4.3.3` |
+| Vite/TanStack preset | Lovable config             |            exact `2.12.0` |                   `2.12.0` |
+| Forms available      | React Hook Form            |                 `^7.71.2` |                   `7.83.0` |
+| Validation available | Zod                        |                 `^3.24.2` |                  `3.25.76` |
+| Notifications        | Sonner                     |                  `^2.0.7` |                    `2.0.7` |
+| Icons                | Lucide React               |                `^0.575.0` |                  `0.575.0` |
+| UI primitives        | Radix UI packages          |                    разные |       зафиксированы в lock |
+| UI scaffolding       | shadcn/ui style `new-york` |                    config |       локальные компоненты |
 
 Источником воспроизводимых версий является `bun.lock`. Установка через другой package manager по диапазонам может получить более новые patch/minor-версии; для production следует использовать Bun и lock-файл проекта.
 
@@ -454,20 +454,20 @@ Production-аудит ранее показал те же метаданные �
 
 ## 17. Готовность к будущим функциям
 
-| Функция | Текущая основа | Готовность |
-|---|---|---|
-| Публичный каталог | карточки и mock-массивы | UI-прототип; data/API/URL отсутствуют |
-| Карточка помещения | CTA и карточка-preview | отдельного маршрута/модели нет |
-| Избранное | UI primitives доступны | реализации и identity нет |
-| Заявки | две mock-формы | backend/storage/workflow отсутствуют |
-| Кабинет арендатора | кнопка-заглушка | не реализован |
-| Admin | shadcn primitives | не реализован |
-| Роли | нет | не реализованы |
-| База данных | нет | не реализована |
-| 1С | нет | не реализована |
-| Уведомления | toast только в браузере | продуктовых уведомлений нет |
-| Статистика | Recharts dependency доступна | событий и данных нет |
-| AI | keyword mock UI | API/RAG/guardrails нет |
+| Функция            | Текущая основа               | Готовность                            |
+| ------------------ | ---------------------------- | ------------------------------------- |
+| Публичный каталог  | карточки и mock-массивы      | UI-прототип; data/API/URL отсутствуют |
+| Карточка помещения | CTA и карточка-preview       | отдельного маршрута/модели нет        |
+| Избранное          | UI primitives доступны       | реализации и identity нет             |
+| Заявки             | две mock-формы               | backend/storage/workflow отсутствуют  |
+| Кабинет арендатора | кнопка-заглушка              | не реализован                         |
+| Admin              | shadcn primitives            | не реализован                         |
+| Роли               | нет                          | не реализованы                        |
+| База данных        | нет                          | не реализована                        |
+| 1С                 | нет                          | не реализована                        |
+| Уведомления        | toast только в браузере      | продуктовых уведомлений нет           |
+| Статистика         | Recharts dependency доступна | событий и данных нет                  |
+| AI                 | keyword mock UI              | API/RAG/guardrails нет                |
 
 Проект имеет пригодный frontend-фундамент, но не платформенный фундамент цифровой системы.
 
@@ -564,18 +564,18 @@ ESLint завершился с ошибкой:
 
 ## 21. Сопоставление с production-аудитом
 
-| Наблюдение production | Подтверждение в исходниках |
-|---|---|
-| Одна страница и hash-навигация | единственный route `/`, `NAV` с hash href |
-| Статические помещения | `FREE_PREMISES`/`SOON_PREMISES` в `rang.ts` |
-| Формы не имеют name/required | подтверждено JSX |
-| Формы не отправляют данные | `preventDefault`, state и toast |
-| Контакты и карта — заглушки | literal values в `Contacts` |
-| Кнопки вместо страниц | demo handlers в `Sections`, Header, Footer |
-| AI — демонстрационный | локальная keyword function `reply()` |
-| `lang=en` | `RootShell` в `__root.tsx` |
-| Нет JSON-LD/canonical | отсутствуют в route head |
-| Production assets | локальный build дал те же hashes |
+| Наблюдение production          | Подтверждение в исходниках                  |
+| ------------------------------ | ------------------------------------------- |
+| Одна страница и hash-навигация | единственный route `/`, `NAV` с hash href   |
+| Статические помещения          | `FREE_PREMISES`/`SOON_PREMISES` в `rang.ts` |
+| Формы не имеют name/required   | подтверждено JSX                            |
+| Формы не отправляют данные     | `preventDefault`, state и toast             |
+| Контакты и карта — заглушки    | literal values в `Contacts`                 |
+| Кнопки вместо страниц          | demo handlers в `Sections`, Header, Footer  |
+| AI — демонстрационный          | локальная keyword function `reply()`        |
+| `lang=en`                      | `RootShell` в `__root.tsx`                  |
+| Нет JSON-LD/canonical          | отсутствуют в route head                    |
+| Production assets              | локальный build дал те же hashes            |
 
 ## 22. Необходимые данные и доступы от заказчика
 
@@ -656,3 +656,13 @@ Backend, БД, отправка CTA, загрузка медиа, массовы
 - Оригинальный PDF лицензии от 07.07.1994 хранится как статический файл `public/documents/rang-license-1994.pdf`; отдельный PNG используется только для качественного превью. Документ представлен как исторический и не заявлен действующим в настоящее время. Модель `COMPANY_DOCUMENTS` позволяет позднее заменить публичные URL на Object Storage без изменения интерфейса.
 
 Точки дальнейшей интеграции: серверный источник предложений аренды/продажи и объектов, единая система заявок для аренды/продажи/услуг, подтверждённые координаты и выбранный картографический сервис, медиа/Object Storage, административное управление материалами истории.
+
+## 28. Актуализация после Этапа 5
+
+Добавлен постоянный backend-фундамент внутри существующего TanStack Start/Nitro node-server приложения: TanStack server functions → service → repository → Drizzle ORM → PostgreSQL. Выбрана self-hosted PostgreSQL 16+ на VPS Timeweb; внешние BaaS и managed database не подключались.
+
+Создана нормализованная схема из 45 таблиц с первой контролируемой SQL-миграцией. Она покрывает недвижимость, предложения аренды/продажи, медиа, арендаторов, пользователей, сотрудников, RBAC, договоры, заявки, документы, коммуникации, услуги, избранное/интерес, рекламу, приборы учёта, начисления/расходы, аудит и интеграционные mappings. Backend принимает только валидированные Zod input и не раскрывает детали серверных ошибок.
+
+Текущие 4 объекта, 7 помещений и 8 услуг сопоставлены с новой моделью и подготовлены как идемпотентный seed. Миграция и repository/API слой проверены в изолированном PostgreSQL-совместимом PGlite. Production-БД, production migrations, merge, push и deploy не выполнялись.
+
+Публичные route loaders намеренно не переключены на БД: production database ещё не создана и не разрешена, массовый Excel import и media/Object Storage не согласованы. Статические данные сохранены как исходник миграции и safety fallback. Контролируемый cutover после создания/backup/seed/reconciliation production-БД описан в `BACKEND_DATABASE.md`; после cutover БД должна стать единственным редактируемым источником бизнес-данных.
