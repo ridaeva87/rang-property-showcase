@@ -133,4 +133,16 @@ Production build Nitro `node-server` подтверждён как работо�
 
 Production build Nitro `node-server` собран успешно. Для `/`, `/rent`, `/sale`, `/services`, `/objects`, `/objects/adelya-kutuya-153a`, `/about`, `/properties`, `/properties/sklad-8-ak-153a` и `/favorites` выполнен полный SSR GET через собранный Nitro SSR handler: все маршруты вернули HTTP 200, HTML с `lang="ru"` и непустой SSR-контент. Оригинальный PDF лицензии и PNG-превью присутствуют в `.output/public`; контрольная сумма исходного и опубликованного PDF совпадает.
 
-Автоматизированный browser-level прогон Этапа 4 в текущей локальной среде не завершён: sandbox не разрешил открыть локальный listening port и запуск установленных browser binaries. Поэтому Chrome/Firefox/Chromium/WebKit, hydration, Console/Network и horizontal overflow для новых страниц не отмечены как подтверждённые. До окончательного cross-browser sign-off требуется запустить собранное приложение и выполнить матрицу desktop/tablet/mobile в указанных движках. Ранее подтверждённые результаты Этапов 0.1–3 остаются без изменений.
+После снятия ограничения локальной среды production-сборка была реально запущена через `.output/server/index.mjs` на Node.js. Выполнена автоматизированная матрица:
+
+- Google Chrome desktop — 1440 × 1000;
+- Chromium desktop — 1440 × 1000, engine-level proxy для Microsoft Edge;
+- Firefox desktop — 1440 × 1000;
+- WebKit/Safari engine desktop — 1440 × 1000;
+- WebKit iPad — 768 × 1024;
+- WebKit iPhone — 390 × 844;
+- Chromium Android — 412 × 915.
+
+Во всех конфигурациях проверены `/`, `/rent`, `/sale`, `/services`, `/objects`, `/objects/adelya-kutuya-153a` и `/about`; дополнительно проверены переход аренды в отфильтрованный `/properties`, мобильное меню, открытие увеличенного превью лицензии, прямой URL и reload объекта, текст парковки АК 153А и наличие единственного `h1`. Все сценарии прошли. Console errors, uncaught JavaScript errors, локальные failed Network requests, HTTP 4xx/5xx ресурсов и горизонтальный overflow отсутствуют. Интерактивные действия после SSR подтверждают успешную клиентскую гидратацию.
+
+Нативный Microsoft Edge не установлен и проверен через общий Chromium engine. Safari проверен через WebKit engine, а iPad/iPhone/Android — через device emulation; ограничения physical-device sign-off из раздела 5 остаются актуальными.
