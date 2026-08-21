@@ -24,7 +24,7 @@ export function Header() {
           : "bg-background/70 backdrop-blur-sm"
       }`}
     >
-      <div className="container-rang flex h-20 items-center justify-between gap-6">
+      <div className="container-rang flex h-20 max-w-[120rem] items-center justify-between gap-4">
         <a href="/" className="flex flex-col leading-none">
           <span className="font-display text-2xl font-extrabold tracking-tight text-primary">
             РАНГ
@@ -34,7 +34,7 @@ export function Header() {
           </span>
         </a>
 
-        <nav className="hidden items-center gap-5 xl:flex">
+        <nav className="hidden items-center gap-4 min-[1900px]:flex">
           {NAV.map((item) => (
             <a
               key={item.label}
@@ -46,7 +46,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden items-center gap-3 min-[1200px]:flex">
           <a
             href="/favorites"
             className="inline-flex items-center gap-2 border border-border px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
@@ -70,16 +70,21 @@ export function Header() {
         </div>
 
         <button
-          className="inline-flex size-11 items-center justify-center border border-border text-foreground xl:hidden"
+          className="inline-flex size-11 shrink-0 items-center justify-center border border-border text-foreground min-[1900px]:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Меню"
+          aria-expanded={open}
+          aria-controls="rang-navigation-menu"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
 
       {open && (
-        <div className="animate-fade-in border-t border-border bg-background xl:hidden">
+        <div
+          id="rang-navigation-menu"
+          className="animate-fade-in border-t border-border bg-background min-[1900px]:hidden"
+        >
           <nav className="container-rang flex flex-col py-3">
             {NAV.map((item) => (
               <a
