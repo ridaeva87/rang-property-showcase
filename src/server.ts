@@ -40,7 +40,13 @@ function preventStaleHtml(response: Response): Response {
   if (!contentType.includes("text/html")) return response;
 
   const headers = new Headers(response.headers);
-  headers.set("cache-control", "no-cache, must-revalidate");
+  // A document contains hashed asset URLs. If a mobile browser or an in-app
+  // webview keeps an old document after a deployment, those old assets may no
+  // longer exist and the page is rendered as unstyled HTML. Do not store HTML;
+  // hashed /assets files remain safely cacheable for a year by Nitro.
+  headers.set("cache-control", "no-store, no-cache, must-revalidate, max-age=0");
+  headers.set("pragma", "no-cache");
+  headers.set("expires", "0");
 
   return new Response(response.body, {
     status: response.status,
