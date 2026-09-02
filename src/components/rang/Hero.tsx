@@ -1,14 +1,16 @@
 import heroImage from "@/assets/hero-property.jpg";
-import { OBJECTS, type PropertyFilters } from "@/data/rang";
+import type { PropertyFilters, PropertyObject } from "@/data/rang";
 
 export function Hero({
   filters,
   onFiltersChange,
   onSearch,
+  objects,
 }: {
   filters: PropertyFilters;
   onFiltersChange: (filters: PropertyFilters) => void;
   onSearch: () => void;
+  objects: PropertyObject[];
 }) {
   const update = <K extends keyof PropertyFilters>(key: K, value: PropertyFilters[K]) => {
     onFiltersChange({ ...filters, [key]: value });
@@ -95,7 +97,7 @@ export function Hero({
                 className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent"
               >
                 <option value="">Все объекты</option>
-                {OBJECTS.map((o) => (
+                {objects.map((o) => (
                   <option key={o.id} value={o.id}>{`${o.name} — ${o.address}`}</option>
                 ))}
               </select>

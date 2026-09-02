@@ -10,12 +10,13 @@ import {
   PropertyInterestForm,
   type PropertyInterestType,
 } from "@/components/rang/PropertyInterestForm";
-import { getPropertyBySlug, getPropertyObject } from "@/data/rang";
+import { getPropertyObject } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
+import { loadCatalogProperty } from "@/lib/catalog.loaders";
 
 export const Route = createFileRoute("/properties/$slug")({
-  loader: ({ params }) => {
-    const property = getPropertyBySlug(params.slug);
+  loader: async ({ params }) => {
+    const property = await loadCatalogProperty(params.slug);
     if (!property) throw notFound();
     return property;
   },

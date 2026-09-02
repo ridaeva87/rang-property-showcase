@@ -59,91 +59,6 @@ const statusRows = [
   { id: "coming-soon", code: "coming-soon", name: "Скоро освободится", isAvailable: false },
 ];
 
-const premiseRows = [
-  {
-    id: "property-001",
-    slug: "sklad-8-ak-153a",
-    title: "Склад №8",
-    objectId: "adelya-kutuya-153a",
-    typeId: "warehouse",
-    statusId: "available",
-    areaSqm: "133",
-    publicationStatus: "published" as const,
-  },
-  {
-    id: "property-002",
-    slug: "ofis-2-14-tolbuhina-15-2",
-    title: "Офис 2.14",
-    objectId: "tolbuhina-15-2",
-    typeId: "office",
-    statusId: "available",
-    areaSqm: "48",
-    publicationStatus: "published" as const,
-  },
-  {
-    id: "property-003",
-    slug: "ofis-sklad-3-tolbuhina-19",
-    title: "Офис + склад №3",
-    objectId: "tolbuhina-19",
-    typeId: "office-warehouse",
-    statusId: "available",
-    areaSqm: "212",
-    publicationStatus: "published" as const,
-  },
-  {
-    id: "property-004",
-    slug: "pomeshchenie-5-lumumby-28b",
-    title: "Помещение №5",
-    objectId: "patrisa-lumumby-28b",
-    typeId: "other",
-    statusId: "available",
-    areaSqm: "76",
-    publicationStatus: "published" as const,
-  },
-  {
-    id: "property-005",
-    slug: "sklad-12-tolbuhina-19",
-    title: "Склад №12",
-    objectId: "tolbuhina-19",
-    typeId: "warehouse",
-    statusId: "coming-soon",
-    areaSqm: "150",
-    expectedReleaseLabel: "1 октября",
-    publicationStatus: "published" as const,
-  },
-  {
-    id: "property-006",
-    slug: "ofis-1-05-ak-153a",
-    title: "Офис 1.05",
-    objectId: "adelya-kutuya-153a",
-    typeId: "office",
-    statusId: "coming-soon",
-    areaSqm: "64",
-    expectedReleaseLabel: "В ноябре",
-    publicationStatus: "published" as const,
-  },
-  {
-    id: "property-007",
-    slug: "ofis-sklad-7-tolbuhina-15-2",
-    title: "Офис + склад №7",
-    objectId: "tolbuhina-15-2",
-    typeId: "office-warehouse",
-    statusId: "coming-soon",
-    areaSqm: "185",
-    publicationStatus: "published" as const,
-  },
-];
-
-const purposes: Record<string, string[]> = {
-  "property-001": ["Хранение", "Комплектация", "Отгрузка"],
-  "property-002": ["Рабочее пространство"],
-  "property-003": ["Офис", "Хранение"],
-  "property-004": ["Другое назначение"],
-  "property-005": ["Хранение", "Комплектация", "Отгрузка"],
-  "property-006": ["Рабочее пространство"],
-  "property-007": ["Офис", "Хранение"],
-};
-
 const services = [
   "Переоборудование помещения",
   "Технические работы",
@@ -160,65 +75,6 @@ export async function seedPublicCatalog(db: Db) {
     await tx.insert(schema.propertyObjects).values(objectRows).onConflictDoNothing();
     await tx.insert(schema.premiseTypes).values(typeRows).onConflictDoNothing();
     await tx.insert(schema.premiseStatuses).values(statusRows).onConflictDoNothing();
-    await tx.insert(schema.premises).values(premiseRows).onConflictDoNothing();
-    await tx
-      .insert(schema.propertyOffers)
-      .values(
-        premiseRows.map((premise) => ({
-          id: `offer-${premise.id}`,
-          premiseId: premise.id,
-          type: "rent" as const,
-          rentPricePerSqm: premise.id === "property-001" ? "1260" : null,
-          utilityCosts: premise.id === "property-001" ? "По приборам учёта (ПУ)" : null,
-          publicationStatus: "published" as const,
-        })),
-      )
-      .onConflictDoNothing();
-    await tx
-      .insert(schema.premisePurposes)
-      .values(
-        Object.entries(purposes).flatMap(([premiseId, values]) =>
-          values.map((purpose) => ({ premiseId, purpose })),
-        ),
-      )
-      .onConflictDoNothing();
-    await tx
-      .insert(schema.premiseCharacteristics)
-      .values(
-        (
-          [
-            ["ceiling-height", "Высота потолка", "6,09 м", "Основные"],
-            ["heating", "Отопление", "Тепловентилятор", "Инженерные системы"],
-            ["power-220", "Электроснабжение 220 В", "Есть", "Инженерные системы"],
-            [
-              "electric-power",
-              "Электрическая мощность",
-              "5 (единица измерения не указана в источнике)",
-              "Инженерные системы",
-            ],
-            [
-              "power-increase",
-              "Увеличение мощности",
-              "10 (значение и единица измерения требуют уточнения)",
-              "Инженерные системы",
-            ],
-            ["restroom", "Санузел", "Отсутствует", "Удобства"],
-            ["gates", "Ворота", "1 шт., 3,8 × 3,8 м", "Доступ"],
-            ["material", "Материал", "Бетон", "Конструкция"],
-            ["access-mode", "Режим доступа", "По графику базы", "Доступ"],
-            ["vehicle-access", "Допуск автомобилей", "До 4", "Доступ"],
-          ] as const
-        ).map(([key, label, valueText, groupName], sortOrder) => ({
-          id: `property-001-${key}`,
-          premiseId: "property-001",
-          key,
-          label,
-          valueText,
-          groupName,
-          sortOrder,
-        })),
-      )
-      .onConflictDoNothing();
     const serviceIds = [
       "refit",
       "technical",
@@ -244,6 +100,6 @@ export async function seedPublicCatalog(db: Db) {
 
 export const publicCatalogSeedCounts = {
   objects: objectRows.length,
-  premises: premiseRows.length,
+  premises: 0,
   services: services.length,
 };

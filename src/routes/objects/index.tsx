@@ -2,13 +2,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { ObjectCard, ObjectsMapPlaceholder, PageIntro } from "@/components/rang/CompanySections";
-import { OBJECTS } from "@/data/rang";
+import { loadCatalogObjects, loadCatalogProperties } from "@/lib/catalog.loaders";
 
 const title = "Объекты компании RANG — Казань";
 const description =
   "Объекты коммерческой недвижимости компании RANG и помещения внутри каждого объекта.";
 
 export const Route = createFileRoute("/objects/")({
+  loader: async () => {
+    const [objects, properties] = await Promise.all([
+      loadCatalogObjects(),
+      loadCatalogProperties({ offerType: "rent" }),
+    ]);
+    return { objects, properties };
+  },
   head: () => ({
     meta: [
       { title },
@@ -23,6 +30,7 @@ export const Route = createFileRoute("/objects/")({
 });
 
 function ObjectsPage() {
+  const { objects, properties } = Route.useLoaderData();
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -34,12 +42,18 @@ function ObjectsPage() {
         />
         <section className="container-rang pb-16 lg:pb-24">
           <div className="grid gap-6 md:grid-cols-2">
-            {OBJECTS.map((object) => (
-              <ObjectCard key={object.id} object={object} />
+            {objects.map((object) => (
+              <ObjectCard
+                key={object.id}
+                object={object}
+                propertyCount={
+                  properties.filter((property) => property.objectId === object.id).length
+                }
+              />
             ))}
           </div>
         </section>
-        <ObjectsMapPlaceholder />
+        <ObjectsMapPlaceholder objects={objects} />
       </main>
       <Footer />
     </div>

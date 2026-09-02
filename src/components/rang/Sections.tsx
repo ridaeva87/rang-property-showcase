@@ -29,10 +29,10 @@ import {
 import {
   ADDITIONAL_SERVICES,
   FAQ,
-  OBJECTS,
   PREMISE_TYPES,
-  PROPERTIES,
+  type Property,
   type PropertyFilters,
+  type PropertyObject,
 } from "@/data/rang";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { PropertyCard } from "@/components/rang/PropertyCard";
@@ -81,12 +81,14 @@ export function SectionHead({
 export function FreePremises({
   filters,
   onReset,
+  properties,
 }: {
   filters: PropertyFilters;
   onReset: () => void;
+  properties: Property[];
 }) {
   const premises = filterProperties(
-    PROPERTIES.filter((property) => property.status === "Свободно"),
+    properties.filter((property) => property.status === "Свободно"),
     filters,
   );
   const isFiltered = hasActivePropertyFilters(filters);
@@ -144,8 +146,8 @@ export function FreePremises({
 }
 
 /* 6. Скоро освободятся */
-export function ComingSoon() {
-  const properties = PROPERTIES.filter((property) => property.status === "Скоро освободится");
+export function ComingSoon({ properties }: { properties: Property[] }) {
+  const comingSoon = properties.filter((property) => property.status === "Скоро освободится");
 
   return (
     <section className="bg-graphite py-20 lg:py-28">
@@ -157,7 +159,7 @@ export function ComingSoon() {
           tone="dark"
         />
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {properties.map((property) => (
+          {comingSoon.map((property) => (
             <PropertyCard key={property.id} property={property} dark />
           ))}
         </div>
@@ -167,7 +169,7 @@ export function ComingSoon() {
 }
 
 /* 7. Типы помещений */
-export function PremiseTypes() {
+export function PremiseTypes({ properties }: { properties: Property[] }) {
   return (
     <section className="container-rang py-20 lg:py-28">
       <SectionHead eyebrow="Типы помещений" title="Подберите помещение под задачи бизнеса" />
@@ -189,7 +191,7 @@ export function PremiseTypes() {
               <h3 className="text-2xl font-semibold text-primary-foreground">{t.title}</h3>
               <p className="mt-2 text-sm text-primary-foreground/75">{t.text}</p>
               <p className="mt-2 text-xs text-primary-foreground/60">
-                В каталоге: {PROPERTIES.filter((property) => property.type === t.type).length}
+                В каталоге: {properties.filter((property) => property.type === t.type).length}
               </p>
               <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-foreground opacity-0 transition-all duration-500 group-hover:opacity-100">
                 Смотреть <ArrowRight className="size-4" />
@@ -203,13 +205,13 @@ export function PremiseTypes() {
 }
 
 /* 8. Наши объекты */
-export function Objects() {
+export function Objects({ objects }: { objects: PropertyObject[] }) {
   return (
     <section className="bg-surface py-20 lg:py-28">
       <div className="container-rang">
         <SectionHead eyebrow="География" title="Наши объекты" />
         <div className="mt-12 grid gap-6 md:grid-cols-2">
-          {OBJECTS.map((o) => (
+          {objects.map((o) => (
             <article
               key={o.name}
               className="card-lift media-zoom flex flex-col bg-background shadow-card"
@@ -698,7 +700,7 @@ function Input({ label, placeholder }: { label: string; placeholder: string }) {
 }
 
 /* 18. Контакты */
-export function Contacts() {
+export function Contacts({ objects }: { objects: PropertyObject[] }) {
   return (
     <section id="contacts" className="container-rang py-20 lg:py-28">
       <SectionHead eyebrow="Контакты" title="Контакты" />
@@ -720,7 +722,7 @@ export function Contacts() {
           <div className="bg-background p-6">
             <p className="eyebrow">Объекты компании</p>
             <ul className="mt-3 space-y-2 text-sm">
-              {OBJECTS.map((o) => (
+              {objects.map((o) => (
                 <li key={o.name} className="flex items-start gap-2">
                   <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
                   <span>

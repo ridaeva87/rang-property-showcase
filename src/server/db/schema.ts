@@ -70,6 +70,26 @@ export const propertyObjects = pgTable(
   ],
 );
 
+export const propertyBuildings = pgTable(
+  "property_buildings",
+  {
+    id: text("id").primaryKey(),
+    objectId: text("object_id")
+      .notNull()
+      .references(() => propertyObjects.id, { onDelete: "restrict" }),
+    code: text("code").notNull(),
+    name: text("name").notNull(),
+    sourceSystem: integrationSystem("source_system").default("manual").notNull(),
+    externalId: text("external_id"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("property_buildings_object_code_uq").on(table.objectId, table.code),
+    uniqueIndex("property_buildings_source_external_uq").on(table.sourceSystem, table.externalId),
+    index("property_buildings_object_idx").on(table.objectId),
+  ],
+);
+
 export const premiseTypes = pgTable(
   "premise_types",
   {
@@ -100,6 +120,9 @@ export const premises = pgTable(
     objectId: text("object_id")
       .notNull()
       .references(() => propertyObjects.id, { onDelete: "restrict" }),
+    buildingId: text("building_id").references(() => propertyBuildings.id, {
+      onDelete: "restrict",
+    }),
     typeId: text("type_id")
       .notNull()
       .references(() => premiseTypes.id, { onDelete: "restrict" }),
@@ -118,7 +141,9 @@ export const premises = pgTable(
   },
   (table) => [
     uniqueIndex("premises_slug_uq").on(table.slug),
+    uniqueIndex("premises_source_external_uq").on(table.sourceSystem, table.externalId),
     index("premises_object_idx").on(table.objectId),
+    index("premises_building_idx").on(table.buildingId),
     index("premises_catalog_idx").on(table.publicationStatus, table.statusId),
   ],
 );
@@ -178,6 +203,42 @@ export const propertyOffers = pgTable(
   (table) => [
     uniqueIndex("property_offers_active_kind_uq").on(table.premiseId, table.type),
     index("property_offers_catalog_idx").on(table.type, table.publicationStatus),
+  ],
+);
+
+export const premiseComponents = pgTable(
+  "premise_components",
+  {
+    id: text("id").primaryKey(),
+    premiseId: text("premise_id")
+      .notNull()
+      .references(() => premises.id, { onDelete: "cascade" }),
+    componentType: text("component_type").notNull(),
+    title: text("title").notNull(),
+    floor: text("floor"),
+    areaSqm: decimal("area_sqm", { precision: 12, scale: 2 }),
+    rentPricePerSqm: decimal("rent_price_per_sqm", { precision: 14, scale: 2 }),
+    utilityCosts: text("utility_costs"),
+    ceilingHeight: text("ceiling_height"),
+    heating: text("heating"),
+    material: text("material"),
+    characteristics:
+      jsonb("characteristics").$type<
+        Array<{
+          key: string;
+          label: string;
+          valueText: string;
+          groupName: string;
+          sortOrder: number;
+        }>
+      >(),
+    sourceRow: integer("source_row"),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("premise_components_premise_order_uq").on(table.premiseId, table.sortOrder),
+    index("premise_components_premise_idx").on(table.premiseId),
   ],
 );
 

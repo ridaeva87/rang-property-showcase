@@ -7,12 +7,12 @@ import { PropertyCard } from "@/components/rang/PropertyCard";
 import { PropertyFilters } from "@/components/rang/PropertyFilters";
 import {
   INITIAL_PROPERTY_FILTERS,
-  PROPERTIES,
   PROPERTY_TYPES,
   type PropertyFilters as Filters,
   type PropertyType,
 } from "@/data/rang";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
+import { loadCatalogProperties } from "@/lib/catalog.loaders";
 
 type CatalogSearch = { type?: PropertyType };
 
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/properties/")({
       ? { type: type as PropertyType }
       : {};
   },
+  loader: () => loadCatalogProperties({ offerType: "rent" }),
   head: () => ({
     meta: [
       { title: "Каталог коммерческих помещений — Ранг" },
@@ -46,12 +47,13 @@ export const Route = createFileRoute("/properties/")({
 
 function PropertiesPage() {
   const search = Route.useSearch();
+  const catalogProperties = Route.useLoaderData();
   const [filters, setFilters] = useState<Filters>({
     ...INITIAL_PROPERTY_FILTERS,
     type: search.type ?? "",
   });
   const [chatOpen, setChatOpen] = useState(false);
-  const properties = filterProperties(PROPERTIES, filters);
+  const properties = filterProperties(catalogProperties, filters);
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,6 +68,7 @@ function PropertiesPage() {
           <div className="mt-10">
             <PropertyFilters
               filters={filters}
+              properties={catalogProperties}
               onChange={setFilters}
               onReset={() => setFilters(INITIAL_PROPERTY_FILTERS)}
             />

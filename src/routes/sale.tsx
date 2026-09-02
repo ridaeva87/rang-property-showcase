@@ -3,12 +3,13 @@ import { Building2 } from "lucide-react";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { PageIntro, RequestIntegrationNotice } from "@/components/rang/CompanySections";
-import { PROPERTIES } from "@/data/rang";
+import { loadCatalogProperties } from "@/lib/catalog.loaders";
 
 const title = "Продажа коммерческой недвижимости — Ранг";
 const description = "Отдельное направление продажи коммерческой недвижимости компании «Ранг».";
 
 export const Route = createFileRoute("/sale")({
+  loader: () => loadCatalogProperties({ offerType: "sale" }),
   head: () => ({
     meta: [
       { title },
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/sale")({
 });
 
 function SalePage() {
-  const saleProperties = PROPERTIES.filter((property) => property.offerType === "sale");
+  const saleProperties = Route.useLoaderData();
 
   return (
     <div className="min-h-screen bg-background">

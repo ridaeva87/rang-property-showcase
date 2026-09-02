@@ -22,12 +22,20 @@ import {
 } from "@/components/rang/Sections";
 import { Footer } from "@/components/rang/Footer";
 import { AiAssistant } from "@/components/rang/AiAssistant";
+import { loadCatalogObjects, loadCatalogProperties } from "@/lib/catalog.loaders";
 
 const title = "Ранг — аренда офисов и складов в Казани с 1993 года";
 const description =
   "Коммерческие помещения в Казани: офисы, склады и помещения «офис + склад» в аренду и на продажу. Свободные помещения, объекты компании и услуги для арендаторов.";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const [properties, objects] = await Promise.all([
+      loadCatalogProperties({ offerType: "rent" }),
+      loadCatalogObjects(),
+    ]);
+    return { properties, objects };
+  },
   head: () => ({
     meta: [
       { title },
@@ -42,6 +50,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { properties, objects } = Route.useLoaderData();
   const [chatOpen, setChatOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
@@ -59,11 +68,12 @@ function Index() {
           filters={draftFilters}
           onFiltersChange={setDraftFilters}
           onSearch={() => setAppliedFilters(draftFilters)}
+          objects={objects}
         />
-        <FreePremises filters={appliedFilters} onReset={resetFilters} />
-        <ComingSoon />
-        <PremiseTypes />
-        <Objects />
+        <FreePremises filters={appliedFilters} onReset={resetFilters} properties={properties} />
+        <ComingSoon properties={properties} />
+        <PremiseTypes properties={properties} />
+        <Objects objects={objects} />
         <RentSection />
         <SaleSection />
         <Services />
@@ -74,7 +84,7 @@ function Index() {
         <Faq onAskAi={() => setChatOpen(true)} />
         <AiTransition onOpen={() => setChatOpen(true)} />
         <CtaForm />
-        <Contacts />
+        <Contacts objects={objects} />
       </main>
       <Footer />
       <AiAssistant open={chatOpen} setOpen={setChatOpen} />

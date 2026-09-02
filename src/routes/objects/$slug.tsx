@@ -3,16 +3,18 @@ import { MapPin } from "lucide-react";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { PropertyCard } from "@/components/rang/PropertyCard";
-import { getObjectBySlug, getObjectProperties } from "@/data/rang";
+import { loadCatalogObject, loadCatalogProperties } from "@/lib/catalog.loaders";
 
 export const Route = createFileRoute("/objects/$slug")({
-  loader: ({ params }) => {
-    const object = getObjectBySlug(params.slug);
+  loader: async ({ params }) => {
+    const object = await loadCatalogObject(params.slug);
     if (!object) throw notFound();
-    return object;
+    const properties = await loadCatalogProperties({ offerType: "rent", objectId: object.id });
+    return { object, properties };
   },
-  head: ({ loaderData: object }) => {
-    if (!object) return {};
+  head: ({ loaderData }) => {
+    if (!loaderData) return {};
+    const { object } = loaderData;
     const title = `${object.name}, ${object.address} — RANG`;
     const description = object.description ?? `Объект компании RANG по адресу ${object.address}.`;
     const canonical = `https://rangpro.ru/objects/${object.slug}`;
@@ -33,8 +35,7 @@ export const Route = createFileRoute("/objects/$slug")({
 });
 
 function ObjectPage() {
-  const object = Route.useLoaderData();
-  const properties = getObjectProperties(object.id);
+  const { object, properties } = Route.useLoaderData();
   const photo = object.photos[0];
 
   return (

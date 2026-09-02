@@ -1,29 +1,37 @@
 import {
   INITIAL_PROPERTY_FILTERS,
   OBJECTS,
-  PROPERTIES,
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
+  type Property,
   type PropertyFilters as PropertyFiltersValue,
 } from "@/data/rang";
-import { PROPERTY_FILTER_OPTIONS } from "@/lib/properties";
 
 export function PropertyFilters({
   filters,
+  properties,
   onChange,
   onReset,
 }: {
   filters: PropertyFiltersValue;
+  properties: Property[];
   onChange: (filters: PropertyFiltersValue) => void;
   onReset: () => void;
 }) {
   const update = <K extends keyof PropertyFiltersValue>(key: K, value: PropertyFiltersValue[K]) =>
     onChange({ ...filters, [key]: value });
   const objects = OBJECTS.filter((object) =>
-    PROPERTIES.some((property) => property.objectId === object.id),
+    properties.some((property) => property.objectId === object.id),
   );
   const statuses = PROPERTY_STATUSES.filter((status) =>
-    PROPERTIES.some((property) => property.status === status),
+    properties.some((property) => property.status === status),
+  );
+  const purposes = uniqueValues(properties.flatMap((property) => property.purposes));
+  const accessModes = uniqueValues(
+    properties.flatMap((property) => (property.accessMode ? [property.accessMode] : [])),
+  );
+  const features = uniqueValues(
+    properties.flatMap((property) => [...property.mainFeatures, ...property.additionalFeatures]),
   );
 
   return (
@@ -100,7 +108,7 @@ export function PropertyFilters({
             className="filter-control"
           >
             <option value="">Любое назначение</option>
-            {PROPERTY_FILTER_OPTIONS.purposes.map((purpose) => (
+            {purposes.map((purpose) => (
               <option key={purpose} value={purpose}>
                 {purpose}
               </option>
@@ -108,7 +116,7 @@ export function PropertyFilters({
           </select>
         </FilterField>
 
-        {PROPERTY_FILTER_OPTIONS.accessModes.length > 0 && (
+        {accessModes.length > 0 && (
           <FilterField label="Режим доступа">
             <select
               value={filters.accessMode}
@@ -116,7 +124,7 @@ export function PropertyFilters({
               className="filter-control"
             >
               <option value="">Любой режим</option>
-              {PROPERTY_FILTER_OPTIONS.accessModes.map((mode) => (
+              {accessModes.map((mode) => (
                 <option key={mode} value={mode}>
                   {mode}
                 </option>
@@ -125,7 +133,7 @@ export function PropertyFilters({
           </FilterField>
         )}
 
-        {PROPERTY_FILTER_OPTIONS.features.length > 0 && (
+        {features.length > 0 && (
           <FilterField label="Характеристика">
             <select
               value={filters.feature}
@@ -133,7 +141,7 @@ export function PropertyFilters({
               className="filter-control"
             >
               <option value="">Любая характеристика</option>
-              {PROPERTY_FILTER_OPTIONS.features.map((feature) => (
+              {features.map((feature) => (
                 <option key={feature} value={feature}>
                   {feature}
                 </option>
@@ -171,6 +179,10 @@ export function PropertyFilters({
       </div>
     </div>
   );
+}
+
+function uniqueValues(values: string[]) {
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right, "ru"));
 }
 
 function FilterField({ label, children }: { label: string; children: React.ReactNode }) {

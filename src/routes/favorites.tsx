@@ -4,10 +4,11 @@ import { AiAssistant } from "@/components/rang/AiAssistant";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { PropertyCard } from "@/components/rang/PropertyCard";
-import { getPropertiesByIds } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
+import { loadCatalogProperties } from "@/lib/catalog.loaders";
 
 export const Route = createFileRoute("/favorites")({
+  loader: () => loadCatalogProperties({ offerType: "rent" }),
   head: () => ({
     meta: [
       { title: "Избранные помещения — Ранг" },
@@ -19,9 +20,11 @@ export const Route = createFileRoute("/favorites")({
 });
 
 function FavoritesPage() {
+  const catalogProperties = Route.useLoaderData();
   const { favoriteIds, hydrated } = useFavorites();
   const [chatOpen, setChatOpen] = useState(false);
-  const properties = getPropertiesByIds(favoriteIds);
+  const favoriteIdSet = new Set(favoriteIds);
+  const properties = catalogProperties.filter((property) => favoriteIdSet.has(property.id));
 
   return (
     <div className="min-h-screen bg-background">

@@ -1,5 +1,5 @@
 import { ArrowRight, ExternalLink, MapPin } from "lucide-react";
-import { COMPANY_DOCUMENTS, OBJECTS, getObjectProperties, type PropertyObject } from "@/data/rang";
+import { COMPANY_DOCUMENTS, type PropertyObject } from "@/data/rang";
 import {
   Dialog,
   DialogContent,
@@ -26,9 +26,14 @@ export function PageIntro({
   );
 }
 
-export function ObjectCard({ object }: { object: PropertyObject }) {
+export function ObjectCard({
+  object,
+  propertyCount,
+}: {
+  object: PropertyObject;
+  propertyCount: number;
+}) {
   const photo = object.photos[0];
-  const propertyCount = getObjectProperties(object.id).length;
 
   return (
     <article className="card-lift flex h-full flex-col border border-border bg-card">
@@ -61,8 +66,8 @@ export function ObjectCard({ object }: { object: PropertyObject }) {
   );
 }
 
-export function ObjectsMapPlaceholder() {
-  const hasCoordinates = OBJECTS.some((object) => object.coordinates !== undefined);
+export function ObjectsMapPlaceholder({ objects }: { objects: PropertyObject[] }) {
+  const hasCoordinates = objects.some((object) => object.coordinates !== undefined);
 
   return (
     <section className="bg-surface py-16 lg:py-24">
@@ -87,7 +92,7 @@ export function ObjectsMapPlaceholder() {
               }}
             />
             <div className="relative grid gap-3 sm:grid-cols-2">
-              {OBJECTS.map((object) => (
+              {objects.map((object) => (
                 <a
                   key={object.id}
                   href={`/objects/${object.slug}`}
