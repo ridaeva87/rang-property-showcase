@@ -32,7 +32,7 @@ export function PropertyCard({ property, dark = false }: { property: Property; d
             }`}
           >
             <Building2 className="size-9 text-accent" />
-            <span className="text-sm">Фотографии помещения пока не предоставлены</span>
+            <span className="text-sm">Фото готовятся</span>
           </div>
         )}
         {property.status && (

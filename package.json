@@ -16,6 +16,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed:catalog": "tsx scripts/seed-public-catalog.ts",
     "db:import:excel": "tsx scripts/import-official-premises.ts",
+    "media:prepare": "python3 scripts/prepare-official-media.py",
     "db:check": "tsx scripts/check-database.ts",
     "format": "prettier --write ."
   },

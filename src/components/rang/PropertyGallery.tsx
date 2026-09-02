@@ -15,7 +15,7 @@ export function PropertyGallery({ property }: { property: Property }) {
           <div className="flex size-full flex-col items-center justify-center gap-4 px-8 text-center text-muted-foreground">
             <Building2 className="size-12 text-accent" />
             <div>
-              <p className="font-semibold text-foreground">Фотографии пока не предоставлены</p>
+              <p className="font-semibold text-foreground">Фото готовятся</p>
               <p className="mt-2 text-sm">Здесь появится галерея именно этого помещения.</p>
             </div>
           </div>
