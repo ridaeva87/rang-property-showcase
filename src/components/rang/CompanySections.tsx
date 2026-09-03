@@ -1,5 +1,6 @@
 import { ArrowRight, ExternalLink, MapPin } from "lucide-react";
 import { COMPANY_DOCUMENTS, type PropertyObject } from "@/data/rang";
+import { ResponsiveImage } from "./ResponsiveImage";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,11 @@ export function ObjectCard({
     <article className="card-lift flex h-full flex-col border border-border bg-card">
       {photo && (
         <div className="aspect-[16/9] overflow-hidden">
-          <img src={photo.src} alt={photo.alt} className="size-full object-cover" loading="lazy" />
+          <ResponsiveImage
+            photo={photo}
+            sizes="(max-width: 767px) 100vw, 50vw"
+            className="size-full object-cover"
+          />
         </div>
       )}
       <div className="flex flex-1 flex-col p-6 sm:p-8">

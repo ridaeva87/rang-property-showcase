@@ -18,6 +18,8 @@ export const NAV = [
   { label: "Контакты", href: "/#contacts" },
 ];
 
+export type CatalogPhoto = { src: string; alt: string; srcSet?: string };
+
 export type PropertyObject = {
   id: string;
   slug: string;
@@ -25,7 +27,7 @@ export type PropertyObject = {
   address: string;
   description?: string;
   coordinates?: { latitude: number; longitude: number };
-  photos: Array<{ src: string; alt: string }>;
+  photos: CatalogPhoto[];
   territoryFeatures: string[];
   parking?: string;
   accessMode?: string;
@@ -128,7 +130,7 @@ export type Property = {
     tenantLimit?: number;
     guestLimit?: number;
   };
-  photos: Array<{ src: string; alt: string }>;
+  photos: CatalogPhoto[];
   video?: { url: string; title: string; kind: "file" | "embed"; poster?: string };
   mainFeatures: string[];
   additionalFeatures: string[];

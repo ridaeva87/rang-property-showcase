@@ -36,6 +36,7 @@ import {
 } from "@/data/rang";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { PropertyCard } from "@/components/rang/PropertyCard";
+import { ResponsiveImage } from "@/components/rang/ResponsiveImage";
 import aboutImage from "@/assets/object-ak153.jpg";
 import videoWarehouse from "@/assets/type-warehouse.jpg";
 import videoTerritory from "@/assets/object-tolbuhina19.jpg";
@@ -218,10 +219,9 @@ export function Objects({ objects }: { objects: PropertyObject[] }) {
             >
               {o.photos[0] && (
                 <div className="aspect-[16/9] overflow-hidden">
-                  <img
-                    src={o.photos[0].src}
-                    alt={o.photos[0].alt}
-                    loading="lazy"
+                  <ResponsiveImage
+                    photo={o.photos[0]}
+                    sizes="(max-width: 767px) 100vw, 50vw"
                     className="size-full object-cover"
                   />
                 </div>

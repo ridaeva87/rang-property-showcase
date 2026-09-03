@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Building2, Play } from "lucide-react";
 import type { Property } from "@/data/rang";
+import { ResponsiveImage } from "./ResponsiveImage";
 
 export function PropertyGallery({ property }: { property: Property }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -10,7 +11,12 @@ export function PropertyGallery({ property }: { property: Property }) {
     <div>
       <div className="aspect-[4/3] overflow-hidden bg-surface">
         {activePhoto ? (
-          <img src={activePhoto.src} alt={activePhoto.alt} className="size-full object-cover" />
+          <ResponsiveImage
+            photo={activePhoto}
+            sizes="(max-width: 1023px) 100vw, 58vw"
+            priority
+            className="size-full object-cover"
+          />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-4 px-8 text-center text-muted-foreground">
             <Building2 className="size-12 text-accent" />
@@ -35,7 +41,11 @@ export function PropertyGallery({ property }: { property: Property }) {
                 index === activeIndex ? "border-primary" : "border-transparent"
               }`}
             >
-              <img src={photo.src} alt="" className="size-full object-cover" />
+              <ResponsiveImage
+                photo={{ ...photo, alt: "" }}
+                sizes="20vw"
+                className="size-full object-cover"
+              />
             </button>
           ))}
         </div>

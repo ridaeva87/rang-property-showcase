@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { PropertyCard } from "@/components/rang/PropertyCard";
+import { ResponsiveImage } from "@/components/rang/ResponsiveImage";
 import { loadCatalogObject, loadCatalogProperties } from "@/lib/catalog.loaders";
 
 export const Route = createFileRoute("/objects/$slug")({
@@ -48,9 +49,10 @@ function ObjectPage() {
           </a>
           <div className="mt-8 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16">
             {photo && (
-              <img
-                src={photo.src}
-                alt={photo.alt}
+              <ResponsiveImage
+                photo={photo}
+                sizes="(max-width: 1023px) 100vw, 55vw"
+                priority
                 className="aspect-[16/10] size-full object-cover"
               />
             )}

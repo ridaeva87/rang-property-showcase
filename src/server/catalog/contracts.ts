@@ -66,6 +66,7 @@ export type CatalogProperty = {
     url: string;
     title?: string | undefined;
     alt?: string | undefined;
+    srcSet?: string | undefined;
     sortOrder: number;
   }>;
 };

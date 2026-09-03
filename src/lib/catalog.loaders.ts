@@ -80,7 +80,11 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
     ...(accessMode ? { accessMode } : {}),
     photos: property.media
       .filter((item) => item.kind === "image")
-      .map((item) => ({ src: item.url, alt: item.alt ?? property.title })),
+      .map((item) => ({
+        src: item.srcSet?.split(",")[0]?.trim().split(" ")[0] ?? item.url,
+        alt: item.alt ?? property.title,
+        ...(item.srcSet ? { srcSet: item.srcSet } : {}),
+      })),
     mainFeatures: [],
     additionalFeatures: [],
   };
@@ -94,7 +98,11 @@ export const catalogObjectToViewModel = (object: CatalogObject) => ({
   ...(object.description ? { description: object.description } : {}),
   photos: object.media
     .filter((item) => item.kind === "image")
-    .map((item) => ({ src: item.url, alt: item.alt ?? object.name })),
+    .map((item) => ({
+      src: item.srcSet?.split(",")[0]?.trim().split(" ")[0] ?? item.url,
+      alt: item.alt ?? object.name,
+      ...(item.srcSet ? { srcSet: item.srcSet } : {}),
+    })),
   territoryFeatures: object.territoryFeatures,
   ...(object.parking ? { parking: object.parking } : {}),
   ...(object.accessMode ? { accessMode: object.accessMode } : {}),

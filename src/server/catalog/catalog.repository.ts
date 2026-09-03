@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, type SQL } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte, type SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../db/schema";
 import type { CatalogFilter, CatalogObject, CatalogProperty, CatalogService } from "./contracts";
@@ -51,7 +51,7 @@ export class CatalogRepository {
       .where(and(...conditions))
       .orderBy(asc(schema.premises.title));
 
-    return Promise.all(rows.map((row) => this.hydrateProperty(row)));
+    return this.hydrateProperties(rows);
   }
 
   async getPropertyBySlug(slug: string): Promise<CatalogProperty | undefined> {
@@ -151,60 +151,104 @@ export class CatalogRepository {
     purchaseTerms: string | null;
     utilityCosts: string | null;
   }): Promise<CatalogProperty> {
+    return (await this.hydrateProperties([row]))[0]!;
+  }
+
+  private async hydrateProperties(
+    rows: Array<{
+      id: string;
+      slug: string;
+      title: string;
+      objectId: string;
+      objectName: string;
+      objectAddress: string;
+      type: string;
+      status: string | null;
+      areaSqm: string | null;
+      expectedRelease: string | null;
+      offerType: "rent" | "sale";
+      rentPricePerSqm: string | null;
+      totalMonthlyRent: string | null;
+      salePrice: string | null;
+      purchaseTerms: string | null;
+      utilityCosts: string | null;
+    }>,
+  ): Promise<CatalogProperty[]> {
+    if (rows.length === 0) return [];
+    const ids = rows.map((row) => row.id);
     const [purposes, characteristics, media] = await Promise.all([
       this.db
-        .select({ purpose: schema.premisePurposes.purpose })
+        .select({
+          premiseId: schema.premisePurposes.premiseId,
+          purpose: schema.premisePurposes.purpose,
+        })
         .from(schema.premisePurposes)
-        .where(eq(schema.premisePurposes.premiseId, row.id))
-        .orderBy(asc(schema.premisePurposes.purpose)),
+        .where(inArray(schema.premisePurposes.premiseId, ids))
+        .orderBy(asc(schema.premisePurposes.premiseId), asc(schema.premisePurposes.purpose)),
       this.db
         .select()
         .from(schema.premiseCharacteristics)
-        .where(eq(schema.premiseCharacteristics.premiseId, row.id))
-        .orderBy(asc(schema.premiseCharacteristics.sortOrder)),
+        .where(inArray(schema.premiseCharacteristics.premiseId, ids))
+        .orderBy(
+          asc(schema.premiseCharacteristics.premiseId),
+          asc(schema.premiseCharacteristics.sortOrder),
+        ),
       this.db
         .select({
+          premiseId: schema.premiseMedia.premiseId,
           id: schema.mediaAssets.id,
           kind: schema.mediaAssets.kind,
           publicUrl: schema.mediaAssets.publicUrl,
           storageKey: schema.mediaAssets.storageKey,
           title: schema.mediaAssets.title,
           alt: schema.mediaAssets.altText,
+          metadata: schema.mediaAssets.metadata,
           sortOrder: schema.premiseMedia.sortOrder,
         })
         .from(schema.premiseMedia)
         .innerJoin(schema.mediaAssets, eq(schema.premiseMedia.mediaId, schema.mediaAssets.id))
-        .where(eq(schema.premiseMedia.premiseId, row.id))
-        .orderBy(asc(schema.premiseMedia.sortOrder)),
+        .where(inArray(schema.premiseMedia.premiseId, ids))
+        .orderBy(asc(schema.premiseMedia.premiseId), asc(schema.premiseMedia.sortOrder)),
     ]);
-    return {
-      ...row,
-      status: row.status ?? undefined,
-      areaSqm: numberValue(row.areaSqm),
-      expectedRelease: row.expectedRelease ?? undefined,
-      rentPricePerSqm: numberValue(row.rentPricePerSqm),
-      totalMonthlyRent: numberValue(row.totalMonthlyRent),
-      salePrice: numberValue(row.salePrice),
-      purchaseTerms: row.purchaseTerms ?? undefined,
-      utilityCosts: row.utilityCosts ?? undefined,
-      purposes: purposes.map((item) => item.purpose),
-      characteristics: characteristics.map((item) => ({
-        key: item.key,
-        label: item.label,
-        value: item.valueText ?? item.valueNumber ?? "",
-        unit: item.unit ?? undefined,
-        group: item.groupName ?? undefined,
-        sortOrder: item.sortOrder,
-      })),
-      media: media.map((item) => ({
-        id: item.id,
-        kind: item.kind,
-        url: item.publicUrl ?? item.storageKey,
-        title: item.title ?? undefined,
-        alt: item.alt ?? undefined,
-        sortOrder: item.sortOrder,
-      })),
-    };
+
+    return rows.map((row) => {
+      const rowPurposes = purposes.filter((item) => item.premiseId === row.id);
+      const rowCharacteristics = characteristics.filter((item) => item.premiseId === row.id);
+      const rowMedia = media.filter((item) => item.premiseId === row.id);
+      return {
+        ...row,
+        status: row.status ?? undefined,
+        areaSqm: numberValue(row.areaSqm),
+        expectedRelease: row.expectedRelease ?? undefined,
+        rentPricePerSqm: numberValue(row.rentPricePerSqm),
+        totalMonthlyRent: numberValue(row.totalMonthlyRent),
+        salePrice: numberValue(row.salePrice),
+        purchaseTerms: row.purchaseTerms ?? undefined,
+        utilityCosts: row.utilityCosts ?? undefined,
+        purposes: rowPurposes.map((item) => item.purpose),
+        characteristics: rowCharacteristics.map((item) => ({
+          key: item.key,
+          label: item.label,
+          value: item.valueText ?? item.valueNumber ?? "",
+          unit: item.unit ?? undefined,
+          group: item.groupName ?? undefined,
+          sortOrder: item.sortOrder,
+        })),
+        media: rowMedia.map((item) => ({
+          id: item.id,
+          kind: item.kind,
+          url: item.publicUrl ?? item.storageKey,
+          title: item.title ?? undefined,
+          alt: item.alt ?? undefined,
+          srcSet: Array.isArray(item.metadata["variants"])
+            ? (item.metadata["variants"] as Array<{ url: string; width: number }>)
+                .map((variant) => `${variant.url} ${variant.width}w`)
+                .join(", ")
+            : undefined,
+          sortOrder: item.sortOrder,
+        })),
+      };
+    });
   }
 
   private async hydrateObject(
@@ -218,6 +262,7 @@ export class CatalogRepository {
         storageKey: schema.mediaAssets.storageKey,
         title: schema.mediaAssets.title,
         alt: schema.mediaAssets.altText,
+        metadata: schema.mediaAssets.metadata,
         sortOrder: schema.objectMedia.sortOrder,
       })
       .from(schema.objectMedia)
@@ -239,6 +284,11 @@ export class CatalogRepository {
         url: item.publicUrl ?? item.storageKey,
         title: item.title ?? undefined,
         alt: item.alt ?? undefined,
+        srcSet: Array.isArray(item.metadata["variants"])
+          ? (item.metadata["variants"] as Array<{ url: string; width: number }>)
+              .map((variant) => `${variant.url} ${variant.width}w`)
+              .join(", ")
+          : undefined,
         sortOrder: item.sortOrder,
       })),
     };

@@ -2,8 +2,17 @@ import { Link } from "@tanstack/react-router";
 import { Building2, Heart, MapPin } from "lucide-react";
 import { getPropertyObject, type Property } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
+import { ResponsiveImage } from "./ResponsiveImage";
 
-export function PropertyCard({ property, dark = false }: { property: Property; dark?: boolean }) {
+export function PropertyCard({
+  property,
+  dark = false,
+  priority = false,
+}: {
+  property: Property;
+  dark?: boolean;
+  priority?: boolean;
+}) {
   const { hydrated, isFavorite, toggleFavorite } = useFavorites();
   const favorite = hydrated && isFavorite(property.id);
   const object = getPropertyObject(property);
@@ -17,10 +26,10 @@ export function PropertyCard({ property, dark = false }: { property: Property; d
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         {mainPhoto ? (
-          <img
-            src={mainPhoto.src}
-            alt={mainPhoto.alt}
-            loading="lazy"
+          <ResponsiveImage
+            photo={mainPhoto}
+            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+            priority={priority}
             className={`size-full object-cover ${dark ? "opacity-85" : ""}`}
           />
         ) : (
