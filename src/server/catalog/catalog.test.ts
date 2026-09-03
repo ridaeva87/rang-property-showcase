@@ -182,6 +182,23 @@ describe("RANG official Excel catalog migration", () => {
     expect(await repository.listProperties({ offerType: "rent" })).toHaveLength(63);
   });
 
+  it("keeps rent intact and exposes the idempotent sale apartment", async () => {
+    const repository = new CatalogRepository(db);
+    expect(await repository.listProperties({ offerType: "rent" })).toHaveLength(63);
+    expect(await repository.listProperties({ offerType: "sale" })).toHaveLength(1);
+    expect(await repository.getPropertyBySlug("2-komnatnaya-kvartira-tolbuhina-15-2")).toMatchObject({
+      id: "sale-apartment-tolbuhina-15-2",
+      offerType: "sale",
+      areaSqm: 59.2,
+      salePrice: 13_600_000,
+    });
+
+    const migration = await readFile(resolve("drizzle/0002_sale_apartment_tolbuhina.sql"), "utf8");
+    await client.exec(migration.replaceAll("--> statement-breakpoint", ""));
+    expect(await repository.listProperties({ offerType: "sale" })).toHaveLength(1);
+    expect(await repository.listProperties({ offerType: "rent" })).toHaveLength(63);
+  });
+
   it("validates server input", () => {
     expect(() => slugInputSchema.parse({ slug: "../../etc/passwd" })).toThrow();
     expect(() => catalogFilterSchema.parse({ areaFrom: 200, areaTo: 100 })).toThrow();

@@ -38,6 +38,7 @@ export type CatalogProperty = {
   id: string;
   slug: string;
   title: string;
+  description?: string | undefined;
   offerType: "rent" | "sale";
   type: string;
   status?: string | undefined;
@@ -67,6 +68,7 @@ export type CatalogProperty = {
     title?: string | undefined;
     alt?: string | undefined;
     srcSet?: string | undefined;
+    role?: "photo" | "floor-plan" | undefined;
     sortOrder: number;
   }>;
 };

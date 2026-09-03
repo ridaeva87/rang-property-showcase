@@ -15,6 +15,13 @@
       "when": 1788163200000,
       "tag": "0001_official_excel_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788336000000,
+      "tag": "0002_sale_apartment_tolbuhina",
+      "breakpoints": true
     }
   ]
 }

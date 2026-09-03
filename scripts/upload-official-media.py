@@ -8,8 +8,9 @@ def sign(key, message): return hmac.new(key, message.encode(), hashlib.sha256).d
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--directory", type=Path, required=True)
+    ap.add_argument("--manifest", default="media-manifest.json")
     args = ap.parse_args()
-    manifest = json.loads((args.directory / "media-manifest.json").read_text())
+    manifest = json.loads((args.directory / args.manifest).read_text())
     endpoint = os.environ["S3_ENDPOINT"].rstrip("/")
     bucket, access, secret = os.environ["S3_BUCKET"], os.environ["S3_ACCESS_KEY_ID"], os.environ["S3_SECRET_ACCESS_KEY"]
     host, region = endpoint.split("://", 1)[1], "ru-1"

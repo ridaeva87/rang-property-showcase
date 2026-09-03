@@ -18,7 +18,12 @@ export const NAV = [
   { label: "Контакты", href: "/#contacts" },
 ];
 
-export type CatalogPhoto = { src: string; alt: string; srcSet?: string };
+export type CatalogPhoto = {
+  src: string;
+  alt: string;
+  srcSet?: string;
+  role?: "photo" | "floor-plan";
+};
 
 export type PropertyObject = {
   id: string;
@@ -85,7 +90,7 @@ export const PROPERTY_TYPES = [
 
 export const PROPERTY_STATUSES = ["Свободно", "В резерве", "Сдано", "Скоро освободится"] as const;
 
-export type PropertyType = (typeof PROPERTY_TYPES)[number];
+export type PropertyType = (typeof PROPERTY_TYPES)[number] | "2-комнатная квартира";
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 export type OfferType = "rent" | "sale";
 export type SaleStatus = "Доступно к продаже" | "Переговоры" | "Продано";
@@ -94,18 +99,22 @@ export type Property = {
   id: string;
   slug: string;
   title: string;
+  description?: string;
   offerType: OfferType;
   type: PropertyType;
   purposes: string[];
   objectId: PropertyObject["id"];
+  objectName?: string;
+  objectAddress?: string;
   areaSqm?: number;
   usableAreaSqm?: number;
   rentPricePerSqm?: number;
   totalMonthlyRent?: number;
   salePrice?: number;
+  pricePerSqm?: number;
+  floor?: string;
   saleStatus?: SaleStatus;
   purchaseTerms?: string;
-  description?: string;
   utilityCosts?: string;
   status?: PropertyStatus;
   expectedRelease?: string;
@@ -131,6 +140,14 @@ export type Property = {
     guestLimit?: number;
   };
   photos: CatalogPhoto[];
+  characteristics: Array<{
+    key: string;
+    label: string;
+    value: string;
+    unit?: string | undefined;
+    group?: string | undefined;
+    sortOrder: number;
+  }>;
   video?: { url: string; title: string; kind: "file" | "embed"; poster?: string };
   mainFeatures: string[];
   additionalFeatures: string[];

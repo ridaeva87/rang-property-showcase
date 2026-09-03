@@ -5,9 +5,16 @@ type DetailItem = { label: string; value: ReactNode };
 
 export function PropertyDetails({ property }: { property: Property }) {
   const object = getPropertyObject(property);
+  const isSale = property.offerType === "sale";
   const main: DetailItem[] = compact([
-    object && { label: "Объект", value: object.name },
-    object && { label: "Адрес", value: object.address },
+    (property.objectName || object) && {
+      label: "Объект",
+      value: property.objectName ?? object!.name,
+    },
+    (property.objectAddress || object) && {
+      label: "Адрес",
+      value: property.objectAddress ?? object!.address,
+    },
     property.areaSqm !== undefined && { label: "Общая площадь", value: `${property.areaSqm} м²` },
     property.usableAreaSqm !== undefined && {
       label: "Полезная площадь",
@@ -25,6 +32,14 @@ export function PropertyDetails({ property }: { property: Property }) {
     property.totalMonthlyRent !== undefined && {
       label: "Полная стоимость аренды",
       value: `${formatNumber(property.totalMonthlyRent)} ₽/месяц`,
+    },
+    property.salePrice !== undefined && {
+      label: "Цена",
+      value: `${formatNumber(property.salePrice)} ₽`,
+    },
+    property.pricePerSqm !== undefined && {
+      label: "Цена за м²",
+      value: `${formatNumber(property.pricePerSqm)} ₽/м²`,
     },
     property.utilityCosts && { label: "Коммунальные расходы", value: property.utilityCosts },
     property.status && { label: "Статус аренды", value: property.status },
@@ -86,12 +101,36 @@ export function PropertyDetails({ property }: { property: Property }) {
     },
     object?.parking && { label: "Парковка", value: object.parking },
   ]);
+  const grouped = new Map<string, DetailItem[]>();
+  for (const item of property.characteristics) {
+    if (["price-per-sqm", "floor"].includes(item.key)) continue;
+    const group = item.group ?? "Характеристики";
+    const items = grouped.get(group) ?? [];
+    items.push({ label: item.label, value: `${item.value}${item.unit ? ` ${item.unit}` : ""}` });
+    grouped.set(group, items);
+  }
 
   return (
     <div className="space-y-10">
       <DetailGroup title="Основная информация" items={main} />
-      <DetailGroup title="Технические характеристики" items={technical} />
-      <DetailGroup title="Доступ и территория" items={access} />
+      {property.description && (
+        <section>
+          <h2 className="text-2xl font-semibold">Описание</h2>
+          <p className="mt-5 max-w-4xl whitespace-pre-line text-muted-foreground">
+            {property.description}
+          </p>
+        </section>
+      )}
+      {isSale ? (
+        [...grouped].map(([title, items]) => (
+          <DetailGroup key={title} title={title} items={items} />
+        ))
+      ) : (
+        <>
+          <DetailGroup title="Технические характеристики" items={technical} />
+          <DetailGroup title="Доступ и территория" items={access} />
+        </>
+      )}
       {(property.mainFeatures.length > 0 || property.additionalFeatures.length > 0) && (
         <section>
           <h2 className="text-2xl font-semibold">Дополнительные характеристики</h2>

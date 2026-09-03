@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Building2 } from "lucide-react";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
+import { PropertyCard } from "@/components/rang/PropertyCard";
 import { PageIntro, RequestIntegrationNotice } from "@/components/rang/CompanySections";
 import { loadCatalogProperties } from "@/lib/catalog.loaders";
 
-const title = "Продажа коммерческой недвижимости — Ранг";
-const description = "Отдельное направление продажи коммерческой недвижимости компании «Ранг».";
+const title = "Недвижимость на продажу — Ранг";
+const description = "Объекты недвижимости компании «Ранг», доступные для покупки в Казани.";
 
 export const Route = createFileRoute("/sale")({
   loader: () => loadCatalogProperties({ offerType: "sale" }),
@@ -32,8 +33,8 @@ function SalePage() {
       <main className="pt-20">
         <PageIntro
           eyebrow="Продажа"
-          title="Продажа коммерческой недвижимости"
-          description="Продажа отделена от аренды: стоимость приобретения и будущие статусы продажи хранятся независимо от арендных ставок и статусов."
+          title="Недвижимость на продажу"
+          description="Отдельный каталог объектов, которые можно приобрести непосредственно у собственника."
         />
         <section className="bg-surface py-16 lg:py-24">
           <div className="container-rang">
@@ -47,6 +48,13 @@ function SalePage() {
                 </p>
               </div>
             ) : null}
+            {saleProperties.length > 0 && (
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {saleProperties.map((property, index) => (
+                  <PropertyCard key={property.id} property={property} priority={index === 0} />
+                ))}
+              </div>
+            )}
             <div className="mx-auto mt-8 max-w-3xl">
               <RequestIntegrationNotice subject="Уточнить информацию о продаже" />
             </div>

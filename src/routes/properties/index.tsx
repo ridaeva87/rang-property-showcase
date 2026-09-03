@@ -9,18 +9,18 @@ import {
   INITIAL_PROPERTY_FILTERS,
   PROPERTY_TYPES,
   type PropertyFilters as Filters,
-  type PropertyType,
 } from "@/data/rang";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { loadCatalogProperties } from "@/lib/catalog.loaders";
 
-type CatalogSearch = { type?: PropertyType };
+type RentPropertyType = (typeof PROPERTY_TYPES)[number];
+type CatalogSearch = { type?: RentPropertyType };
 
 export const Route = createFileRoute("/properties/")({
   validateSearch: (search: Record<string, unknown>): CatalogSearch => {
     const type = search["type"];
-    return typeof type === "string" && PROPERTY_TYPES.includes(type as PropertyType)
-      ? { type: type as PropertyType }
+    return typeof type === "string" && PROPERTY_TYPES.includes(type as RentPropertyType)
+      ? { type: type as RentPropertyType }
       : {};
   },
   loader: () => loadCatalogProperties({ offerType: "rent" }),

@@ -6,16 +6,17 @@ import { ResponsiveImage } from "./ResponsiveImage";
 export function PropertyGallery({ property }: { property: Property }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const activePhoto = property.photos[activeIndex] ?? property.photos[0];
+  const floorPlan = property.photos.find((photo) => photo.role === "floor-plan");
 
   return (
     <div>
-      <div className="aspect-[4/3] overflow-hidden bg-surface">
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface">
         {activePhoto ? (
           <ResponsiveImage
             photo={activePhoto}
             sizes="(max-width: 1023px) 100vw, 58vw"
             priority
-            className="size-full object-cover"
+            className={`size-full ${activePhoto.role === "floor-plan" ? "object-contain p-4" : "object-cover"}`}
           />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-4 px-8 text-center text-muted-foreground">
@@ -49,6 +50,21 @@ export function PropertyGallery({ property }: { property: Property }) {
             </button>
           ))}
         </div>
+      )}
+
+      {floorPlan && (
+        <section className="mt-10" aria-labelledby="floor-plan-title">
+          <h2 id="floor-plan-title" className="text-2xl font-semibold">
+            Планировка
+          </h2>
+          <div className="mt-5 aspect-[4/3] overflow-hidden border border-border bg-card p-4">
+            <ResponsiveImage
+              photo={floorPlan}
+              sizes="(max-width: 1023px) 100vw, 58vw"
+              className="size-full object-contain"
+            />
+          </div>
+        </section>
       )}
 
       {property.video && (

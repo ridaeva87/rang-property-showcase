@@ -13,6 +13,7 @@ const propertyTypes = new Set<PropertyType>([
   "Офис + склад",
   "Другое помещение",
   "Земельный участок",
+  "2-комнатная квартира",
 ]);
 const propertyStatuses = new Set<PropertyStatus>([
   "Свободно",
@@ -37,16 +38,21 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
   const airConditioning = characteristic(property, "air-conditioning");
   const material = characteristic(property, "material");
   const accessMode = characteristic(property, "access-mode");
+  const pricePerSqm = Number(characteristic(property, "price-per-sqm"));
+  const floor = characteristic(property, "floor");
   return {
     id: property.id,
     slug: property.slug,
     title: property.title,
+    ...(property.description ? { description: property.description } : {}),
     offerType: property.offerType,
     type: propertyTypes.has(property.type as PropertyType)
       ? (property.type as PropertyType)
       : "Другое помещение",
     purposes: property.purposes,
     objectId: property.objectId,
+    objectName: property.objectName,
+    objectAddress: property.objectAddress,
     ...(property.areaSqm !== undefined ? { areaSqm: property.areaSqm } : {}),
     ...(property.rentPricePerSqm !== undefined
       ? { rentPricePerSqm: property.rentPricePerSqm }
@@ -55,6 +61,8 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
       ? { totalMonthlyRent: property.totalMonthlyRent }
       : {}),
     ...(property.salePrice !== undefined ? { salePrice: property.salePrice } : {}),
+    ...(Number.isFinite(pricePerSqm) && pricePerSqm > 0 ? { pricePerSqm } : {}),
+    ...(floor ? { floor } : {}),
     ...(property.purchaseTerms ? { purchaseTerms: property.purchaseTerms } : {}),
     ...(property.utilityCosts ? { utilityCosts: property.utilityCosts } : {}),
     ...(status && propertyStatuses.has(status) ? { status } : {}),
@@ -84,7 +92,9 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
         src: item.srcSet?.split(",")[0]?.trim().split(" ")[0] ?? item.url,
         alt: item.alt ?? property.title,
         ...(item.srcSet ? { srcSet: item.srcSet } : {}),
+        ...(item.role ? { role: item.role } : {}),
       })),
+    characteristics: property.characteristics,
     mainFeatures: [],
     additionalFeatures: [],
   };

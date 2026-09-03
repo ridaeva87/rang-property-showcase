@@ -27,7 +27,9 @@ export const Route = createFileRoute("/properties/$slug")({
     const object = getPropertyObject(property);
     const title = `${property.title}, ${areaLabel} — Ранг`;
     const statusLabel = property.status ? ` Статус аренды: ${property.status}.` : "";
-    const description = `${property.type}${object ? ` в объекте ${object.name}, ${object.address}` : ""}.${statusLabel}`;
+    const address = property.objectAddress ?? object?.address;
+    const description =
+      property.description ?? `${property.type}${address ? `, ${address}` : ""}.${statusLabel}`;
     const canonical = `https://rangpro.ru/properties/${property.slug}`;
     const mainPhoto = property.photos[0];
     return {
@@ -80,7 +82,7 @@ function PropertyPage() {
               <h1 className="mt-5 text-4xl font-semibold sm:text-5xl">{property.title}</h1>
               <p className="mt-4 flex items-start gap-2 text-muted-foreground">
                 <MapPin className="mt-0.5 size-5 shrink-0 text-accent" />
-                {object?.address ?? "Адрес уточняется"}
+                {property.objectAddress ?? object?.address ?? "Адрес уточняется"}
               </p>
               <dl className="mt-8 grid gap-3 sm:grid-cols-2">
                 {property.areaSqm !== undefined && (
@@ -93,6 +95,13 @@ function PropertyPage() {
                 {property.totalMonthlyRent !== undefined && (
                   <Detail label="Полная стоимость" value={`${property.totalMonthlyRent} ₽/месяц`} />
                 )}
+                {property.salePrice !== undefined && (
+                  <Detail label="Цена" value={`${formatNumber(property.salePrice)} ₽`} />
+                )}
+                {property.pricePerSqm !== undefined && (
+                  <Detail label="Цена за м²" value={`${formatNumber(property.pricePerSqm)} ₽/м²`} />
+                )}
+                {property.floor && <Detail label="Этаж" value={property.floor} />}
                 {property.status === "Скоро освободится" && property.expectedRelease && (
                   <Detail label="Предполагаемое освобождение" value={property.expectedRelease} />
                 )}
@@ -151,6 +160,10 @@ function PropertyPage() {
       <AiAssistant open={chatOpen} setOpen={setChatOpen} />
     </div>
   );
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

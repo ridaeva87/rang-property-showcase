@@ -29,6 +29,7 @@ export class CatalogRepository {
         id: schema.premises.id,
         slug: schema.premises.slug,
         title: schema.premises.title,
+        description: schema.premises.description,
         objectId: schema.premises.objectId,
         objectName: schema.propertyObjects.name,
         objectAddress: schema.propertyObjects.address,
@@ -61,6 +62,7 @@ export class CatalogRepository {
           id: schema.premises.id,
           slug: schema.premises.slug,
           title: schema.premises.title,
+          description: schema.premises.description,
           objectId: schema.premises.objectId,
           objectName: schema.propertyObjects.name,
           objectAddress: schema.propertyObjects.address,
@@ -137,6 +139,7 @@ export class CatalogRepository {
     id: string;
     slug: string;
     title: string;
+    description: string | null;
     objectId: string;
     objectName: string;
     objectAddress: string;
@@ -159,6 +162,7 @@ export class CatalogRepository {
       id: string;
       slug: string;
       title: string;
+      description: string | null;
       objectId: string;
       objectName: string;
       objectAddress: string;
@@ -218,6 +222,7 @@ export class CatalogRepository {
       return {
         ...row,
         status: row.status ?? undefined,
+        description: row.description ?? undefined,
         areaSqm: numberValue(row.areaSqm),
         expectedRelease: row.expectedRelease ?? undefined,
         rentPricePerSqm: numberValue(row.rentPricePerSqm),
@@ -245,6 +250,7 @@ export class CatalogRepository {
                 .map((variant) => `${variant.url} ${variant.width}w`)
                 .join(", ")
             : undefined,
+          role: item.metadata["role"] === "floor-plan" ? "floor-plan" : "photo",
           sortOrder: item.sortOrder,
         })),
       };
@@ -289,6 +295,7 @@ export class CatalogRepository {
               .map((variant) => `${variant.url} ${variant.width}w`)
               .join(", ")
           : undefined,
+        role: item.metadata["role"] === "floor-plan" ? "floor-plan" : "photo",
         sortOrder: item.sortOrder,
       })),
     };

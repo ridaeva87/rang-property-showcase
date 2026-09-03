@@ -17,6 +17,7 @@ export function PropertyCard({
   const favorite = hydrated && isFavorite(property.id);
   const object = getPropertyObject(property);
   const mainPhoto = property.photos[0];
+  const isSale = property.offerType === "sale";
 
   return (
     <article
@@ -44,7 +45,7 @@ export function PropertyCard({
             <span className="text-sm">Фото готовятся</span>
           </div>
         )}
-        {property.status && (
+        {(isSale || property.status) && (
           <span
             className={`absolute top-4 left-4 px-3 py-1.5 text-[0.7rem] font-semibold tracking-[0.08em] uppercase ${
               dark
@@ -52,7 +53,7 @@ export function PropertyCard({
                 : "bg-primary text-primary-foreground"
             }`}
           >
-            {property.status}
+            {isSale ? "Продажа" : property.status}
           </span>
         )}
         <button
@@ -75,7 +76,7 @@ export function PropertyCard({
           }`}
         >
           <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
-          {object?.name ?? "Объект уточняется"} · {property.type}
+          {property.objectAddress ?? object?.address ?? "Адрес уточняется"}
         </p>
         {property.expectedRelease && (
           <p className={`mt-3 text-sm font-semibold ${dark ? "text-accent" : "text-primary"}`}>
@@ -90,10 +91,20 @@ export function PropertyCard({
           <span className={`text-lg font-semibold ${dark ? "text-primary-foreground" : ""}`}>
             {property.areaSqm !== undefined ? `${property.areaSqm} м²` : "Площадь уточняется"}
           </span>
-          {property.rentPricePerSqm !== undefined && (
+          {isSale && property.salePrice !== undefined ? (
+            <span className="text-sm font-semibold text-primary">
+              {formatNumber(property.salePrice)} ₽
+            </span>
+          ) : property.rentPricePerSqm !== undefined ? (
             <span className="text-sm text-accent">{property.rentPricePerSqm} ₽/м²</span>
-          )}
+          ) : null}
         </div>
+        {isSale && (
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            {property.floor && <span>{property.floor} этаж</span>}
+            {property.pricePerSqm && <span>{formatNumber(property.pricePerSqm)} ₽/м²</span>}
+          </div>
+        )}
         {property.mainFeatures.length > 0 && (
           <ul
             className={`mt-5 space-y-2 text-sm ${
@@ -122,4 +133,8 @@ export function PropertyCard({
       </div>
     </article>
   );
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 }
