@@ -27,7 +27,6 @@ export function PropertyFilters({
   const statuses = PROPERTY_STATUSES.filter((status) =>
     properties.some((property) => property.status === status),
   );
-  const purposes = uniqueValues(properties.flatMap((property) => property.purposes));
   const accessModes = uniqueValues(
     properties.flatMap((property) => (property.accessMode ? [property.accessMode] : [])),
   );
@@ -97,21 +96,6 @@ export function PropertyFilters({
             {objects.map((object) => (
               <option key={object.id} value={object.id}>
                 {formatObjectFilterLabel(object)}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-
-        <FilterField label="Назначение">
-          <select
-            value={filters.purpose}
-            onChange={(event) => update("purpose", event.target.value)}
-            className="filter-control"
-          >
-            <option value="">Любое назначение</option>
-            {purposes.map((purpose) => (
-              <option key={purpose} value={purpose}>
-                {purpose}
               </option>
             ))}
           </select>

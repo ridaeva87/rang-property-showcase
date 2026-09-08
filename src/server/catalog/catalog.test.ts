@@ -6,7 +6,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import ExcelJS from "exceljs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { formatObjectFilterLabel, PROPERTIES } from "../../data/rang";
+import { formatCharacteristicValue, formatObjectFilterLabel, PROPERTIES } from "../../data/rang";
 import * as schema from "../db/schema";
 import { seedPublicCatalog } from "../db/public-catalog-seed";
 import { DEMO_PREMISE_IDS, EXCEL_PREMISE_IDENTITIES } from "../import/excel-premise-identities";
@@ -226,5 +226,13 @@ describe("RANG official Excel catalog migration", () => {
     expect(formatObjectFilterLabel({ id: "other", name: "ЛИТЕР Е", address: "Казань" })).toBe(
       "ЛИТЕР Е — Казань",
     );
+  });
+
+  it("capitalizes characteristic values without changing numbers, units or slash values", () => {
+    expect(formatCharacteristicValue("радиатор")).toBe("Радиатор");
+    expect(formatCharacteristicValue("естественная/принудительная")).toBe(
+      "Естественная/Принудительная",
+    );
+    expect(formatCharacteristicValue("220/380 В, 12 кВт")).toBe("220/380 В, 12 кВт");
   });
 });

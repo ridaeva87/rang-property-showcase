@@ -44,6 +44,14 @@ export function formatObjectFilterLabel(object: Pick<PropertyObject, "id" | "nam
     : `${object.name} — ${object.address}`;
 }
 
+export function formatCharacteristicValue(value: string) {
+  return value.replace(
+    /(^|\/)(\s*)(\p{Ll})/gu,
+    (_match, separator, spacing, letter: string) =>
+      `${separator}${spacing}${letter.toLocaleUpperCase("ru-RU")}`,
+  );
+}
+
 export const OBJECTS: PropertyObject[] = [
   {
     id: "adelya-kutuya-153a",

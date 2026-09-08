@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { getPropertyObject, type Property } from "@/data/rang";
+import { formatCharacteristicValue, getPropertyObject, type Property } from "@/data/rang";
 
 type DetailItem = { label: string; value: ReactNode };
 
@@ -23,7 +23,7 @@ export function PropertyDetails({ property }: { property: Property }) {
     { label: "Тип помещения", value: property.type },
     property.purposes.length > 0 && {
       label: "Назначение",
-      value: property.purposes.join(", "),
+      value: formatCharacteristicValue(property.purposes.join(", ")),
     },
     (property.rentPricePerSqmLabel || property.rentPricePerSqm !== undefined) && {
       label: "Ставка аренды",
@@ -52,10 +52,10 @@ export function PropertyDetails({ property }: { property: Property }) {
 
   const technical: DetailItem[] = compact([
     property.ceilingHeight && { label: "Высота потолков", value: property.ceilingHeight },
-    property.heating && { label: "Отопление", value: property.heating },
+    property.heating && { label: "Отопление", value: formatCharacteristicValue(property.heating) },
     property.electricalSupply && {
       label: "Электроснабжение",
-      value: property.electricalSupply,
+      value: formatCharacteristicValue(property.electricalSupply),
     },
     property.has220V !== undefined && {
       label: "Розетки 220 В",
@@ -71,22 +71,31 @@ export function PropertyDetails({ property }: { property: Property }) {
     },
     property.powerIncrease && {
       label: "Возможность увеличения мощности",
-      value: property.powerIncrease,
+      value: formatCharacteristicValue(property.powerIncrease),
     },
-    property.restroom && { label: "Санузел", value: property.restroom },
+    property.restroom && {
+      label: "Санузел",
+      value: formatCharacteristicValue(property.restroom),
+    },
     property.gates && {
       label: "Ворота",
       value: formatGates(property.gates),
     },
     property.airConditioning && {
       label: "Кондиционирование",
-      value: property.airConditioning,
+      value: formatCharacteristicValue(property.airConditioning),
     },
-    property.material && { label: "Материал помещения", value: property.material },
+    property.material && {
+      label: "Материал помещения",
+      value: formatCharacteristicValue(property.material),
+    },
   ]);
 
   const access: DetailItem[] = compact([
-    property.accessMode && { label: "Режим доступа", value: property.accessMode },
+    property.accessMode && {
+      label: "Режим доступа",
+      value: formatCharacteristicValue(property.accessMode),
+    },
     property.vehicleAccess?.totalLimit !== undefined && {
       label: "Лимит автомобилей",
       value: `${property.vehicleAccess.totalLimit}`,
@@ -99,14 +108,17 @@ export function PropertyDetails({ property }: { property: Property }) {
       label: "Гостевые автомобили",
       value: `${property.vehicleAccess.guestLimit}`,
     },
-    object?.parking && { label: "Парковка", value: object.parking },
+    object?.parking && { label: "Парковка", value: formatCharacteristicValue(object.parking) },
   ]);
   const grouped = new Map<string, DetailItem[]>();
   for (const item of property.characteristics) {
     if (["price-per-sqm", "floor"].includes(item.key)) continue;
     const group = item.group ?? "Характеристики";
     const items = grouped.get(group) ?? [];
-    items.push({ label: item.label, value: `${item.value}${item.unit ? ` ${item.unit}` : ""}` });
+    items.push({
+      label: item.label,
+      value: `${formatCharacteristicValue(item.value)}${item.unit ? ` ${item.unit}` : ""}`,
+    });
     grouped.set(group, items);
   }
 
@@ -138,7 +150,7 @@ export function PropertyDetails({ property }: { property: Property }) {
             {[...property.mainFeatures, ...property.additionalFeatures].map((feature) => (
               <li key={feature} className="flex items-start gap-3 bg-card p-4 text-sm">
                 <span className="mt-2 size-1.5 shrink-0 bg-accent" />
-                {feature}
+                {formatCharacteristicValue(feature)}
               </li>
             ))}
           </ul>
