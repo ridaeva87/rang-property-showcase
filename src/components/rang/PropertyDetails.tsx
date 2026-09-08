@@ -25,9 +25,9 @@ export function PropertyDetails({ property }: { property: Property }) {
       label: "Назначение",
       value: property.purposes.join(", "),
     },
-    property.rentPricePerSqm !== undefined && {
+    (property.rentPricePerSqmLabel || property.rentPricePerSqm !== undefined) && {
       label: "Ставка аренды",
-      value: `${formatNumber(property.rentPricePerSqm)} ₽/м²`,
+      value: `${property.rentPricePerSqmLabel ?? formatNumber(property.rentPricePerSqm!)} ₽/м²`,
     },
     property.totalMonthlyRent !== undefined && {
       label: "Полная стоимость аренды",

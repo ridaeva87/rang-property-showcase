@@ -6,7 +6,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import ExcelJS from "exceljs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PROPERTIES } from "../../data/rang";
+import { formatObjectFilterLabel, PROPERTIES } from "../../data/rang";
 import * as schema from "../db/schema";
 import { seedPublicCatalog } from "../db/public-catalog-seed";
 import { DEMO_PREMISE_IDS, EXCEL_PREMISE_IDENTITIES } from "../import/excel-premise-identities";
@@ -169,6 +169,15 @@ describe("RANG official Excel catalog migration", () => {
     const components = await db.select().from(schema.premiseComponents);
     expect(components).toHaveLength(2);
     expect(components.map((component) => component.componentType)).toEqual(["warehouse", "office"]);
+    expect(await repository.getPropertyBySlug("liter-avsp-sklad-2-3-ofis-2-ak-153a")).toMatchObject(
+      {
+        areaSqm: 254,
+        rentPricePerSqmLabel: "900/945",
+        characteristics: expect.arrayContaining([
+          expect.objectContaining({ label: "Этаж", value: "1/1+2" }),
+        ]),
+      },
+    );
 
     const secondPlan = buildOfficialImportPlan(parsed, await readExistingCatalogState(db));
     expect(secondPlan).toMatchObject({
@@ -186,7 +195,9 @@ describe("RANG official Excel catalog migration", () => {
     const repository = new CatalogRepository(db);
     expect(await repository.listProperties({ offerType: "rent" })).toHaveLength(63);
     expect(await repository.listProperties({ offerType: "sale" })).toHaveLength(1);
-    expect(await repository.getPropertyBySlug("2-komnatnaya-kvartira-tolbuhina-15-2")).toMatchObject({
+    expect(
+      await repository.getPropertyBySlug("2-komnatnaya-kvartira-tolbuhina-15-2"),
+    ).toMatchObject({
       id: "sale-apartment-tolbuhina-15-2",
       offerType: "sale",
       areaSqm: 59.2,
@@ -202,5 +213,18 @@ describe("RANG official Excel catalog migration", () => {
   it("validates server input", () => {
     expect(() => slugInputSchema.parse({ slug: "../../etc/passwd" })).toThrow();
     expect(() => catalogFilterSchema.parse({ areaFrom: 200, areaTo: 100 })).toThrow();
+  });
+
+  it("changes only the requested object label in filters", () => {
+    expect(
+      formatObjectFilterLabel({
+        id: "adelya-kutuya-153a",
+        name: "АК 153А",
+        address: "Казань, ул. Аделя Кутуя, 153А",
+      }),
+    ).toBe("АК - Аделя Кутуя 153А");
+    expect(formatObjectFilterLabel({ id: "other", name: "ЛИТЕР Е", address: "Казань" })).toBe(
+      "ЛИТЕР Е — Казань",
+    );
   });
 });

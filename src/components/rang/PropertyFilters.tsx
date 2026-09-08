@@ -3,6 +3,7 @@ import {
   OBJECTS,
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
+  formatObjectFilterLabel,
   type Property,
   type PropertyFilters as PropertyFiltersValue,
 } from "@/data/rang";
@@ -95,7 +96,7 @@ export function PropertyFilters({
             <option value="">Все объекты</option>
             {objects.map((object) => (
               <option key={object.id} value={object.id}>
-                {object.name} — {object.address}
+                {formatObjectFilterLabel(object)}
               </option>
             ))}
           </select>

@@ -38,6 +38,12 @@ export type PropertyObject = {
   accessMode?: string;
 };
 
+export function formatObjectFilterLabel(object: Pick<PropertyObject, "id" | "name" | "address">) {
+  return object.id === "adelya-kutuya-153a"
+    ? "АК - Аделя Кутуя 153А"
+    : `${object.name} — ${object.address}`;
+}
+
 export const OBJECTS: PropertyObject[] = [
   {
     id: "adelya-kutuya-153a",
@@ -109,6 +115,7 @@ export type Property = {
   areaSqm?: number;
   usableAreaSqm?: number;
   rentPricePerSqm?: number;
+  rentPricePerSqmLabel?: string;
   totalMonthlyRent?: number;
   salePrice?: number;
   pricePerSqm?: number;

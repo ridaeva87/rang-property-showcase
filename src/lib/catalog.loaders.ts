@@ -57,6 +57,9 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
     ...(property.rentPricePerSqm !== undefined
       ? { rentPricePerSqm: property.rentPricePerSqm }
       : {}),
+    ...(property.rentPricePerSqmLabel
+      ? { rentPricePerSqmLabel: property.rentPricePerSqmLabel }
+      : {}),
     ...(property.totalMonthlyRent !== undefined
       ? { totalMonthlyRent: property.totalMonthlyRent }
       : {}),

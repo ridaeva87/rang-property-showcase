@@ -45,7 +45,7 @@ export function PropertyGallery({ property }: { property: Property }) {
               <ResponsiveImage
                 photo={{ ...photo, alt: "" }}
                 sizes="20vw"
-                className="size-full object-cover"
+                className={`size-full ${photo.role === "floor-plan" ? "object-contain p-1" : "object-cover"}`}
               />
             </button>
           ))}

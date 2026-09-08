@@ -180,7 +180,7 @@ export class CatalogRepository {
   ): Promise<CatalogProperty[]> {
     if (rows.length === 0) return [];
     const ids = rows.map((row) => row.id);
-    const [purposes, characteristics, media] = await Promise.all([
+    const [purposes, characteristics, media, components] = await Promise.all([
       this.db
         .select({
           premiseId: schema.premisePurposes.premiseId,
@@ -213,32 +213,68 @@ export class CatalogRepository {
         .innerJoin(schema.mediaAssets, eq(schema.premiseMedia.mediaId, schema.mediaAssets.id))
         .where(inArray(schema.premiseMedia.premiseId, ids))
         .orderBy(asc(schema.premiseMedia.premiseId), asc(schema.premiseMedia.sortOrder)),
+      this.db
+        .select()
+        .from(schema.premiseComponents)
+        .where(inArray(schema.premiseComponents.premiseId, ids))
+        .orderBy(asc(schema.premiseComponents.premiseId), asc(schema.premiseComponents.sortOrder)),
     ]);
 
     return rows.map((row) => {
       const rowPurposes = purposes.filter((item) => item.premiseId === row.id);
       const rowCharacteristics = characteristics.filter((item) => item.premiseId === row.id);
       const rowMedia = media.filter((item) => item.premiseId === row.id);
+      const rowComponents = components.filter((item) => item.premiseId === row.id);
+      const componentArea = rowComponents.reduce((sum, item) => sum + Number(item.areaSqm ?? 0), 0);
+      const componentRates = [
+        ...new Set(
+          rowComponents
+            .map((item) => numberValue(item.rentPricePerSqm))
+            .filter((value): value is number => value !== undefined),
+        ),
+      ];
+      const componentFloors = [
+        ...new Set(
+          rowComponents
+            .map((item) => item.floor)
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ];
+      const normalizedCharacteristics = rowCharacteristics.map((item) => ({
+        key: item.key,
+        label: item.label,
+        value: item.valueText ?? item.valueNumber ?? "",
+        unit: item.unit ?? undefined,
+        group: item.groupName ?? undefined,
+        sortOrder: item.sortOrder,
+      }));
+      if (
+        !normalizedCharacteristics.some((item) => item.key === "floor") &&
+        componentFloors.length
+      ) {
+        normalizedCharacteristics.unshift({
+          key: "floor",
+          label: "Этаж",
+          value: componentFloors.join("/"),
+          unit: undefined,
+          group: "Основные",
+          sortOrder: -1,
+        });
+      }
       return {
         ...row,
         status: row.status ?? undefined,
         description: row.description ?? undefined,
-        areaSqm: numberValue(row.areaSqm),
+        areaSqm: numberValue(row.areaSqm) ?? (rowComponents.length ? componentArea : undefined),
         expectedRelease: row.expectedRelease ?? undefined,
         rentPricePerSqm: numberValue(row.rentPricePerSqm),
+        rentPricePerSqmLabel: componentRates.length > 1 ? componentRates.join("/") : undefined,
         totalMonthlyRent: numberValue(row.totalMonthlyRent),
         salePrice: numberValue(row.salePrice),
         purchaseTerms: row.purchaseTerms ?? undefined,
         utilityCosts: row.utilityCosts ?? undefined,
         purposes: rowPurposes.map((item) => item.purpose),
-        characteristics: rowCharacteristics.map((item) => ({
-          key: item.key,
-          label: item.label,
-          value: item.valueText ?? item.valueNumber ?? "",
-          unit: item.unit ?? undefined,
-          group: item.groupName ?? undefined,
-          sortOrder: item.sortOrder,
-        })),
+        characteristics: normalizedCharacteristics,
         media: rowMedia.map((item) => ({
           id: item.id,
           kind: item.kind,

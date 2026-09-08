@@ -31,7 +31,7 @@ export function PropertyCard({
             photo={mainPhoto}
             sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
             priority={priority}
-            className={`size-full object-cover ${dark ? "opacity-85" : ""}`}
+            className={`size-full ${mainPhoto.role === "floor-plan" ? "object-contain p-3" : "object-cover"} ${dark ? "opacity-85" : ""}`}
           />
         ) : (
           <div
@@ -95,8 +95,10 @@ export function PropertyCard({
             <span className="text-sm font-semibold text-primary">
               {formatNumber(property.salePrice)} ₽
             </span>
-          ) : property.rentPricePerSqm !== undefined ? (
-            <span className="text-sm text-accent">{property.rentPricePerSqm} ₽/м²</span>
+          ) : property.rentPricePerSqmLabel || property.rentPricePerSqm !== undefined ? (
+            <span className="text-sm text-accent">
+              {property.rentPricePerSqmLabel ?? property.rentPricePerSqm} ₽/м²
+            </span>
           ) : null}
         </div>
         {isSale && (

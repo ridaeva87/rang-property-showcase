@@ -1,5 +1,5 @@
 import heroImage from "@/assets/hero-property.jpg";
-import type { PropertyFilters, PropertyObject } from "@/data/rang";
+import { formatObjectFilterLabel, type PropertyFilters, type PropertyObject } from "@/data/rang";
 
 export function Hero({
   filters,
@@ -98,7 +98,9 @@ export function Hero({
               >
                 <option value="">Все объекты</option>
                 {objects.map((o) => (
-                  <option key={o.id} value={o.id}>{`${o.name} — ${o.address}`}</option>
+                  <option key={o.id} value={o.id}>
+                    {formatObjectFilterLabel(o)}
+                  </option>
                 ))}
               </select>
             </Field>
