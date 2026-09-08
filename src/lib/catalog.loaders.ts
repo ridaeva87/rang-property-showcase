@@ -1,4 +1,10 @@
-import type { Property, PropertyStatus, PropertyType } from "@/data/rang";
+import {
+  formatCharacteristicValue,
+  formatPremiseTitle,
+  type Property,
+  type PropertyStatus,
+  type PropertyType,
+} from "@/data/rang";
 import {
   getCatalogObject,
   getCatalogProperty,
@@ -43,7 +49,7 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
   return {
     id: property.id,
     slug: property.slug,
-    title: property.title,
+    title: formatPremiseTitle(property.title),
     ...(property.description ? { description: property.description } : {}),
     offerType: property.offerType,
     type: propertyTypes.has(property.type as PropertyType)
@@ -97,7 +103,10 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
         ...(item.srcSet ? { srcSet: item.srcSet } : {}),
         ...(item.role ? { role: item.role } : {}),
       })),
-    characteristics: property.characteristics,
+    characteristics: property.characteristics.map((item) => ({
+      ...item,
+      value: formatCharacteristicValue(item.value),
+    })),
     mainFeatures: [],
     additionalFeatures: [],
   };

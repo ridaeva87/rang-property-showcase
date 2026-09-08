@@ -6,7 +6,12 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import ExcelJS from "exceljs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { formatCharacteristicValue, formatObjectFilterLabel, PROPERTIES } from "../../data/rang";
+import {
+  formatCharacteristicValue,
+  formatObjectFilterLabel,
+  formatPremiseTitle,
+  PROPERTIES,
+} from "../../data/rang";
 import * as schema from "../db/schema";
 import { seedPublicCatalog } from "../db/public-catalog-seed";
 import { DEMO_PREMISE_IDS, EXCEL_PREMISE_IDENTITIES } from "../import/excel-premise-identities";
@@ -234,5 +239,11 @@ describe("RANG official Excel catalog migration", () => {
       "Естественная/Принудительная",
     );
     expect(formatCharacteristicValue("220/380 В, 12 кВт")).toBe("220/380 В, 12 кВт");
+  });
+
+  it("normalizes premise titles without changing their numbers", () => {
+    expect(formatPremiseTitle("офис 5 пом.1021")).toBe("Офис 5 пом. 1021");
+    expect(formatPremiseTitle("офис 3 пом. 1010")).toBe("Офис 3 пом. 1010");
+    expect(formatPremiseTitle("ЛИТЕР А1 Склад №1/2")).toBe("ЛИТЕР А1 Склад №1/2");
   });
 });

@@ -52,6 +52,11 @@ export function formatCharacteristicValue(value: string) {
   );
 }
 
+export function formatPremiseTitle(value: string) {
+  const normalizedSpacing = value.replace(/(^|\s)пом\.\s*(?=\d)/giu, "$1пом. ");
+  return normalizedSpacing.replace(/^\s*(\p{Ll})/u, (match) => match.toLocaleUpperCase("ru-RU"));
+}
+
 export const OBJECTS: PropertyObject[] = [
   {
     id: "adelya-kutuya-153a",
