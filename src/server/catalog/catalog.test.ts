@@ -220,14 +220,14 @@ describe("RANG official Excel catalog migration", () => {
     expect(() => catalogFilterSchema.parse({ areaFrom: 200, areaTo: 100 })).toThrow();
   });
 
-  it("changes only the requested object label in filters", () => {
+  it("uses the full requested object names in filters", () => {
     expect(
       formatObjectFilterLabel({
         id: "adelya-kutuya-153a",
-        name: "АК 153А",
+        name: "Аделя Кутуя 153А",
         address: "Казань, ул. Аделя Кутуя, 153А",
       }),
-    ).toBe("АК - Аделя Кутуя 153А");
+    ).toBe("Аделя Кутуя 153А — Казань, ул. Аделя Кутуя, 153А");
     expect(formatObjectFilterLabel({ id: "other", name: "ЛИТЕР Е", address: "Казань" })).toBe(
       "ЛИТЕР Е — Казань",
     );

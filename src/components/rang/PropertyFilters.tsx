@@ -4,6 +4,7 @@ import {
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
   formatObjectFilterLabel,
+  formatCharacteristicValue,
   type Property,
   type PropertyFilters as PropertyFiltersValue,
 } from "@/data/rang";
@@ -111,7 +112,7 @@ export function PropertyFilters({
               <option value="">Любой режим</option>
               {accessModes.map((mode) => (
                 <option key={mode} value={mode}>
-                  {mode}
+                  {formatCharacteristicValue(mode)}
                 </option>
               ))}
             </select>

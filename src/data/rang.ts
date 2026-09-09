@@ -39,9 +39,7 @@ export type PropertyObject = {
 };
 
 export function formatObjectFilterLabel(object: Pick<PropertyObject, "id" | "name" | "address">) {
-  return object.id === "adelya-kutuya-153a"
-    ? "АК - Аделя Кутуя 153А"
-    : `${object.name} — ${object.address}`;
+  return `${object.name} — ${object.address}`;
 }
 
 export function formatCharacteristicValue(value: string) {
@@ -61,7 +59,7 @@ export const OBJECTS: PropertyObject[] = [
   {
     id: "adelya-kutuya-153a",
     slug: "adelya-kutuya-153a",
-    name: "АК 153А",
+    name: "Аделя Кутуя 153А",
     address: "Казань, ул. Аделя Кутуя, 153А",
     description:
       "Офисно-складской комплекс с закрытой территорией и подъездом для грузового транспорта.",
@@ -73,7 +71,7 @@ export const OBJECTS: PropertyObject[] = [
   {
     id: "tolbuhina-15-2",
     slug: "tolbuhina-15-2",
-    name: "Толбухина 15-2",
+    name: "Толбухина 15/2",
     address: "Казань, ул. Толбухина, 15, корп. 2",
     description: "Административно-складское здание: офисные и комбинированные помещения.",
     photos: [{ src: obj15, alt: "Объект компании «Ранг» на Толбухина, 15, корпус 2" }],
