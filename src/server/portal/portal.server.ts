@@ -106,7 +106,7 @@ export async function logout() {
   deleteCookie(COOKIE, { path: "/" });
 }
 
-export async function consumeAccessToken(token: string, password: string) {
+export async function consumeAccessToken(token: string, password: string, purpose: "activation" | "password_reset") {
   validatePassword(password);
   const db = getDatabase();
   const rows = await db
@@ -115,6 +115,7 @@ export async function consumeAccessToken(token: string, password: string) {
     .where(
       and(
         eq(schema.userAccessTokens.tokenHash, hashToken(token)),
+        eq(schema.userAccessTokens.purpose, purpose),
         isNull(schema.userAccessTokens.usedAt),
         gt(schema.userAccessTokens.expiresAt, new Date()),
       ),
@@ -128,6 +129,7 @@ export async function consumeAccessToken(token: string, password: string) {
         passwordHash: await hashPassword(password),
         passwordChangedAt: new Date(),
         isActive: true,
+        activatedAt: purpose === "activation" ? new Date() : undefined,
         updatedAt: new Date(),
       })
       .where(eq(schema.users.id, rows[0]!.userId));
@@ -260,8 +262,9 @@ export async function portalOverview() {
         )
         .orderBy(schema.requestComments.createdAt)
     : [];
-  const documents = orgIds.length
-    ? await db
+  const documentScope = [eq(schema.documents.recipientUserId, user.id)];
+  if (orgIds.length) documentScope.push(inArray(schema.documents.organizationId, orgIds));
+  const documents = await db
         .select({
           id: schema.documents.id,
           title: schema.documents.title,
@@ -270,9 +273,9 @@ export async function portalOverview() {
         })
         .from(schema.documents)
         .innerJoin(schema.documentTypes, eq(schema.documents.typeId, schema.documentTypes.id))
-        .where(inArray(schema.documents.organizationId, orgIds))
+        .where(and(eq(schema.documents.isActive, true), or(...documentScope)))
         .orderBy(sql`${schema.documents.documentDate} desc nulls last`)
-    : [];
+    ;
   return {
     user,
     premises,
@@ -349,21 +352,22 @@ export async function addRequestComment(requestId: string, body: string) {
 }
 
 export async function getDocumentForCurrentTenant(id: string) {
-  const user = await requireUser("tenant");
+  const user = await requireUser();
   const orgIds = await tenantOrganizationIds(user.id);
-  if (!orgIds.length) throw new AuthorizationError("Документ недоступен");
+  const scope = user.roles.includes("admin") ? undefined : or(eq(schema.documents.recipientUserId, user.id), ...(orgIds.length ? [inArray(schema.documents.organizationId, orgIds)] : []));
   const rows = await getDatabase()
     .select({
       url: schema.mediaAssets.publicUrl,
       title: schema.documents.title,
       mime: schema.mediaAssets.mimeType,
+      storageKey: schema.mediaAssets.storageKey,
     })
     .from(schema.documents)
     .innerJoin(schema.mediaAssets, eq(schema.documents.mediaId, schema.mediaAssets.id))
-    .where(and(eq(schema.documents.id, id), inArray(schema.documents.organizationId, orgIds)))
+    .where(and(eq(schema.documents.id, id), eq(schema.documents.isActive, true), scope))
     .limit(1);
-  if (!rows[0]?.url) throw new AuthorizationError("Документ недоступен");
-  return { ...rows[0], url: rows[0].url };
+  if (!rows[0]) throw new AuthorizationError("Документ недоступен");
+  return rows[0];
 }
 
 export async function listTenantsAdmin() {
@@ -375,6 +379,7 @@ export async function listTenantsAdmin() {
       name: schema.users.displayName,
       email: schema.users.email,
       active: schema.users.isActive,
+      activated: schema.users.activatedAt,
     })
     .from(schema.users)
     .where(eq(schema.users.kind, "tenant"))
@@ -441,17 +446,19 @@ export async function saveTenantAdmin(input: {
         .set({ revokedAt: new Date() })
         .where(and(eq(schema.userSessions.userId, id), isNull(schema.userSessions.revokedAt)));
   });
-  return {
-    id,
-    activationPath: activationToken ? `/account/activate?token=${activationToken}` : undefined,
-  };
+  let emailSent: boolean | undefined;
+  if (activationToken) {
+    const { sendAccessEmail } = await import("./email.server");
+    emailSent = await sendAccessEmail({ email, name: input.name, token: activationToken, purpose: "activation" });
+  }
+  return { id, emailSent };
 }
 
 export async function issuePasswordResetAdmin(userId: string) {
   await requireAdmin();
   const db = getDatabase();
   const user = await db
-    .select({ id: schema.users.id })
+    .select({ id: schema.users.id, email: schema.users.email, name: schema.users.displayName })
     .from(schema.users)
     .where(and(eq(schema.users.id, userId), eq(schema.users.kind, "tenant")))
     .limit(1);
@@ -476,7 +483,39 @@ export async function issuePasswordResetAdmin(userId: string) {
       expiresAt: new Date(Date.now() + 2 * 3600000),
     });
   });
-  return { activationPath: `/account/activate?token=${token}` };
+  if (!user[0].email) throw new Error("У арендатора не указан email");
+  const { sendAccessEmail } = await import("./email.server");
+  return { emailSent: await sendAccessEmail({ email: user[0].email, name: user[0].name, token, purpose: "password_reset" }) };
+}
+
+export async function resendActivationAdmin(userId: string) {
+  await requireAdmin();
+  const db = getDatabase();
+  const [user] = await db.select({ id: schema.users.id, email: schema.users.email, name: schema.users.displayName, activatedAt: schema.users.activatedAt }).from(schema.users).where(and(eq(schema.users.id, userId), eq(schema.users.kind, "tenant"))).limit(1);
+  if (!user || !user.email) throw new Error("Арендатор не найден");
+  if (user.activatedAt) throw new Error("Аккаунт уже активирован");
+  const token = createOpaqueToken();
+  await db.transaction(async (tx) => {
+    await tx.update(schema.userAccessTokens).set({ usedAt: new Date() }).where(and(eq(schema.userAccessTokens.userId, userId), eq(schema.userAccessTokens.purpose, "activation"), isNull(schema.userAccessTokens.usedAt)));
+    await tx.insert(schema.userAccessTokens).values({ id: randomUUID(), userId, purpose: "activation", tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 72 * 3600000) });
+  });
+  const { sendAccessEmail } = await import("./email.server");
+  return { emailSent: await sendAccessEmail({ email: user.email, name: user.name, token, purpose: "activation" }) };
+}
+
+export async function requestPasswordReset(email: string) {
+  const db = getDatabase();
+  const normalized = email.trim().toLowerCase();
+  const [user] = await db.select({ id: schema.users.id, email: schema.users.email, name: schema.users.displayName }).from(schema.users).where(and(eq(schema.users.email, normalized), eq(schema.users.isActive, true))).limit(1);
+  if (user?.email) {
+    const token = createOpaqueToken();
+    await db.transaction(async (tx) => {
+      await tx.update(schema.userAccessTokens).set({ usedAt: new Date() }).where(and(eq(schema.userAccessTokens.userId, user.id), eq(schema.userAccessTokens.purpose, "password_reset"), isNull(schema.userAccessTokens.usedAt)));
+      await tx.insert(schema.userAccessTokens).values({ id: randomUUID(), userId: user.id, purpose: "password_reset", tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 2 * 3600000) });
+    });
+    const { sendAccessEmail } = await import("./email.server");
+    await sendAccessEmail({ email: user.email, name: user.name, token, purpose: "password_reset" });
+  }
 }
 
 export async function listRequestsAdmin() {
@@ -491,11 +530,15 @@ export async function listRequestsAdmin() {
       tenant: schema.users.displayName,
       premise: schema.premises.title,
       status: schema.requestStatuses.code,
+      tenantId: schema.users.id,
+      category: schema.requestCategories.name,
+      categoryCode: schema.requestCategories.code,
     })
     .from(schema.requests)
     .leftJoin(schema.users, eq(schema.requests.createdByUserId, schema.users.id))
     .leftJoin(schema.premises, eq(schema.requests.premiseId, schema.premises.id))
     .innerJoin(schema.requestStatuses, eq(schema.requests.statusId, schema.requestStatuses.id))
+    .innerJoin(schema.requestCategories, eq(schema.requests.categoryId, schema.requestCategories.id))
     .orderBy(sql`${schema.requests.createdAt} desc`);
   const ids = requests.map((request) => request.id);
   const comments = ids.length
@@ -511,10 +554,10 @@ export async function listRequestsAdmin() {
         .where(inArray(schema.requestComments.requestId, ids))
         .orderBy(schema.requestComments.createdAt)
     : [];
-  return requests.map((request) => ({
+  return { requests: requests.map((request) => ({
     ...request,
     comments: comments.filter((comment) => comment.requestId === request.id),
-  }));
+  })), categories: await db.select({ code: schema.requestCategories.code, name: schema.requestCategories.name }).from(schema.requestCategories), tenants: await db.select({ id: schema.users.id, name: schema.users.displayName }).from(schema.users).where(eq(schema.users.kind, "tenant")) };
 }
 
 export async function updateRequestAdmin(input: {
@@ -577,4 +620,45 @@ export async function notifyTenantAdmin(input: { userId: string; title: string; 
     channel: "in_app",
     deliveredAt: new Date(),
   });
+}
+
+export async function listDocumentsAdmin() {
+  await requireAdmin();
+  const db = getDatabase();
+  return {
+    tenants: await db.select({ id: schema.users.id, name: schema.users.displayName }).from(schema.users).where(eq(schema.users.kind, "tenant")).orderBy(schema.users.displayName),
+    types: await db.select({ code: schema.documentTypes.code, name: schema.documentTypes.name }).from(schema.documentTypes).orderBy(schema.documentTypes.name),
+    documents: await db.select({ id: schema.documents.id, title: schema.documents.title, date: schema.documents.documentDate, active: schema.documents.isActive, tenant: schema.users.displayName, type: schema.documentTypes.name }).from(schema.documents).innerJoin(schema.documentTypes, eq(schema.documents.typeId, schema.documentTypes.id)).leftJoin(schema.users, eq(schema.documents.recipientUserId, schema.users.id)).orderBy(sql`${schema.documents.createdAt} desc`),
+  };
+}
+
+export async function savePrivateDocumentAdmin(input: { userId: string; title: string; type: string; date?: string; file: File }) {
+  await requireAdmin();
+  if (input.file.size < 1 || input.file.size > 20 * 1024 * 1024) throw new Error("Размер документа должен быть до 20 МБ");
+  const db = getDatabase();
+  const [tenant] = await db.select({ id: schema.users.id }).from(schema.users).where(and(eq(schema.users.id, input.userId), eq(schema.users.kind, "tenant"))).limit(1);
+  const [type] = await db.select({ id: schema.documentTypes.id }).from(schema.documentTypes).where(eq(schema.documentTypes.code, input.type)).limit(1);
+  if (!tenant || !type) throw new Error("Некорректный арендатор или тип документа");
+  const { createHash } = await import("node:crypto");
+  const { mkdir, writeFile, unlink } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const bytes = Buffer.from(await input.file.arrayBuffer());
+  const id = randomUUID();
+  const safeName = input.file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "document";
+  const storageKey = `private-documents/${id}/${safeName}`;
+  const root = process.env["PRIVATE_DOCUMENTS_DIR"] || "/var/lib/rang/documents";
+  const path = join(root, id, safeName);
+  await mkdir(join(root, id), { recursive: true, mode: 0o700 });
+  await writeFile(path, bytes, { mode: 0o600 });
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(schema.mediaAssets).values({ id, kind: "document", storageKey, mimeType: input.file.type || "application/octet-stream", byteSize: bytes.length, checksumSha256: createHash("sha256").update(bytes).digest("hex"), publicUrl: null });
+      await tx.insert(schema.documents).values({ id: randomUUID(), typeId: type.id, mediaId: id, recipientUserId: input.userId, title: input.title.trim(), documentDate: input.date || null });
+    });
+  } catch (error) { await unlink(path).catch(() => undefined); throw error; }
+}
+
+export async function deactivateDocumentAdmin(id: string) {
+  await requireAdmin();
+  await getDatabase().update(schema.documents).set({ isActive: false, updatedAt: new Date() }).where(eq(schema.documents.id, id));
 }

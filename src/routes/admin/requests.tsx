@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { getCurrentAccount, loadRequestsAdmin, updateRequest } from "@/lib/portal.functions";
 import { PortalShell } from "@/components/portal/PortalShell";
 
@@ -14,7 +14,9 @@ export const Route = createFileRoute("/admin/requests")({
 });
 
 function RequestsAdminPage() {
-  const requests = Route.useLoaderData();
+  const data = Route.useLoaderData();
+  const [status,setStatus]=useState(""); const [category,setCategory]=useState(""); const [tenant,setTenant]=useState("");
+  const requests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant));
   async function submit(event: FormEvent<HTMLFormElement>, requestId: string) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -34,6 +36,7 @@ function RequestsAdminPage() {
       <a href="/admin/tenants" className="mb-4 inline-block border px-3 py-2 text-sm">
         Арендаторы
       </a>
+      <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-3"><select value={status} onChange={e=>setStatus(e.target.value)} className="border px-3 py-2"><option value="">Все статусы</option><option value="accepted">Принято</option><option value="in_progress">В работе</option><option value="completed">Выполнено</option></select><select value={category} onChange={e=>setCategory(e.target.value)} className="border px-3 py-2"><option value="">Все категории</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select><select value={tenant} onChange={e=>setTenant(e.target.value)} className="border px-3 py-2"><option value="">Все арендаторы</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
       <div className="space-y-4">
         {requests.map((request) => (
           <article key={request.id} className="border bg-background p-5">
@@ -42,8 +45,9 @@ function RequestsAdminPage() {
                 <h2 className="font-semibold">{request.subject}</h2>
                 <p className="text-sm text-muted-foreground">
                   {request.tenant || "Без автора"}
-                  {request.premise ? ` · ${request.premise}` : ""}
+                  {request.premise ? ` · ${request.premise}` : " · Без помещения"}
                 </p>
+                <p className="text-sm font-medium">Категория: {request.category}</p>
               </div>
               <time className="text-xs text-muted-foreground">
                 {new Date(request.createdAt).toLocaleString("ru-RU")}

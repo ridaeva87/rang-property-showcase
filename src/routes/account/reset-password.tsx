@@ -1,0 +1,7 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { z } from "zod";
+import { resetAccountPassword } from "@/lib/portal.functions";
+import { PasswordInput } from "@/components/portal/PasswordInput";
+export const Route=createFileRoute("/account/reset-password")({validateSearch:z.object({token:z.string().optional()}),component:Page});
+function Page(){const{token}=Route.useSearch();const[msg,setMsg]=useState("");async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget),password=String(f.get("password"));if(password!==String(f.get("confirm")))return setMsg("Пароли не совпадают");try{await resetAccountPassword({data:{token:token||"",password}});location.href="/account/login"}catch{setMsg("Ссылка недействительна или истекла")}}return <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4"><form onSubmit={submit} className="w-full max-w-md border bg-background p-8"><h1 className="text-2xl font-semibold">Новый пароль</h1><PasswordInput name="password" required minLength={12} className="mt-6 w-full border px-3 py-3" placeholder="Новый пароль"/><PasswordInput name="confirm" required minLength={12} className="mt-3 w-full border px-3 py-3" placeholder="Повторите пароль"/>{msg&&<p className="mt-3 text-sm text-destructive">{msg}</p>}<button className="mt-5 w-full bg-primary px-4 py-3 font-semibold text-primary-foreground">Сохранить пароль</button></form></main>}

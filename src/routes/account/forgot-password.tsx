@@ -1,0 +1,5 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { requestAccountPasswordReset } from "@/lib/portal.functions";
+export const Route = createFileRoute("/account/forgot-password")({ component: Page });
+function Page() { const [done,setDone]=useState(false); async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);await requestAccountPasswordReset({data:{email:String(f.get("email"))}});setDone(true)} return <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4"><form onSubmit={submit} className="w-full max-w-md border bg-background p-8"><h1 className="text-2xl font-semibold">Восстановление доступа</h1><p className="mt-2 text-sm text-muted-foreground">Укажите электронную почту.</p><input name="email" type="email" required className="mt-6 w-full border px-3 py-3" />{done&&<p className="mt-4 text-sm">Если аккаунт существует, письмо со ссылкой отправлено.</p>}<button className="mt-5 w-full bg-primary px-4 py-3 font-semibold text-primary-foreground">Отправить ссылку</button></form></main> }

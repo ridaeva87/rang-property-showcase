@@ -35,7 +35,7 @@ export const activateAccount = createServerFn({ method: "POST" })
   .validator(z.object({ token: z.string().min(32), password: z.string().min(12) }))
   .handler(async ({ data }) => {
     const { consumeAccessToken } = await import("@/server/portal/portal.server");
-    await consumeAccessToken(data.token, data.password);
+    await consumeAccessToken(data.token, data.password, "activation");
     return { ok: true };
   });
 
@@ -46,6 +46,18 @@ export const changeAccountPassword = createServerFn({ method: "POST" })
     await changePassword(data.currentPassword, data.newPassword);
     return { ok: true };
   });
+
+export const requestAccountPasswordReset = createServerFn({ method: "POST" }).validator(z.object({ email: z.string().email() })).handler(async ({ data }) => {
+  const { requestPasswordReset } = await import("@/server/portal/portal.server");
+  await requestPasswordReset(data.email);
+  return { ok: true };
+});
+
+export const resetAccountPassword = createServerFn({ method: "POST" }).validator(z.object({ token: z.string().min(32), password: z.string().min(12) })).handler(async ({ data }) => {
+  const { consumeAccessToken } = await import("@/server/portal/portal.server");
+  await consumeAccessToken(data.token, data.password, "password_reset");
+  return { ok: true };
+});
 
 export const loadPortal = createServerFn({ method: "GET" }).handler(async () => {
   const { portalOverview } = await import("@/server/portal/portal.server");
@@ -103,6 +115,21 @@ export const resetTenantPassword = createServerFn({ method: "POST" })
     const { issuePasswordResetAdmin } = await import("@/server/portal/portal.server");
     return issuePasswordResetAdmin(data.userId);
   });
+
+export const resendTenantActivation = createServerFn({ method: "POST" }).validator(z.object({ userId: z.string().uuid() })).handler(async ({ data }) => {
+  const { resendActivationAdmin } = await import("@/server/portal/portal.server");
+  return resendActivationAdmin(data.userId);
+});
+
+export const loadDocumentsAdmin = createServerFn({ method: "GET" }).handler(async () => {
+  const { listDocumentsAdmin } = await import("@/server/portal/portal.server");
+  return listDocumentsAdmin();
+});
+
+export const deactivateDocument = createServerFn({ method: "POST" }).validator(z.object({ id: z.string().uuid() })).handler(async ({ data }) => {
+  const { deactivateDocumentAdmin } = await import("@/server/portal/portal.server");
+  await deactivateDocumentAdmin(data.id); return { ok: true };
+});
 
 export const loadRequestsAdmin = createServerFn({ method: "GET" }).handler(async () => {
   const { listRequestsAdmin } = await import("@/server/portal/portal.server");

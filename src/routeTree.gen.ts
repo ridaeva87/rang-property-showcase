@@ -18,7 +18,10 @@ import { Route as ServicesRouteImport } from './routes/services'
 import { Route as AccountIndexRouteImport } from './routes/account/index'
 import { Route as AccountActivateRouteImport } from './routes/account/activate'
 import { Route as AccountChangePasswordRouteImport } from './routes/account/change-password'
+import { Route as AccountForgotPasswordRouteImport } from './routes/account/forgot-password'
 import { Route as AccountLoginRouteImport } from './routes/account/login'
+import { Route as AccountResetPasswordRouteImport } from './routes/account/reset-password'
+import { Route as AdminDocumentsRouteImport } from './routes/admin/documents'
 import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
 import { Route as AdminTenantsRouteImport } from './routes/admin/tenants'
 import { Route as ObjectsIndexRouteImport } from './routes/objects/index'
@@ -26,6 +29,7 @@ import { Route as ObjectsSlugRouteImport } from './routes/objects/$slug'
 import { Route as PropertiesIndexRouteImport } from './routes/properties/index'
 import { Route as PropertiesSlugRouteImport } from './routes/properties/$slug'
 import { Route as AccountDocumentsIdRouteImport } from './routes/account/documents/$id'
+import { Route as AdminDocumentsUploadRouteImport } from './routes/admin/documents/upload'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -72,9 +76,24 @@ const AccountChangePasswordRoute = AccountChangePasswordRouteImport.update({
   path: '/account/change-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountForgotPasswordRoute = AccountForgotPasswordRouteImport.update({
+  id: '/account/forgot-password',
+  path: '/account/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountLoginRoute = AccountLoginRouteImport.update({
   id: '/account/login',
   path: '/account/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountResetPasswordRoute = AccountResetPasswordRouteImport.update({
+  id: '/account/reset-password',
+  path: '/account/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
+  id: '/admin/documents',
+  path: '/admin/documents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRequestsRoute = AdminRequestsRouteImport.update({
@@ -112,6 +131,11 @@ const AccountDocumentsIdRoute = AccountDocumentsIdRouteImport.update({
   path: '/account/documents/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDocumentsUploadRoute = AdminDocumentsUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => AdminDocumentsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -122,7 +146,10 @@ export interface FileRoutesByFullPath {
   '/services': typeof ServicesRoute
   '/account/activate': typeof AccountActivateRoute
   '/account/change-password': typeof AccountChangePasswordRoute
+  '/account/forgot-password': typeof AccountForgotPasswordRoute
   '/account/login': typeof AccountLoginRoute
+  '/account/reset-password': typeof AccountResetPasswordRoute
+  '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/tenants': typeof AdminTenantsRoute
   '/objects/$slug': typeof ObjectsSlugRoute
@@ -131,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/objects/': typeof ObjectsIndexRoute
   '/properties/': typeof PropertiesIndexRoute
   '/account/documents/$id': typeof AccountDocumentsIdRoute
+  '/admin/documents/upload': typeof AdminDocumentsUploadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -141,7 +169,10 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesRoute
   '/account/activate': typeof AccountActivateRoute
   '/account/change-password': typeof AccountChangePasswordRoute
+  '/account/forgot-password': typeof AccountForgotPasswordRoute
   '/account/login': typeof AccountLoginRoute
+  '/account/reset-password': typeof AccountResetPasswordRoute
+  '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/tenants': typeof AdminTenantsRoute
   '/objects/$slug': typeof ObjectsSlugRoute
@@ -150,6 +181,7 @@ export interface FileRoutesByTo {
   '/objects': typeof ObjectsIndexRoute
   '/properties': typeof PropertiesIndexRoute
   '/account/documents/$id': typeof AccountDocumentsIdRoute
+  '/admin/documents/upload': typeof AdminDocumentsUploadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,7 +193,10 @@ export interface FileRoutesById {
   '/services': typeof ServicesRoute
   '/account/activate': typeof AccountActivateRoute
   '/account/change-password': typeof AccountChangePasswordRoute
+  '/account/forgot-password': typeof AccountForgotPasswordRoute
   '/account/login': typeof AccountLoginRoute
+  '/account/reset-password': typeof AccountResetPasswordRoute
+  '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/tenants': typeof AdminTenantsRoute
   '/objects/$slug': typeof ObjectsSlugRoute
@@ -170,6 +205,7 @@ export interface FileRoutesById {
   '/objects/': typeof ObjectsIndexRoute
   '/properties/': typeof PropertiesIndexRoute
   '/account/documents/$id': typeof AccountDocumentsIdRoute
+  '/admin/documents/upload': typeof AdminDocumentsUploadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -182,7 +218,10 @@ export interface FileRouteTypes {
     | '/services'
     | '/account/activate'
     | '/account/change-password'
+    | '/account/forgot-password'
     | '/account/login'
+    | '/account/reset-password'
+    | '/admin/documents'
     | '/admin/requests'
     | '/admin/tenants'
     | '/objects/$slug'
@@ -191,6 +230,7 @@ export interface FileRouteTypes {
     | '/objects/'
     | '/properties/'
     | '/account/documents/$id'
+    | '/admin/documents/upload'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -201,7 +241,10 @@ export interface FileRouteTypes {
     | '/services'
     | '/account/activate'
     | '/account/change-password'
+    | '/account/forgot-password'
     | '/account/login'
+    | '/account/reset-password'
+    | '/admin/documents'
     | '/admin/requests'
     | '/admin/tenants'
     | '/objects/$slug'
@@ -210,6 +253,7 @@ export interface FileRouteTypes {
     | '/objects'
     | '/properties'
     | '/account/documents/$id'
+    | '/admin/documents/upload'
   id:
     | '__root__'
     | '/'
@@ -220,7 +264,10 @@ export interface FileRouteTypes {
     | '/services'
     | '/account/activate'
     | '/account/change-password'
+    | '/account/forgot-password'
     | '/account/login'
+    | '/account/reset-password'
+    | '/admin/documents'
     | '/admin/requests'
     | '/admin/tenants'
     | '/objects/$slug'
@@ -229,6 +276,7 @@ export interface FileRouteTypes {
     | '/objects/'
     | '/properties/'
     | '/account/documents/$id'
+    | '/admin/documents/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -240,7 +288,10 @@ export interface RootRouteChildren {
   ServicesRoute: typeof ServicesRoute
   AccountActivateRoute: typeof AccountActivateRoute
   AccountChangePasswordRoute: typeof AccountChangePasswordRoute
+  AccountForgotPasswordRoute: typeof AccountForgotPasswordRoute
   AccountLoginRoute: typeof AccountLoginRoute
+  AccountResetPasswordRoute: typeof AccountResetPasswordRoute
+  AdminDocumentsRoute: typeof AdminDocumentsRouteWithChildren
   AdminRequestsRoute: typeof AdminRequestsRoute
   AdminTenantsRoute: typeof AdminTenantsRoute
   ObjectsSlugRoute: typeof ObjectsSlugRoute
@@ -316,11 +367,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountChangePasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/forgot-password': {
+      id: '/account/forgot-password'
+      path: '/account/forgot-password'
+      fullPath: '/account/forgot-password'
+      preLoaderRoute: typeof AccountForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account/login': {
       id: '/account/login'
       path: '/account/login'
       fullPath: '/account/login'
       preLoaderRoute: typeof AccountLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/reset-password': {
+      id: '/account/reset-password'
+      path: '/account/reset-password'
+      fullPath: '/account/reset-password'
+      preLoaderRoute: typeof AccountResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/documents': {
+      id: '/admin/documents'
+      path: '/admin/documents'
+      fullPath: '/admin/documents'
+      preLoaderRoute: typeof AdminDocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/requests': {
@@ -372,8 +444,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountDocumentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/documents/upload': {
+      id: '/admin/documents/upload'
+      path: '/upload'
+      fullPath: '/admin/documents/upload'
+      preLoaderRoute: typeof AdminDocumentsUploadRouteImport
+      parentRoute: typeof AdminDocumentsRoute
+    }
   }
 }
+
+interface AdminDocumentsRouteChildren {
+  AdminDocumentsUploadRoute: typeof AdminDocumentsUploadRoute
+}
+
+const AdminDocumentsRouteChildren: AdminDocumentsRouteChildren = {
+  AdminDocumentsUploadRoute: AdminDocumentsUploadRoute,
+}
+
+const AdminDocumentsRouteWithChildren = AdminDocumentsRoute._addFileChildren(
+  AdminDocumentsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -384,7 +475,10 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesRoute: ServicesRoute,
   AccountActivateRoute: AccountActivateRoute,
   AccountChangePasswordRoute: AccountChangePasswordRoute,
+  AccountForgotPasswordRoute: AccountForgotPasswordRoute,
   AccountLoginRoute: AccountLoginRoute,
+  AccountResetPasswordRoute: AccountResetPasswordRoute,
+  AdminDocumentsRoute: AdminDocumentsRouteWithChildren,
   AdminRequestsRoute: AdminRequestsRoute,
   AdminTenantsRoute: AdminTenantsRoute,
   ObjectsSlugRoute: ObjectsSlugRoute,

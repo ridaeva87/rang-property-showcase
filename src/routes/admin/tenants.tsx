@@ -7,8 +7,10 @@ import {
   resetTenantPassword,
   saveTenant,
   notifyTenant,
+  resendTenantActivation,
 } from "@/lib/portal.functions";
 import { PortalShell } from "@/components/portal/PortalShell";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/tenants")({
   beforeLoad: async () => {
@@ -21,7 +23,8 @@ export const Route = createFileRoute("/admin/tenants")({
 });
 function AdminPage() {
   const data = Route.useLoaderData();
-  const [link, setLink] = useState("");
+  const [message, setMessage] = useState("");
+  const [notifying, setNotifying] = useState<(typeof data.tenants)[number] | null>(null);
   const [editing, setEditing] = useState<(typeof data.tenants)[number] | null>(null);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,8 +38,7 @@ function AdminPage() {
         premiseIds: f.getAll("premises").map(String),
       },
     });
-    if (result.activationPath) setLink(`${location.origin}${result.activationPath}`);
-    else location.reload();
+    if (result.emailSent === false) setMessage("Арендатор сохранён. Отправка email не настроена."); else location.reload();
   }
   return (
     <PortalShell title="Управление арендаторами">
@@ -44,6 +46,7 @@ function AdminPage() {
         <a href="/admin/requests" className="border px-3 py-2 text-sm">
           Заявки арендаторов
         </a>
+        <a href="/admin/documents" className="border px-3 py-2 text-sm">Документы</a>
         <button
           onClick={async () => {
             await logoutAccount();
@@ -71,27 +74,18 @@ function AdminPage() {
                     Изменить
                   </button>
                   <button
-                    onClick={async () => {
-                      const r = await resetTenantPassword({ data: { userId: t.id } });
-                      setLink(`${location.origin}${r.activationPath}`);
-                    }}
+                    onClick={async () => { const r = await resetTenantPassword({ data: { userId: t.id } }); setMessage(r.emailSent ? "Письмо для сброса пароля отправлено." : "Отправка email не настроена."); }}
                     className="text-sm text-primary"
                   >
                     Сброс пароля
                   </button>
                   <button
-                    onClick={async () => {
-                      const title = window.prompt("Заголовок уведомления");
-                      const body = title && window.prompt("Текст уведомления");
-                      if (title && body) {
-                        await notifyTenant({ data: { userId: t.id, title, body } });
-                        window.alert("Уведомление отправлено");
-                      }
-                    }}
+                    onClick={() => setNotifying(t)}
                     className="text-sm text-primary"
                   >
                     Уведомить
                   </button>
+                  {!t.activated && <button onClick={async()=>{const r=await resendTenantActivation({data:{userId:t.id}});setMessage(r.emailSent?"Письмо активации отправлено.":"Отправка email не настроена.")}} className="text-sm text-primary">Повторить активацию</button>}
                 </div>
               </div>
             ))}
@@ -148,16 +142,16 @@ function AdminPage() {
               </button>
             )}
           </form>
-          {link && (
-            <div className="mt-4 border border-primary p-3">
-              <p className="text-sm font-medium">
-                Одноразовая ссылка (передайте арендатору безопасным каналом):
-              </p>
-              <input readOnly value={link} className="mt-2 w-full border px-2 py-2 text-xs" />
-            </div>
-          )}
+          {message && <p className="mt-4 border border-primary p-3 text-sm">{message}</p>}
         </section>
       </div>
+      <Dialog open={!!notifying} onOpenChange={(open) => !open && setNotifying(null)}>
+        <DialogContent><DialogHeader><DialogTitle>Уведомление для {notifying?.name}</DialogTitle></DialogHeader>
+          <form onSubmit={async (e) => { e.preventDefault(); const f = new FormData(e.currentTarget); try { await notifyTenant({ data: { userId: notifying!.id, title: String(f.get("title")), body: String(f.get("body")) } }); setMessage("Уведомление отправлено."); setNotifying(null); } catch { setMessage("Не удалось отправить уведомление."); } }} className="space-y-3">
+            <input name="title" required className="w-full border px-3 py-3" placeholder="Заголовок"/><textarea name="body" required className="min-h-32 w-full border px-3 py-3" placeholder="Текст уведомления"/><DialogFooter><button type="button" onClick={() => setNotifying(null)} className="border px-4 py-2">Отмена</button><button className="bg-primary px-4 py-2 text-primary-foreground">Отправить</button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </PortalShell>
   );
 }

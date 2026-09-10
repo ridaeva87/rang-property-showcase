@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { loginAccount } from "@/lib/portal.functions";
+import { PasswordInput } from "@/components/portal/PasswordInput";
 
 export const Route = createFileRoute("/account/login")({ component: LoginPage });
 
@@ -35,7 +36,7 @@ function LoginPage() {
         <p className="mt-2 text-sm text-muted-foreground">Вход для действующих арендаторов</p>
         <label className="mt-6 block text-sm font-medium">
           Электронная почта
-          <input
+          <PasswordInput
             name="email"
             type="email"
             autoComplete="username"
@@ -47,12 +48,12 @@ function LoginPage() {
           Пароль
           <input
             name="password"
-            type="password"
             autoComplete="current-password"
             required
             className="mt-2 w-full border border-input bg-background px-3 py-3"
           />
         </label>
+        <a href="/account/forgot-password" className="mt-3 block text-right text-sm text-primary">Забыли пароль?</a>
         {error && (
           <p role="alert" className="mt-4 text-sm text-destructive">
             {error}

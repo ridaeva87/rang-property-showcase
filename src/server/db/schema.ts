@@ -318,6 +318,7 @@ export const users = pgTable(
     passwordHash: text("password_hash"),
     isActive: boolean("is_active").default(true).notNull(),
     passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
   },
@@ -616,6 +617,8 @@ export const documents = pgTable(
     contractId: text("contract_id").references(() => leaseContracts.id, { onDelete: "restrict" }),
     premiseId: text("premise_id").references(() => premises.id, { onDelete: "restrict" }),
     objectId: text("object_id").references(() => propertyObjects.id, { onDelete: "restrict" }),
+    recipientUserId: text("recipient_user_id").references(() => users.id, { onDelete: "restrict" }),
+    isActive: boolean("is_active").default(true).notNull(),
     title: text("title").notNull(),
     documentDate: date("document_date"),
     ...timestamps,
@@ -623,6 +626,7 @@ export const documents = pgTable(
   (table) => [
     index("documents_org_idx").on(table.organizationId),
     index("documents_contract_idx").on(table.contractId),
+    index("documents_recipient_idx").on(table.recipientUserId),
   ],
 );
 

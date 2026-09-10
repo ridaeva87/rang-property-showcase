@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import { activateAccount } from "@/lib/portal.functions";
+import { PasswordInput } from "@/components/portal/PasswordInput";
 
 export const Route = createFileRoute("/account/activate")({
   validateSearch: z.object({ token: z.string().optional() }),
@@ -27,17 +28,15 @@ function ActivatePage() {
       <form onSubmit={submit} className="w-full max-w-md border bg-background p-8">
         <h1 className="text-2xl font-semibold">Задать пароль</h1>
         <p className="mt-2 text-sm text-muted-foreground">Не менее 12 символов, буквы и цифры.</p>
-        <input
+        <PasswordInput
           name="password"
-          type="password"
           required
           minLength={12}
           className="mt-6 w-full border px-3 py-3"
           placeholder="Новый пароль"
         />
-        <input
+        <PasswordInput
           name="confirm"
-          type="password"
           required
           minLength={12}
           className="mt-3 w-full border px-3 py-3"
