@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Heart, Menu, X, UserRound } from "lucide-react";
 import { NAV } from "@/data/rang";
-import { toast } from "sonner";
 import { useFavorites } from "@/hooks/use-favorites";
 
 export function Header() {
@@ -54,13 +53,13 @@ export function Header() {
             <Heart className="size-4" />
             Избранное{hydrated && favoriteIds.length > 0 ? ` · ${favoriteIds.length}` : ""}
           </a>
-          <button
-            onClick={() => toast("Личный кабинет появится на следующем этапе разработки")}
+          <a
+            href="/account"
             className="inline-flex items-center gap-2 border border-border px-4 py-2.5 text-sm font-medium whitespace-nowrap text-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <UserRound className="size-4" />
-            Личный кабинет — скоро
-          </button>
+            Личный кабинет
+          </a>
           <a
             href="/#search"
             className="bg-primary px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors hover:bg-accent"
@@ -105,15 +104,13 @@ export function Header() {
                 <Heart className="size-4" />
                 Избранное{hydrated && favoriteIds.length > 0 ? ` · ${favoriteIds.length}` : ""}
               </a>
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  toast("Личный кабинет появится на следующем этапе разработки");
-                }}
+              <a
+                href="/account"
+                onClick={() => setOpen(false)}
                 className="border border-border px-4 py-3 text-sm font-medium"
               >
-                Личный кабинет — скоро
-              </button>
+                Личный кабинет
+              </a>
               <a
                 href="/#search"
                 onClick={() => setOpen(false)}

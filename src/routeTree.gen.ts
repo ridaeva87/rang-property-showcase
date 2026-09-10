@@ -15,10 +15,17 @@ import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as RentRouteImport } from './routes/rent'
 import { Route as SaleRouteImport } from './routes/sale'
 import { Route as ServicesRouteImport } from './routes/services'
+import { Route as AccountIndexRouteImport } from './routes/account/index'
+import { Route as AccountActivateRouteImport } from './routes/account/activate'
+import { Route as AccountChangePasswordRouteImport } from './routes/account/change-password'
+import { Route as AccountLoginRouteImport } from './routes/account/login'
+import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
+import { Route as AdminTenantsRouteImport } from './routes/admin/tenants'
 import { Route as ObjectsIndexRouteImport } from './routes/objects/index'
 import { Route as ObjectsSlugRouteImport } from './routes/objects/$slug'
 import { Route as PropertiesIndexRouteImport } from './routes/properties/index'
 import { Route as PropertiesSlugRouteImport } from './routes/properties/$slug'
+import { Route as AccountDocumentsIdRouteImport } from './routes/account/documents/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -50,6 +57,36 @@ const ServicesRoute = ServicesRouteImport.update({
   path: '/services',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/account/',
+  path: '/account/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountActivateRoute = AccountActivateRouteImport.update({
+  id: '/account/activate',
+  path: '/account/activate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountChangePasswordRoute = AccountChangePasswordRouteImport.update({
+  id: '/account/change-password',
+  path: '/account/change-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountLoginRoute = AccountLoginRouteImport.update({
+  id: '/account/login',
+  path: '/account/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRequestsRoute = AdminRequestsRouteImport.update({
+  id: '/admin/requests',
+  path: '/admin/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTenantsRoute = AdminTenantsRouteImport.update({
+  id: '/admin/tenants',
+  path: '/admin/tenants',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObjectsIndexRoute = ObjectsIndexRouteImport.update({
   id: '/objects/',
   path: '/objects/',
@@ -70,6 +107,11 @@ const PropertiesSlugRoute = PropertiesSlugRouteImport.update({
   path: '/properties/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountDocumentsIdRoute = AccountDocumentsIdRouteImport.update({
+  id: '/account/documents/$id',
+  path: '/account/documents/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,10 +120,17 @@ export interface FileRoutesByFullPath {
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
+  '/account/activate': typeof AccountActivateRoute
+  '/account/change-password': typeof AccountChangePasswordRoute
+  '/account/login': typeof AccountLoginRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/tenants': typeof AdminTenantsRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
+  '/account/': typeof AccountIndexRoute
   '/objects/': typeof ObjectsIndexRoute
   '/properties/': typeof PropertiesIndexRoute
+  '/account/documents/$id': typeof AccountDocumentsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -90,10 +139,17 @@ export interface FileRoutesByTo {
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
+  '/account/activate': typeof AccountActivateRoute
+  '/account/change-password': typeof AccountChangePasswordRoute
+  '/account/login': typeof AccountLoginRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/tenants': typeof AdminTenantsRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
+  '/account': typeof AccountIndexRoute
   '/objects': typeof ObjectsIndexRoute
   '/properties': typeof PropertiesIndexRoute
+  '/account/documents/$id': typeof AccountDocumentsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -103,10 +159,17 @@ export interface FileRoutesById {
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
+  '/account/activate': typeof AccountActivateRoute
+  '/account/change-password': typeof AccountChangePasswordRoute
+  '/account/login': typeof AccountLoginRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/tenants': typeof AdminTenantsRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
+  '/account/': typeof AccountIndexRoute
   '/objects/': typeof ObjectsIndexRoute
   '/properties/': typeof PropertiesIndexRoute
+  '/account/documents/$id': typeof AccountDocumentsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,10 +180,17 @@ export interface FileRouteTypes {
     | '/rent'
     | '/sale'
     | '/services'
+    | '/account/activate'
+    | '/account/change-password'
+    | '/account/login'
+    | '/admin/requests'
+    | '/admin/tenants'
     | '/objects/$slug'
     | '/properties/$slug'
+    | '/account/'
     | '/objects/'
     | '/properties/'
+    | '/account/documents/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -129,10 +199,17 @@ export interface FileRouteTypes {
     | '/rent'
     | '/sale'
     | '/services'
+    | '/account/activate'
+    | '/account/change-password'
+    | '/account/login'
+    | '/admin/requests'
+    | '/admin/tenants'
     | '/objects/$slug'
     | '/properties/$slug'
+    | '/account'
     | '/objects'
     | '/properties'
+    | '/account/documents/$id'
   id:
     | '__root__'
     | '/'
@@ -141,10 +218,17 @@ export interface FileRouteTypes {
     | '/rent'
     | '/sale'
     | '/services'
+    | '/account/activate'
+    | '/account/change-password'
+    | '/account/login'
+    | '/admin/requests'
+    | '/admin/tenants'
     | '/objects/$slug'
     | '/properties/$slug'
+    | '/account/'
     | '/objects/'
     | '/properties/'
+    | '/account/documents/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -154,10 +238,17 @@ export interface RootRouteChildren {
   RentRoute: typeof RentRoute
   SaleRoute: typeof SaleRoute
   ServicesRoute: typeof ServicesRoute
+  AccountActivateRoute: typeof AccountActivateRoute
+  AccountChangePasswordRoute: typeof AccountChangePasswordRoute
+  AccountLoginRoute: typeof AccountLoginRoute
+  AdminRequestsRoute: typeof AdminRequestsRoute
+  AdminTenantsRoute: typeof AdminTenantsRoute
   ObjectsSlugRoute: typeof ObjectsSlugRoute
   PropertiesSlugRoute: typeof PropertiesSlugRoute
+  AccountIndexRoute: typeof AccountIndexRoute
   ObjectsIndexRoute: typeof ObjectsIndexRoute
   PropertiesIndexRoute: typeof PropertiesIndexRoute
+  AccountDocumentsIdRoute: typeof AccountDocumentsIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -204,6 +295,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/': {
+      id: '/account/'
+      path: '/account'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/activate': {
+      id: '/account/activate'
+      path: '/account/activate'
+      fullPath: '/account/activate'
+      preLoaderRoute: typeof AccountActivateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/change-password': {
+      id: '/account/change-password'
+      path: '/account/change-password'
+      fullPath: '/account/change-password'
+      preLoaderRoute: typeof AccountChangePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/login': {
+      id: '/account/login'
+      path: '/account/login'
+      fullPath: '/account/login'
+      preLoaderRoute: typeof AccountLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/requests': {
+      id: '/admin/requests'
+      path: '/admin/requests'
+      fullPath: '/admin/requests'
+      preLoaderRoute: typeof AdminRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/tenants': {
+      id: '/admin/tenants'
+      path: '/admin/tenants'
+      fullPath: '/admin/tenants'
+      preLoaderRoute: typeof AdminTenantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/objects/': {
       id: '/objects/'
       path: '/objects'
@@ -232,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropertiesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/documents/$id': {
+      id: '/account/documents/$id'
+      path: '/account/documents/$id'
+      fullPath: '/account/documents/$id'
+      preLoaderRoute: typeof AccountDocumentsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -242,10 +382,17 @@ const rootRouteChildren: RootRouteChildren = {
   RentRoute: RentRoute,
   SaleRoute: SaleRoute,
   ServicesRoute: ServicesRoute,
+  AccountActivateRoute: AccountActivateRoute,
+  AccountChangePasswordRoute: AccountChangePasswordRoute,
+  AccountLoginRoute: AccountLoginRoute,
+  AdminRequestsRoute: AdminRequestsRoute,
+  AdminTenantsRoute: AdminTenantsRoute,
   ObjectsSlugRoute: ObjectsSlugRoute,
   PropertiesSlugRoute: PropertiesSlugRoute,
+  AccountIndexRoute: AccountIndexRoute,
   ObjectsIndexRoute: ObjectsIndexRoute,
   PropertiesIndexRoute: PropertiesIndexRoute,
+  AccountDocumentsIdRoute: AccountDocumentsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

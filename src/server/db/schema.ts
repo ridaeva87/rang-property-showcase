@@ -222,16 +222,15 @@ export const premiseComponents = pgTable(
     ceilingHeight: text("ceiling_height"),
     heating: text("heating"),
     material: text("material"),
-    characteristics:
-      jsonb("characteristics").$type<
-        Array<{
-          key: string;
-          label: string;
-          valueText: string;
-          groupName: string;
-          sortOrder: number;
-        }>
-      >(),
+    characteristics: jsonb("characteristics").$type<
+      Array<{
+        key: string;
+        label: string;
+        valueText: string;
+        groupName: string;
+        sortOrder: number;
+      }>
+    >(),
     sourceRow: integer("source_row"),
     sortOrder: integer("sort_order").default(0).notNull(),
     ...timestamps,
@@ -318,12 +317,52 @@ export const users = pgTable(
     displayName: text("display_name").notNull(),
     passwordHash: text("password_hash"),
     isActive: boolean("is_active").default(true).notNull(),
+    passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
     uniqueIndex("users_email_uq").on(table.email),
     uniqueIndex("users_phone_uq").on(table.phone),
   ],
+);
+
+export const userSessions = pgTable("user_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const userAccessTokens = pgTable("user_access_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  purpose: text("purpose").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const tenantPremises = pgTable(
+  "tenant_premises",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    premiseId: text("premise_id")
+      .notNull()
+      .references(() => premises.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.premiseId] })],
 );
 
 export const organizationUsers = pgTable(
