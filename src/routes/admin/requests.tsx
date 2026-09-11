@@ -16,7 +16,8 @@ export const Route = createFileRoute("/admin/requests")({
 function RequestsAdminPage() {
   const data = Route.useLoaderData();
   const [status,setStatus]=useState(""); const [category,setCategory]=useState(""); const [tenant,setTenant]=useState("");
-  const requests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant));
+  const [direction,setDirection]=useState(""); const [assignee,setAssignee]=useState("");
+  const requests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
   async function submit(event: FormEvent<HTMLFormElement>, requestId: string) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -38,7 +39,7 @@ function RequestsAdminPage() {
       <a href="/admin/tenants" className="mb-4 inline-block border px-3 py-2 text-sm">
         Арендаторы
       </a>
-      <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-3"><select value={status} onChange={e=>setStatus(e.target.value)} className="border px-3 py-2"><option value="">Все статусы</option><option value="accepted">Принято</option><option value="in_progress">В работе</option><option value="completed">Выполнено</option></select><select value={category} onChange={e=>setCategory(e.target.value)} className="border px-3 py-2"><option value="">Все категории</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select><select value={tenant} onChange={e=>setTenant(e.target.value)} className="border px-3 py-2"><option value="">Все арендаторы</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+      <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-2 lg:grid-cols-5"><select value={status} onChange={e=>setStatus(e.target.value)} className="border px-3 py-2"><option value="">Все статусы</option><option value="accepted">Принято</option><option value="in_progress">В работе</option><option value="completed">Выполнено</option></select><select value={category} onChange={e=>setCategory(e.target.value)} className="border px-3 py-2"><option value="">Все категории</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select><select value={direction} onChange={e=>setDirection(e.target.value)} className="border px-3 py-2"><option value="">Все направления</option>{data.directions.map(d=><option key={d.code} value={d.code}>{d.name}</option>)}</select><select value={tenant} onChange={e=>setTenant(e.target.value)} className="border px-3 py-2"><option value="">Все арендаторы</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><select value={assignee} onChange={e=>setAssignee(e.target.value)} className="border px-3 py-2"><option value="">Все ответственные</option><option value="unassigned">Не назначен</option>{data.employees.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
       <div className="space-y-4">
         {requests.map((request) => (
           <article key={request.id} className="border bg-background p-5">
