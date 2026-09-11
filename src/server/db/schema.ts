@@ -1,5 +1,6 @@
 import {
   boolean,
+  bigint,
   date,
   decimal,
   index,
@@ -502,6 +503,19 @@ export const requestStatuses = pgTable(
   },
   (table) => [uniqueIndex("request_statuses_code_uq").on(table.code)],
 );
+export const requestDirections = pgTable(
+  "request_directions",
+  { id: text("id").primaryKey(), code: text("code").notNull(), name: text("name").notNull(), ...timestamps },
+  (table) => [uniqueIndex("request_directions_code_uq").on(table.code)],
+);
+export const requestCategoryRoutes = pgTable(
+  "request_category_routes",
+  {
+    categoryId: text("category_id").notNull().references(() => requestCategories.id, { onDelete: "cascade" }),
+    directionId: text("direction_id").notNull().references(() => requestDirections.id, { onDelete: "restrict" }),
+  },
+  (table) => [primaryKey({ columns: [table.categoryId] })],
+);
 
 export const serviceCategories = pgTable(
   "service_categories",
@@ -528,6 +542,7 @@ export const requests = pgTable(
   "requests",
   {
     id: text("id").primaryKey(),
+    requestNumber: bigint("request_number", { mode: "number" }).generatedByDefaultAsIdentity().notNull(),
     organizationId: text("organization_id").references(() => organizations.id, {
       onDelete: "restrict",
     }),
@@ -540,6 +555,9 @@ export const requests = pgTable(
     statusId: text("status_id")
       .notNull()
       .references(() => requestStatuses.id, { onDelete: "restrict" }),
+    directionId: text("direction_id")
+      .notNull()
+      .references(() => requestDirections.id, { onDelete: "restrict" }),
     assigneeEmployeeId: text("assignee_employee_id").references(() => employees.id, {
       onDelete: "set null",
     }),
@@ -550,9 +568,23 @@ export const requests = pgTable(
     ...timestamps,
   },
   (table) => [
+    uniqueIndex("requests_number_uq").on(table.requestNumber),
     index("requests_org_idx").on(table.organizationId),
     index("requests_assignee_status_idx").on(table.assigneeEmployeeId, table.statusId),
   ],
+);
+export const requestEvents = pgTable(
+  "request_events",
+  {
+    id: text("id").primaryKey(),
+    requestId: text("request_id").notNull().references(() => requests.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(),
+    actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    fromValue: text("from_value"),
+    toValue: text("to_value"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("request_events_request_idx").on(table.requestId, table.createdAt)],
 );
 
 export const requestComments = pgTable(

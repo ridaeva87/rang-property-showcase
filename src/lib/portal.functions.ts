@@ -141,17 +141,20 @@ export const updateRequest = createServerFn({ method: "POST" })
     z.object({
       requestId: z.string().uuid(),
       status: z.enum(["accepted", "in_progress", "completed"]),
+      direction: z.enum(["technical", "management", "accounting", "legal", "documents", "access", "other"]),
+      assigneeEmployeeId: z.string().nullable().optional(),
       comment: z.string().max(5000).optional(),
       visibility: z.enum(["public", "internal"]).optional(),
     }),
   )
   .handler(async ({ data }) => {
     const { updateRequestAdmin } = await import("@/server/portal/portal.server");
-    const { comment, visibility, ...request } = data;
+    const { comment, visibility, assigneeEmployeeId, ...request } = data;
     await updateRequestAdmin({
       ...request,
       ...(comment ? { comment } : {}),
       ...(visibility ? { visibility } : {}),
+      ...(assigneeEmployeeId !== undefined ? { assigneeEmployeeId } : {}),
     });
     return { ok: true };
   });

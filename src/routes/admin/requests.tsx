@@ -6,7 +6,7 @@ import { PortalShell } from "@/components/portal/PortalShell";
 export const Route = createFileRoute("/admin/requests")({
   beforeLoad: async () => {
     const user = await getCurrentAccount();
-    if (!user || user.kind !== "employee" || !user.roles.includes("admin"))
+    if (!user || user.kind !== "employee" || !user.permissions.includes("requests.manage"))
       throw redirect({ to: "/account/login" });
   },
   loader: () => loadRequestsAdmin(),
@@ -25,6 +25,8 @@ function RequestsAdminPage() {
       data: {
         requestId,
         status: String(form.get("status")) as "accepted" | "in_progress" | "completed",
+        direction: String(form.get("direction")) as "technical" | "management" | "accounting" | "legal" | "documents" | "access" | "other",
+        assigneeEmployeeId: String(form.get("assignee") || "") || null,
         visibility: String(form.get("visibility")) as "public" | "internal",
         ...(comment ? { comment } : {}),
       },
@@ -42,12 +44,13 @@ function RequestsAdminPage() {
           <article key={request.id} className="border bg-background p-5">
             <div className="flex flex-wrap justify-between gap-3">
               <div>
-                <h2 className="font-semibold">{request.subject}</h2>
+                <h2 className="font-semibold">№{String(request.requestNumber).padStart(6,"0")} · {request.subject}</h2>
                 <p className="text-sm text-muted-foreground">
                   {request.tenant || "Без автора"}
                   {request.premise ? ` · ${request.premise}` : " · Без помещения"}
                 </p>
                 <p className="text-sm font-medium">Категория: {request.category}</p>
+                <p className="text-sm">Направление: {request.direction} · Ответственный: {request.assignee || "Не назначен"}</p>
               </div>
               <time className="text-xs text-muted-foreground">
                 {new Date(request.createdAt).toLocaleString("ru-RU")}
@@ -62,9 +65,10 @@ function RequestsAdminPage() {
                 {comment.body}
               </p>
             ))}
+            {!!request.events.length && <details className="mt-3 text-sm"><summary className="cursor-pointer font-medium">История</summary><div className="mt-2 space-y-1">{request.events.map(event=><p key={event.id}>{new Date(event.createdAt).toLocaleString("ru-RU")} · {event.actor || "Система"} · {event.type === "created" ? "Создание" : event.type === "status_changed" ? "Изменение статуса" : event.type === "assignee_changed" ? "Смена ответственного" : event.type === "direction_changed" ? "Смена направления" : "Закрытие"}{event.from || event.to ? `: ${event.from || "Не назначен"} → ${event.to || "Не назначен"}` : ""}</p>)}</div></details>}
             <form
               onSubmit={(event) => submit(event, request.id)}
-              className="mt-4 grid gap-2 sm:grid-cols-[180px_160px_1fr_auto]"
+              className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[150px_180px_180px_140px_1fr_auto]"
             >
               <select
                 name="status"
@@ -75,6 +79,8 @@ function RequestsAdminPage() {
                 <option value="in_progress">В работе</option>
                 <option value="completed">Выполнено</option>
               </select>
+              <select name="direction" defaultValue={request.directionCode} className="border bg-background px-3 py-2">{data.directions.map(direction=><option key={direction.code} value={direction.code}>{direction.name}</option>)}</select>
+              <select name="assignee" defaultValue={request.assigneeEmployeeId || ""} className="border bg-background px-3 py-2"><option value="">Не назначен</option>{data.employees.map(employee=><option key={employee.id} value={employee.id}>{employee.name}</option>)}</select>
               <select name="visibility" className="border bg-background px-3 py-2">
                 <option value="public">Ответ арендатору</option>
                 <option value="internal">Внутренний</option>

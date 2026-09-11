@@ -47,7 +47,13 @@ export async function currentUser() {
     .from(schema.userRoles)
     .innerJoin(schema.roles, eq(schema.userRoles.roleId, schema.roles.id))
     .where(eq(schema.userRoles.userId, rows[0].id));
-  return { ...rows[0], roles: roles.map((role) => role.code) };
+  const permissions = await db
+    .selectDistinct({ code: schema.permissions.code })
+    .from(schema.userRoles)
+    .innerJoin(schema.rolePermissions, eq(schema.userRoles.roleId, schema.rolePermissions.roleId))
+    .innerJoin(schema.permissions, eq(schema.rolePermissions.permissionId, schema.permissions.id))
+    .where(eq(schema.userRoles.userId, rows[0].id));
+  return { ...rows[0], roles: roles.map((role) => role.code), permissions: permissions.map((permission) => permission.code) };
 }
 
 export async function requireUser(kind?: "tenant" | "employee") {
@@ -60,6 +66,12 @@ export async function requireUser(kind?: "tenant" | "employee") {
 export async function requireAdmin() {
   const user = await requireUser("employee");
   if (!user.roles.includes("admin")) throw new AuthorizationError("Доступ запрещён");
+  return user;
+}
+
+export async function requireRequestManager() {
+  const user = await requireUser("employee");
+  if (!user.permissions.includes("requests.manage")) throw new AuthorizationError("Доступ запрещён");
   return user;
 }
 
@@ -230,6 +242,7 @@ export async function portalOverview() {
   const requests = await db
     .select({
       id: schema.requests.id,
+      requestNumber: schema.requests.requestNumber,
       subject: schema.requests.subject,
       description: schema.requests.description,
       createdAt: schema.requests.createdAt,
@@ -322,18 +335,17 @@ export async function createTenantRequest(input: {
     .from(schema.requestStatuses)
     .where(eq(schema.requestStatuses.code, "accepted"))
     .limit(1);
-  if (!category || !status) throw new Error("Справочники заявок не настроены");
+  const [route] = category ? await db.select({ directionId: schema.requestCategoryRoutes.directionId }).from(schema.requestCategoryRoutes).where(eq(schema.requestCategoryRoutes.categoryId, category.id)).limit(1) : [];
+  if (!category || !status || !route) throw new Error("Справочники заявок не настроены");
   const [orgId] = await tenantOrganizationIds(user.id);
   const id = randomUUID();
-  await db.insert(schema.requests).values({
-    id,
-    organizationId: orgId,
-    createdByUserId: user.id,
-    categoryId: category.id,
-    statusId: status.id,
-    premiseId: input.premiseId || null,
-    subject: input.subject,
-    description: input.description,
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.requests).values({
+      id, organizationId: orgId, createdByUserId: user.id, categoryId: category.id,
+      directionId: route.directionId, statusId: status.id, premiseId: input.premiseId || null,
+      subject: input.subject, description: input.description,
+    });
+    await tx.insert(schema.requestEvents).values({ id: randomUUID(), requestId: id, eventType: "created", actorUserId: user.id });
   });
   return { id };
 }
@@ -519,11 +531,12 @@ export async function requestPasswordReset(email: string) {
 }
 
 export async function listRequestsAdmin() {
-  await requireAdmin();
+  await requireRequestManager();
   const db = getDatabase();
   const requests = await db
     .select({
       id: schema.requests.id,
+      requestNumber: schema.requests.requestNumber,
       subject: schema.requests.subject,
       description: schema.requests.description,
       createdAt: schema.requests.createdAt,
@@ -533,12 +546,16 @@ export async function listRequestsAdmin() {
       tenantId: schema.users.id,
       category: schema.requestCategories.name,
       categoryCode: schema.requestCategories.code,
+      direction: schema.requestDirections.name,
+      directionCode: schema.requestDirections.code,
+      assigneeEmployeeId: schema.requests.assigneeEmployeeId,
     })
     .from(schema.requests)
     .leftJoin(schema.users, eq(schema.requests.createdByUserId, schema.users.id))
     .leftJoin(schema.premises, eq(schema.requests.premiseId, schema.premises.id))
     .innerJoin(schema.requestStatuses, eq(schema.requests.statusId, schema.requestStatuses.id))
     .innerJoin(schema.requestCategories, eq(schema.requests.categoryId, schema.requestCategories.id))
+    .innerJoin(schema.requestDirections, eq(schema.requests.directionId, schema.requestDirections.id))
     .orderBy(sql`${schema.requests.createdAt} desc`);
   const ids = requests.map((request) => request.id);
   const comments = ids.length
@@ -554,31 +571,42 @@ export async function listRequestsAdmin() {
         .where(inArray(schema.requestComments.requestId, ids))
         .orderBy(schema.requestComments.createdAt)
     : [];
+  const events = ids.length ? await db.select({ id: schema.requestEvents.id, requestId: schema.requestEvents.requestId, type: schema.requestEvents.eventType, from: schema.requestEvents.fromValue, to: schema.requestEvents.toValue, createdAt: schema.requestEvents.createdAt, actor: schema.users.displayName }).from(schema.requestEvents).leftJoin(schema.users, eq(schema.requestEvents.actorUserId, schema.users.id)).where(inArray(schema.requestEvents.requestId, ids)).orderBy(schema.requestEvents.createdAt) : [];
+  const employees = await db.select({ id: schema.employees.id, name: schema.users.displayName }).from(schema.employees).innerJoin(schema.users, eq(schema.employees.userId, schema.users.id)).where(eq(schema.users.isActive, true));
+  const directions = await db.select({ id: schema.requestDirections.id, code: schema.requestDirections.code, name: schema.requestDirections.name }).from(schema.requestDirections);
+  const statuses = await db.select({ id: schema.requestStatuses.id, name: schema.requestStatuses.name }).from(schema.requestStatuses);
+  const eventLabel = (value: string | null) => employees.find((x) => x.id === value)?.name || directions.find((x) => x.id === value)?.name || statuses.find((x) => x.id === value)?.name || value;
   return { requests: requests.map((request) => ({
     ...request,
+    assignee: employees.find((employee) => employee.id === request.assigneeEmployeeId)?.name || null,
     comments: comments.filter((comment) => comment.requestId === request.id),
-  })), categories: await db.select({ code: schema.requestCategories.code, name: schema.requestCategories.name }).from(schema.requestCategories), tenants: await db.select({ id: schema.users.id, name: schema.users.displayName }).from(schema.users).where(eq(schema.users.kind, "tenant")) };
+    events: events.filter((event) => event.requestId === request.id).map((event) => ({ ...event, from: eventLabel(event.from), to: eventLabel(event.to) })),
+  })), categories: await db.select({ code: schema.requestCategories.code, name: schema.requestCategories.name }).from(schema.requestCategories), tenants: await db.select({ id: schema.users.id, name: schema.users.displayName }).from(schema.users).where(eq(schema.users.kind, "tenant")), directions: directions.map(({ code, name }) => ({ code, name })), employees };
 }
 
 export async function updateRequestAdmin(input: {
   requestId: string;
   status: "accepted" | "in_progress" | "completed";
+  direction: string;
+  assigneeEmployeeId?: string | null;
   comment?: string;
   visibility?: "public" | "internal";
 }) {
-  const admin = await requireAdmin();
+  const admin = await requireRequestManager();
   const db = getDatabase();
   const [next] = await db
     .select({ id: schema.requestStatuses.id })
     .from(schema.requestStatuses)
     .where(eq(schema.requestStatuses.code, input.status))
     .limit(1);
+  const [direction] = await db.select({ id: schema.requestDirections.id }).from(schema.requestDirections).where(eq(schema.requestDirections.code, input.direction)).limit(1);
+  const assignee = input.assigneeEmployeeId ? (await db.select({ id: schema.employees.id }).from(schema.employees).where(eq(schema.employees.id, input.assigneeEmployeeId)).limit(1))[0] : null;
   const [request] = await db
-    .select({ statusId: schema.requests.statusId })
+    .select({ statusId: schema.requests.statusId, directionId: schema.requests.directionId, assigneeEmployeeId: schema.requests.assigneeEmployeeId })
     .from(schema.requests)
     .where(eq(schema.requests.id, input.requestId))
     .limit(1);
-  if (!next || !request) throw new Error("Заявка не найдена");
+  if (!next || !direction || !request || (input.assigneeEmployeeId && !assignee)) throw new Error("Заявка или справочник не найдены");
   await db.transaction(async (tx) => {
     if (request.statusId !== next.id) {
       await tx
@@ -592,6 +620,16 @@ export async function updateRequestAdmin(input: {
         toStatusId: next.id,
         changedByUserId: admin.id,
       });
+      await tx.insert(schema.requestEvents).values({ id: randomUUID(), requestId: input.requestId, eventType: input.status === "completed" ? "closed" : "status_changed", actorUserId: admin.id, fromValue: request.statusId, toValue: next.id });
+    }
+    if (request.directionId !== direction.id) {
+      await tx.update(schema.requests).set({ directionId: direction.id, updatedAt: new Date() }).where(eq(schema.requests.id, input.requestId));
+      await tx.insert(schema.requestEvents).values({ id: randomUUID(), requestId: input.requestId, eventType: "direction_changed", actorUserId: admin.id, fromValue: request.directionId, toValue: direction.id });
+    }
+    const nextAssignee = input.assigneeEmployeeId || null;
+    if (request.assigneeEmployeeId !== nextAssignee) {
+      await tx.update(schema.requests).set({ assigneeEmployeeId: nextAssignee, updatedAt: new Date() }).where(eq(schema.requests.id, input.requestId));
+      await tx.insert(schema.requestEvents).values({ id: randomUUID(), requestId: input.requestId, eventType: "assignee_changed", actorUserId: admin.id, fromValue: request.assigneeEmployeeId, toValue: nextAssignee });
     }
     if (input.comment?.trim())
       await tx.insert(schema.requestComments).values({

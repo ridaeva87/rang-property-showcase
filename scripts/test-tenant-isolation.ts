@@ -21,7 +21,8 @@ async function main() {
       requestA = randomUUID(),
       requestB = randomUUID(),
       documentA = randomUUID(),
-      documentB = randomUUID();
+      documentB = randomUUID(),
+      employeeWithoutRole = randomUUID();
     const passwordHash = await hashPassword("Tenant-A-secure-2026");
     assert.equal(await verifyPassword("Tenant-A-secure-2026", passwordHash), true);
     assert.equal(await verifyPassword("wrong-password", passwordHash), false);
@@ -29,6 +30,7 @@ async function main() {
       "insert into users(id,kind,email,display_name,password_hash) values($1,'tenant',$2,'Tenant A',$3),($4,'tenant',$5,'Tenant B',$3)",
       [a, `${a}@test.invalid`, passwordHash, b, `${b}@test.invalid`],
     );
+    await client.query("insert into users(id,kind,email,display_name) values($1,'employee',$2,'Employee without rights')", [employeeWithoutRole, `${employeeWithoutRole}@test.invalid`]);
     await client.query("insert into organizations(id,name) values($1,'Org A'),($2,'Org B')", [
       orgA,
       orgB,
@@ -49,21 +51,15 @@ async function main() {
     const status = (
       await client.query<{ id: string }>("select id from request_statuses where code='accepted'")
     ).rows[0]!;
+    const direction = (await client.query<{ id: string }>("select id from request_directions where code='technical'")).rows[0]!;
     await client.query(
-      "insert into requests(id,organization_id,created_by_user_id,category_id,status_id,premise_id,subject,description) values($1,$2,$3,$4,$5,$6,'A','A'),($7,$8,$9,$4,$5,$10,'B','B')",
+      "insert into requests(id,organization_id,created_by_user_id,category_id,status_id,direction_id,premise_id,subject,description) values($1,$2,$3,$4,$5,$6,$7,'A','A'),($8,$9,$10,$4,$5,$6,$11,'B','B')",
       [
-        requestA,
-        orgA,
-        a,
-        category.id,
-        status.id,
-        premises[0]!.id,
-        requestB,
-        orgB,
-        b,
-        premises[1]!.id,
+        requestA, orgA, a, category.id, status.id, direction.id, premises[0]!.id,
+        requestB, orgB, b, premises[1]!.id,
       ],
     );
+    await client.query("insert into request_comments(id,request_id,author_user_id,visibility,body) values($1,$2,$3,'public','Visible'),($4,$2,$3,'internal','Hidden')", [randomUUID(), requestA, a, randomUUID()]);
     await client.query(
       "insert into notifications(id,user_id,title,body) values($1,$2,'A','A'),($3,$4,'B','B')",
       [randomUUID(), a, randomUUID(), b],
@@ -109,6 +105,16 @@ async function main() {
       ).rows[0].n,
       0,
     );
+    assert.deepEqual((await client.query("select body from request_comments where request_id=$1 and visibility='public'", [requestA])).rows, [{ body: "Visible" }]);
+    assert.equal((await client.query("select count(*)::int n from request_comments where request_id=$1 and visibility='public' and body='Hidden'", [requestA])).rows[0].n, 0);
+    assert.equal((await client.query("select count(*)::int n from permissions p join role_permissions rp on rp.permission_id=p.id join user_roles ur on ur.role_id=rp.role_id where ur.user_id=$1 and p.code='requests.manage'", [a])).rows[0].n, 0);
+    assert.equal((await client.query("select count(*)::int n from permissions p join role_permissions rp on rp.permission_id=p.id join user_roles ur on ur.role_id=rp.role_id where ur.user_id=$1 and p.code='requests.manage'", [employeeWithoutRole])).rows[0].n, 0);
+    const manager = (await client.query<{ user_id: string; id: string }>("select e.user_id,e.id from employees e join user_roles ur on ur.user_id=e.user_id join roles r on r.id=ur.role_id where r.code='admin' limit 1")).rows[0]!;
+    assert.ok(manager);
+    await client.query("update requests set assignee_employee_id=$1 where id=$2", [manager.id, requestA]);
+    await client.query("insert into request_events(id,request_id,event_type,actor_user_id,to_value) values($1,$2,'assignee_changed',$3,$4),($5,$2,'status_changed',$3,$6)", [randomUUID(), requestA, manager.user_id, manager.id, randomUUID(), status.id]);
+    assert.equal((await client.query("select count(*)::int n from request_events where request_id=$1 and event_type in ('assignee_changed','status_changed')", [requestA])).rows[0].n, 2);
+    assert.equal((await client.query("select assignee_employee_id from requests where id=$1", [requestA])).rows[0].assignee_employee_id, manager.id);
     assert.equal(
       (
         await client.query(
