@@ -36,7 +36,7 @@ function LoginPage() {
         <p className="mt-2 text-sm text-muted-foreground">Вход для действующих арендаторов</p>
         <label className="mt-6 block text-sm font-medium">
           Электронная почта
-          <PasswordInput
+          <input
             name="email"
             type="email"
             autoComplete="username"
@@ -46,7 +46,7 @@ function LoginPage() {
         </label>
         <label className="mt-4 block text-sm font-medium">
           Пароль
-          <input
+          <PasswordInput
             name="password"
             autoComplete="current-password"
             required
