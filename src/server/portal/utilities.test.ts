@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{validateReading}from"./utilities.server";
+describe("meter reading validation",()=>{it("accepts a valid monotonic reading",()=>expect(validateReading(12.5,10,true)).toBe(12.5));it("rejects decreasing monotonic readings",()=>expect(()=>validateReading(9,10,true)).toThrow());it("allows a reset-capable meter to decrease",()=>expect(validateReading(1,10,false)).toBe(1));it.each([NaN,-1,1_000_000_000_001])("rejects invalid value %s",value=>expect(()=>validateReading(value,null,true)).toThrow())});

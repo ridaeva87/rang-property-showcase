@@ -63,6 +63,8 @@ export const loadPortal = createServerFn({ method: "GET" }).handler(async () => 
   const { portalOverview } = await import("@/server/portal/portal.server");
   return portalOverview();
 });
+export const loadTenantUtilities=createServerFn({method:"GET"}).handler(async()=>(await import("@/server/portal/utilities.server")).tenantUtilities());
+export const submitMeterReading=createServerFn({method:"POST"}).validator(z.object({meterId:z.string().min(1),value:z.number().finite().nonnegative().max(1_000_000_000_000)})).handler(async({data})=>(await import("@/server/portal/utilities.server")).submitTenantReading(data.meterId,data.value));
 
 export const readPortalNotification = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.string().uuid() }))

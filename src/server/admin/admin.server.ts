@@ -12,6 +12,7 @@ export const ADMIN_SECTIONS = [
   ["/admin/documents", "Документы", "documents.manage"], ["/admin/services", "Дополнительные услуги", "services.manage"],
   ["/admin/ads", "Реклама арендаторов", "ads.manage"], ["/admin/support", "Поддержка", "support.manage"],
   ["/admin/employees", "Сотрудники", "employees.manage"], ["/admin/statistics", "Статистика", "statistics.view"],
+  ["/admin/utilities", "Счётчики и расходы", "utilities.manage"],
 ] as const;
 
 export async function adminNavigation() {

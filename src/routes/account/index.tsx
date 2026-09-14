@@ -64,6 +64,7 @@ function AccountPage() {
         <a href="#documents" className="border bg-background px-3 py-2 text-sm">
           Документы
         </a>
+        <a href="/account/utilities" className="border bg-background px-3 py-2 text-sm">Счётчики и расходы</a>
         <button
           onClick={async () => {
             await logoutAccount();

@@ -21,6 +21,7 @@ import { Route as AccountChangePasswordRouteImport } from './routes/account/chan
 import { Route as AccountForgotPasswordRouteImport } from './routes/account/forgot-password'
 import { Route as AccountLoginRouteImport } from './routes/account/login'
 import { Route as AccountResetPasswordRouteImport } from './routes/account/reset-password'
+import { Route as AccountUtilitiesRouteImport } from './routes/account/utilities'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdsRouteImport } from './routes/admin/ads'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin/announcements'
@@ -34,6 +35,7 @@ import { Route as AdminServicesRouteImport } from './routes/admin/services'
 import { Route as AdminStatisticsRouteImport } from './routes/admin/statistics'
 import { Route as AdminSupportRouteImport } from './routes/admin/support'
 import { Route as AdminTenantsRouteImport } from './routes/admin/tenants'
+import { Route as AdminUtilitiesRouteImport } from './routes/admin/utilities'
 import { Route as ObjectsIndexRouteImport } from './routes/objects/index'
 import { Route as ObjectsSlugRouteImport } from './routes/objects/$slug'
 import { Route as PropertiesIndexRouteImport } from './routes/properties/index'
@@ -102,6 +104,11 @@ const AccountResetPasswordRoute = AccountResetPasswordRouteImport.update({
   path: '/account/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountUtilitiesRoute = AccountUtilitiesRouteImport.update({
+  id: '/account/utilities',
+  path: '/account/utilities',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -167,6 +174,11 @@ const AdminTenantsRoute = AdminTenantsRouteImport.update({
   path: '/admin/tenants',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUtilitiesRoute = AdminUtilitiesRouteImport.update({
+  id: '/admin/utilities',
+  path: '/admin/utilities',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObjectsIndexRoute = ObjectsIndexRouteImport.update({
   id: '/objects/',
   path: '/objects/',
@@ -215,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/account/forgot-password': typeof AccountForgotPasswordRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
+  '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
@@ -227,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/admin/statistics': typeof AdminStatisticsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/tenants': typeof AdminTenantsRoute
+  '/admin/utilities': typeof AdminUtilitiesRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account/': typeof AccountIndexRoute
@@ -249,6 +263,7 @@ export interface FileRoutesByTo {
   '/account/forgot-password': typeof AccountForgotPasswordRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
+  '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
@@ -261,6 +276,7 @@ export interface FileRoutesByTo {
   '/admin/statistics': typeof AdminStatisticsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/tenants': typeof AdminTenantsRoute
+  '/admin/utilities': typeof AdminUtilitiesRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account': typeof AccountIndexRoute
@@ -284,6 +300,7 @@ export interface FileRoutesById {
   '/account/forgot-password': typeof AccountForgotPasswordRoute
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
+  '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
@@ -296,6 +313,7 @@ export interface FileRoutesById {
   '/admin/statistics': typeof AdminStatisticsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/tenants': typeof AdminTenantsRoute
+  '/admin/utilities': typeof AdminUtilitiesRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account/': typeof AccountIndexRoute
@@ -320,6 +338,7 @@ export interface FileRouteTypes {
     | '/account/forgot-password'
     | '/account/login'
     | '/account/reset-password'
+    | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
     | '/admin/documents'
@@ -332,6 +351,7 @@ export interface FileRouteTypes {
     | '/admin/statistics'
     | '/admin/support'
     | '/admin/tenants'
+    | '/admin/utilities'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account/'
@@ -354,6 +374,7 @@ export interface FileRouteTypes {
     | '/account/forgot-password'
     | '/account/login'
     | '/account/reset-password'
+    | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
     | '/admin/documents'
@@ -366,6 +387,7 @@ export interface FileRouteTypes {
     | '/admin/statistics'
     | '/admin/support'
     | '/admin/tenants'
+    | '/admin/utilities'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account'
@@ -388,6 +410,7 @@ export interface FileRouteTypes {
     | '/account/forgot-password'
     | '/account/login'
     | '/account/reset-password'
+    | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
     | '/admin/documents'
@@ -400,6 +423,7 @@ export interface FileRouteTypes {
     | '/admin/statistics'
     | '/admin/support'
     | '/admin/tenants'
+    | '/admin/utilities'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account/'
@@ -423,6 +447,7 @@ export interface RootRouteChildren {
   AccountForgotPasswordRoute: typeof AccountForgotPasswordRoute
   AccountLoginRoute: typeof AccountLoginRoute
   AccountResetPasswordRoute: typeof AccountResetPasswordRoute
+  AccountUtilitiesRoute: typeof AccountUtilitiesRoute
   AdminAdsRoute: typeof AdminAdsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRouteWithChildren
@@ -435,6 +460,7 @@ export interface RootRouteChildren {
   AdminStatisticsRoute: typeof AdminStatisticsRoute
   AdminSupportRoute: typeof AdminSupportRoute
   AdminTenantsRoute: typeof AdminTenantsRoute
+  AdminUtilitiesRoute: typeof AdminUtilitiesRoute
   ObjectsSlugRoute: typeof ObjectsSlugRoute
   PropertiesSlugRoute: typeof PropertiesSlugRoute
   AccountIndexRoute: typeof AccountIndexRoute
@@ -530,6 +556,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/utilities': {
+      id: '/account/utilities'
+      path: '/account/utilities'
+      fullPath: '/account/utilities'
+      preLoaderRoute: typeof AccountUtilitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
@@ -621,6 +654,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTenantsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/utilities': {
+      id: '/admin/utilities'
+      path: '/admin/utilities'
+      fullPath: '/admin/utilities'
+      preLoaderRoute: typeof AdminUtilitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/objects/': {
       id: '/objects/'
       path: '/objects'
@@ -709,6 +749,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountForgotPasswordRoute: AccountForgotPasswordRoute,
   AccountLoginRoute: AccountLoginRoute,
   AccountResetPasswordRoute: AccountResetPasswordRoute,
+  AccountUtilitiesRoute: AccountUtilitiesRoute,
   AdminAdsRoute: AdminAdsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminDocumentsRoute: AdminDocumentsRouteWithChildren,
@@ -721,6 +762,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminStatisticsRoute: AdminStatisticsRoute,
   AdminSupportRoute: AdminSupportRoute,
   AdminTenantsRoute: AdminTenantsRoute,
+  AdminUtilitiesRoute: AdminUtilitiesRoute,
   ObjectsSlugRoute: ObjectsSlugRoute,
   PropertiesSlugRoute: PropertiesSlugRoute,
   AccountIndexRoute: AccountIndexRoute,
