@@ -185,9 +185,10 @@ export async function utilitiesAdmin() {
       .orderBy(s.premises.title),
     types: await db.select().from(s.meterTypes).orderBy(s.meterTypes.name),
     premises: await db
-      .select({ id: s.premises.id, name: s.premises.title })
+      .select({ id: s.premises.id, name: s.premises.title, address: s.propertyObjects.address, objectId: s.propertyObjects.id })
       .from(s.premises)
-      .orderBy(s.premises.title),
+      .innerJoin(s.propertyObjects, eq(s.premises.objectId, s.propertyObjects.id))
+      .orderBy(s.propertyObjects.address, s.premises.title),
     tenants: await db
       .select({ id: s.users.id, name: s.users.displayName })
       .from(s.users)

@@ -13,6 +13,7 @@ import { PortalShell } from "@/components/portal/PortalShell";
 import { AdminShell } from "@/components/portal/AdminShell";
 import { loadAdminNavigation } from "@/lib/admin.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { groupPremisesByAddress } from "@/components/portal/GroupedPremiseOptions";
 
 export const Route = createFileRoute("/admin/tenants")({
   beforeLoad: async () => {
@@ -118,16 +119,21 @@ function AdminPage() {
             <fieldset>
               <legend className="mb-2 text-sm font-medium">Помещения</legend>
               <div className="max-h-64 space-y-1 overflow-auto border p-3">
-                {data.premises.map((p) => (
-                  <label key={p.id} className="flex gap-2 text-sm">
-                    <input
-                      name="premises"
-                      value={p.id}
-                      type="checkbox"
-                      defaultChecked={editing?.premiseIds.includes(p.id)}
-                    />
-                    {p.title}
-                  </label>
+                {groupPremisesByAddress(data.premises).map((group) => (
+                  <div key={group.address} className="pb-3 last:pb-0">
+                    <p className="mb-1 font-semibold">{group.address}</p>
+                    {group.premises.map((p) => (
+                      <label key={p.id} className="flex gap-2 pl-3 text-sm">
+                        <input
+                          name="premises"
+                          value={p.id}
+                          type="checkbox"
+                          defaultChecked={editing?.premiseIds.includes(p.id)}
+                        />
+                        {p.title}
+                      </label>
+                    ))}
+                  </div>
                 ))}
               </div>
             </fieldset>

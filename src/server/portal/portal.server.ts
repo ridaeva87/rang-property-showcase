@@ -416,9 +416,10 @@ export async function listTenantsAdmin() {
     .select({ userId: schema.tenantPremises.userId, premiseId: schema.tenantPremises.premiseId })
     .from(schema.tenantPremises);
   const premises = await db
-    .select({ id: schema.premises.id, title: schema.premises.title })
+    .select({ id: schema.premises.id, title: schema.premises.title, address: schema.propertyObjects.address, objectId: schema.propertyObjects.id })
     .from(schema.premises)
-    .orderBy(schema.premises.title);
+    .innerJoin(schema.propertyObjects, eq(schema.premises.objectId, schema.propertyObjects.id))
+    .orderBy(schema.propertyObjects.address, schema.premises.title);
   const groups = await db.select({ id: schema.tenantGroups.id, name: schema.tenantGroups.name }).from(schema.tenantGroups).orderBy(schema.tenantGroups.name);
   const groupLinks = await db.select({ userId: schema.tenantGroupMembers.userId, groupId: schema.tenantGroupMembers.groupId }).from(schema.tenantGroupMembers);
   const requestCounts = await db.select({ userId: schema.requests.createdByUserId, count: sql<number>`count(*)::int` }).from(schema.requests).groupBy(schema.requests.createdByUserId);

@@ -8,6 +8,7 @@ import {
   saveMeterAdmin,
 } from "@/lib/admin.functions";
 import { AdminShell } from "@/components/portal/AdminShell";
+import { GroupedPremiseOptions } from "@/components/portal/GroupedPremiseOptions";
 export const Route = createFileRoute("/admin/utilities")({
   beforeLoad: async () => {
     const u = await getCurrentAccount();
@@ -120,11 +121,7 @@ function Page() {
               className="border p-3"
             >
               <option value="">Помещение</option>
-              {data.premises.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+              <GroupedPremiseOptions premises={data.premises} />
             </select>
             <label>
               <input name="active" type="checkbox" defaultChecked={meter?.active ?? true} /> Активен
@@ -190,11 +187,7 @@ function Page() {
               className="border p-3"
             >
               <option value="">Помещение арендатора</option>
-              {data.premises.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+              <GroupedPremiseOptions premises={data.premises} />
             </select>
             <select
               name="category"
