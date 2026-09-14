@@ -367,6 +367,33 @@ export const tenantPremises = pgTable(
   (table) => [primaryKey({ columns: [table.userId, table.premiseId] })],
 );
 
+export const tenantGroups = pgTable(
+  "tenant_groups",
+  { id: text("id").primaryKey(), name: text("name").notNull(), description: text("description"), ...timestamps },
+  (table) => [uniqueIndex("tenant_groups_name_uq").on(table.name)],
+);
+export const tenantGroupMembers = pgTable(
+  "tenant_group_members",
+  {
+    groupId: text("group_id").notNull().references(() => tenantGroups.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.groupId, table.userId] })],
+);
+export const tenantInteractions = pgTable(
+  "tenant_interactions",
+  {
+    id: text("id").primaryKey(),
+    tenantUserId: text("tenant_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    actorUserId: text("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    kind: text("kind").notNull(),
+    summary: text("summary").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("tenant_interactions_tenant_idx").on(table.tenantUserId, table.createdAt)],
+);
+
 export const organizationUsers = pgTable(
   "organization_users",
   {

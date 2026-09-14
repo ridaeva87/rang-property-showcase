@@ -69,10 +69,26 @@ export async function requireAdmin() {
   return user;
 }
 
-export async function requireRequestManager() {
+export async function requirePermission(permission: string) {
   const user = await requireUser("employee");
-  if (!user.permissions.includes("requests.manage")) throw new AuthorizationError("Доступ запрещён");
+  if (!hasPermission(user.roles,user.permissions,permission))
+    throw new AuthorizationError("Доступ запрещён");
   return user;
+}
+
+export function hasPermission(roles:string[],permissions:string[],permission:string){return roles.includes("admin")||permissions.includes(permission)}
+
+export function requestDirectionScope(roles: string[]) {
+  if (roles.includes("admin") || roles.includes("request_manager")) return null;
+  if (roles.includes("accountant")) return ["accounting"];
+  if (roles.includes("lawyer")) return ["legal"];
+  if (roles.includes("technician")) return ["technical"];
+  if (roles.includes("rental_manager")) return ["management", "access", "documents", "other"];
+  return [];
+}
+
+export async function requireRequestManager() {
+  return requirePermission("requests.manage");
 }
 
 export async function login(email: string, password: string) {
@@ -383,7 +399,7 @@ export async function getDocumentForCurrentTenant(id: string) {
 }
 
 export async function listTenantsAdmin() {
-  await requireAdmin();
+  await requirePermission("tenants.manage");
   const db = getDatabase();
   const tenants = await db
     .select({
@@ -403,12 +419,23 @@ export async function listTenantsAdmin() {
     .select({ id: schema.premises.id, title: schema.premises.title })
     .from(schema.premises)
     .orderBy(schema.premises.title);
+  const groups = await db.select({ id: schema.tenantGroups.id, name: schema.tenantGroups.name }).from(schema.tenantGroups).orderBy(schema.tenantGroups.name);
+  const groupLinks = await db.select({ userId: schema.tenantGroupMembers.userId, groupId: schema.tenantGroupMembers.groupId }).from(schema.tenantGroupMembers);
+  const requestCounts = await db.select({ userId: schema.requests.createdByUserId, count: sql<number>`count(*)::int` }).from(schema.requests).groupBy(schema.requests.createdByUserId);
+  const notificationCounts = await db.select({ userId: schema.notifications.userId, count: sql<number>`count(*)::int` }).from(schema.notifications).groupBy(schema.notifications.userId);
+  const documentCounts = await db.select({ userId: schema.documents.recipientUserId, count: sql<number>`count(*)::int` }).from(schema.documents).groupBy(schema.documents.recipientUserId);
+  const interactions = await db.select({ userId: schema.tenantInteractions.tenantUserId, summary: schema.tenantInteractions.summary, createdAt: schema.tenantInteractions.createdAt }).from(schema.tenantInteractions).orderBy(sql`${schema.tenantInteractions.createdAt} desc`);
   return {
     tenants: tenants.map((t) => ({
       ...t,
       premiseIds: links.filter((l) => l.userId === t.id).map((l) => l.premiseId),
+      groupIds: groupLinks.filter((l) => l.userId === t.id).map((l) => l.groupId),
+      requests: requestCounts.find(x=>x.userId===t.id)?.count||0,
+      notifications: notificationCounts.find(x=>x.userId===t.id)?.count||0,
+      documents: documentCounts.find(x=>x.userId===t.id)?.count||0,
+      interactions: interactions.filter(x=>x.userId===t.id).slice(0,5),
     })),
-    premises,
+    premises, groups,
   };
 }
 
@@ -418,8 +445,9 @@ export async function saveTenantAdmin(input: {
   email: string;
   active: boolean;
   premiseIds: string[];
+  groupIds?: string[];
 }) {
-  await requireAdmin();
+  const actor = await requirePermission("tenants.manage");
   const db = getDatabase();
   const id = input.id || randomUUID();
   const email = input.email.trim().toLowerCase();
@@ -452,11 +480,14 @@ export async function saveTenantAdmin(input: {
       await tx
         .insert(schema.tenantPremises)
         .values(input.premiseIds.map((premiseId) => ({ userId: id, premiseId })));
+    await tx.delete(schema.tenantGroupMembers).where(eq(schema.tenantGroupMembers.userId, id));
+    if(input.groupIds?.length) await tx.insert(schema.tenantGroupMembers).values(input.groupIds.map(groupId=>({userId:id,groupId})));
     if (!input.active)
       await tx
         .update(schema.userSessions)
         .set({ revokedAt: new Date() })
         .where(and(eq(schema.userSessions.userId, id), isNull(schema.userSessions.revokedAt)));
+    await tx.insert(schema.tenantInteractions).values({ id: randomUUID(), tenantUserId: id, actorUserId: actor.id, kind: input.id ? "updated" : "created", summary: input.id ? "Карточка арендатора обновлена" : "Арендатор создан" });
   });
   let emailSent: boolean | undefined;
   if (activationToken) {
@@ -531,8 +562,9 @@ export async function requestPasswordReset(email: string) {
 }
 
 export async function listRequestsAdmin() {
-  await requireRequestManager();
+  const staff = await requireRequestManager();
   const db = getDatabase();
+  const scope = requestDirectionScope(staff.roles);
   const requests = await db
     .select({
       id: schema.requests.id,
@@ -556,6 +588,7 @@ export async function listRequestsAdmin() {
     .innerJoin(schema.requestStatuses, eq(schema.requests.statusId, schema.requestStatuses.id))
     .innerJoin(schema.requestCategories, eq(schema.requests.categoryId, schema.requestCategories.id))
     .innerJoin(schema.requestDirections, eq(schema.requests.directionId, schema.requestDirections.id))
+    .where(scope === null ? undefined : inArray(schema.requestDirections.code, scope))
     .orderBy(sql`${schema.requests.createdAt} desc`);
   const ids = requests.map((request) => request.id);
   const comments = ids.length
@@ -607,6 +640,10 @@ export async function updateRequestAdmin(input: {
     .where(eq(schema.requests.id, input.requestId))
     .limit(1);
   if (!next || !direction || !request || (input.assigneeEmployeeId && !assignee)) throw new Error("Заявка или справочник не найдены");
+  const scope = requestDirectionScope(admin.roles);
+  const [currentDirection] = await db.select({ code: schema.requestDirections.code }).from(schema.requestDirections).where(eq(schema.requestDirections.id, request.directionId)).limit(1);
+  if (scope !== null && (!currentDirection || !scope.includes(currentDirection.code) || !scope.includes(input.direction)))
+    throw new AuthorizationError("Доступ к направлению запрещён");
   await db.transaction(async (tx) => {
     if (request.statusId !== next.id) {
       await tx
@@ -643,7 +680,7 @@ export async function updateRequestAdmin(input: {
 }
 
 export async function notifyTenantAdmin(input: { userId: string; title: string; body: string }) {
-  await requireAdmin();
+  const actor = await requirePermission("tenants.manage");
   const tenant = await getDatabase()
     .select({ id: schema.users.id })
     .from(schema.users)
@@ -658,10 +695,11 @@ export async function notifyTenantAdmin(input: { userId: string; title: string; 
     channel: "in_app",
     deliveredAt: new Date(),
   });
+  await getDatabase().insert(schema.tenantInteractions).values({ id: randomUUID(), tenantUserId: input.userId, actorUserId: actor.id, kind: "notification", summary: input.title });
 }
 
 export async function listDocumentsAdmin() {
-  await requireAdmin();
+  await requirePermission("documents.manage");
   const db = getDatabase();
   return {
     tenants: await db.select({ id: schema.users.id, name: schema.users.displayName }).from(schema.users).where(eq(schema.users.kind, "tenant")).orderBy(schema.users.displayName),
@@ -671,7 +709,7 @@ export async function listDocumentsAdmin() {
 }
 
 export async function savePrivateDocumentAdmin(input: { userId: string; title: string; type: string; date?: string; file: File }) {
-  await requireAdmin();
+  await requirePermission("documents.manage");
   if (input.file.size < 1 || input.file.size > 20 * 1024 * 1024) throw new Error("Размер документа должен быть до 20 МБ");
   const db = getDatabase();
   const [tenant] = await db.select({ id: schema.users.id }).from(schema.users).where(and(eq(schema.users.id, input.userId), eq(schema.users.kind, "tenant"))).limit(1);
@@ -697,6 +735,6 @@ export async function savePrivateDocumentAdmin(input: { userId: string; title: s
 }
 
 export async function deactivateDocumentAdmin(id: string) {
-  await requireAdmin();
+  await requirePermission("documents.manage");
   await getDatabase().update(schema.documents).set({ isActive: false, updatedAt: new Date() }).where(eq(schema.documents.id, id));
 }

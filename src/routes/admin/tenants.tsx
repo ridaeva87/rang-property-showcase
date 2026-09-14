@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 export const Route = createFileRoute("/admin/tenants")({
   beforeLoad: async () => {
     const u = await getCurrentAccount();
-    if (!u || u.kind !== "employee" || !u.roles.includes("admin"))
+    if (!u || u.kind !== "employee" || !u.permissions.includes("tenants.manage"))
       throw redirect({ to: "/account/login" });
   },
   loader: () => loadTenantAdmin(),
@@ -36,6 +36,7 @@ function AdminPage() {
         email: String(f.get("email")),
         active: f.get("active") === "on",
         premiseIds: f.getAll("premises").map(String),
+        groupIds: f.getAll("groups").map(String),
       },
     });
     if (result.emailSent === false) setMessage("Арендатор сохранён. Отправка email не настроена."); else location.reload();
@@ -68,6 +69,8 @@ function AdminPage() {
                   <p className="text-sm text-muted-foreground">
                     {t.email} · {t.active ? "активен" : "отключён"}
                   </p>
+                  <p className="text-xs text-muted-foreground">Помещений: {t.premiseIds.length} · Заявок: {t.requests} · Уведомлений: {t.notifications} · Документов: {t.documents}</p>
+                  {!!t.interactions.length&&<p className="mt-1 text-xs">Последнее: {t.interactions[0]?.summary}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => setEditing(t)} className="text-sm text-primary">
@@ -129,6 +132,7 @@ function AdminPage() {
                 ))}
               </div>
             </fieldset>
+            <fieldset><legend className="mb-2 text-sm font-medium">Группы</legend><div className="space-y-1 border p-3">{data.groups.map(g=><label key={g.id} className="flex gap-2 text-sm"><input name="groups" value={g.id} type="checkbox" defaultChecked={editing?.groupIds.includes(g.id)}/>{g.name}</label>)}</div></fieldset>
             <button className="w-full bg-primary px-4 py-3 font-semibold text-primary-foreground">
               Сохранить
             </button>

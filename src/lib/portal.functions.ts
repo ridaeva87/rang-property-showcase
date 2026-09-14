@@ -101,6 +101,7 @@ export const saveTenant = createServerFn({ method: "POST" })
       email: z.string().email(),
       active: z.boolean(),
       premiseIds: z.array(z.string()),
+      groupIds: z.array(z.string()).optional(),
     }),
   )
   .handler(async ({ data }) => {
