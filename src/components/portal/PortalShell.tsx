@@ -3,17 +3,19 @@ import type { ReactNode } from "react";
 export function PortalShell({
   title,
   name,
+  homeHref = "/",
   children,
 }: {
   title: string;
   name?: string;
+  homeHref?: string;
   children: ReactNode;
 }) {
   return (
     <main className="min-h-screen bg-muted/30 px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex flex-col gap-4 border-b border-border bg-background p-5 sm:flex-row sm:items-center sm:justify-between">
-          <a href="/" className="font-display text-2xl font-extrabold text-primary">
+          <a href={homeHref} className="font-display text-2xl font-extrabold text-primary" aria-label="Главная">
             РАНГ
           </a>
           <div>

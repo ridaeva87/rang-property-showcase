@@ -1,5 +1,17 @@
 const APP_URL = (process.env["APP_URL"] || "https://rangpro.ru").replace(/\/$/, "");
 
+export async function sendProjectEmail(input: { to: string; subject: string; text: string }) {
+  const key = process.env["EMAIL_API_KEY"];
+  const from = process.env["EMAIL_FROM"];
+  if (!key || !from) return false;
+  const response = await fetch(process.env["EMAIL_API_URL"] || "https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: [input.to], subject: input.subject, text: input.text }),
+  });
+  return response.ok;
+}
+
 export async function sendAccessEmail(input: { email: string; name: string; token: string; purpose: "activation" | "password_reset" }) {
   const key = process.env["EMAIL_API_KEY"];
   const from = process.env["EMAIL_FROM"];

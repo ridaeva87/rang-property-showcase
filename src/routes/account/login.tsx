@@ -17,7 +17,7 @@ function LoginPage() {
       const result = await loginAccount({
         data: { email: String(form.get("email")), password: String(form.get("password")) },
       });
-      window.location.href = result.kind === "employee" ? "/admin/tenants" : "/account";
+      window.location.href = result.kind === "employee" ? "/admin" : "/account";
     } catch {
       setError("Неверный логин или пароль");
       setBusy(false);

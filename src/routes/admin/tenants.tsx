@@ -10,6 +10,8 @@ import {
   resendTenantActivation,
 } from "@/lib/portal.functions";
 import { PortalShell } from "@/components/portal/PortalShell";
+import { AdminShell } from "@/components/portal/AdminShell";
+import { loadAdminNavigation } from "@/lib/admin.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/tenants")({
@@ -18,7 +20,7 @@ export const Route = createFileRoute("/admin/tenants")({
     if (!u || u.kind !== "employee" || !u.permissions.includes("tenants.manage"))
       throw redirect({ to: "/account/login" });
   },
-  loader: () => loadTenantAdmin(),
+  loader: async () => ({...(await loadTenantAdmin()),nav:(await loadAdminNavigation()).sections}),
   component: AdminPage,
 });
 function AdminPage() {
@@ -42,16 +44,12 @@ function AdminPage() {
     if (result.emailSent === false) setMessage("Арендатор сохранён. Отправка email не настроена."); else location.reload();
   }
   return (
-    <PortalShell title="Управление арендаторами">
-      <div className="mb-4 flex justify-between">
-        <a href="/admin/requests" className="border px-3 py-2 text-sm">
-          Заявки арендаторов
-        </a>
-        <a href="/admin/documents" className="border px-3 py-2 text-sm">Документы</a>
+    <AdminShell title="Управление арендаторами" sections={data.nav}>
+      <div className="mb-4 flex justify-end">
         <button
           onClick={async () => {
             await logoutAccount();
-            location.href = "/";
+            location.href = "/account/login";
           }}
           className="border px-3 py-2 text-sm"
         >
@@ -71,6 +69,7 @@ function AdminPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">Помещений: {t.premiseIds.length} · Заявок: {t.requests} · Уведомлений: {t.notifications} · Документов: {t.documents}</p>
                   {!!t.interactions.length&&<p className="mt-1 text-xs">Последнее: {t.interactions[0]?.summary}</p>}
+                  <details className="mt-2 text-xs"><summary className="cursor-pointer font-medium">Карточка арендатора</summary><div className="mt-2 space-y-2 border-l-2 pl-3"><p><b>Контакты:</b> {t.email}</p><p><b>Помещения:</b> {data.premises.filter(p=>t.premiseIds.includes(p.id)).map(p=>p.title).join(", ")||"Нет"}</p><p><b>Группы:</b> {data.groups.filter(g=>t.groupIds.includes(g.id)).map(g=>g.name).join(", ")||"Нет"}</p><p><b>Заявки/обращения:</b> {t.requestItems.map(r=>`${r.subject} (${r.status})`).join(", ")||"Нет"}</p><p><b>Уведомления:</b> {t.notificationItems.map(n=>n.title).join(", ")||"Нет"}</p><p><b>Документы:</b> {t.documentItems.map(d=>d.title).join(", ")||"Нет"}</p><div><b>История взаимодействия:</b>{t.interactions.map((i,index)=><p key={index}>{new Date(i.createdAt).toLocaleString("ru-RU")} · {i.summary}</p>)}</div></div></details>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => setEditing(t)} className="text-sm text-primary">
@@ -156,6 +155,6 @@ function AdminPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </PortalShell>
+    </AdminShell>
   );
 }

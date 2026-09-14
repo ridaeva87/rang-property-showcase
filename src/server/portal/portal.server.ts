@@ -425,6 +425,9 @@ export async function listTenantsAdmin() {
   const notificationCounts = await db.select({ userId: schema.notifications.userId, count: sql<number>`count(*)::int` }).from(schema.notifications).groupBy(schema.notifications.userId);
   const documentCounts = await db.select({ userId: schema.documents.recipientUserId, count: sql<number>`count(*)::int` }).from(schema.documents).groupBy(schema.documents.recipientUserId);
   const interactions = await db.select({ userId: schema.tenantInteractions.tenantUserId, summary: schema.tenantInteractions.summary, createdAt: schema.tenantInteractions.createdAt }).from(schema.tenantInteractions).orderBy(sql`${schema.tenantInteractions.createdAt} desc`);
+  const requestItems=await db.select({userId:schema.requests.createdByUserId,id:schema.requests.id,subject:schema.requests.subject,status:schema.requestStatuses.name,createdAt:schema.requests.createdAt}).from(schema.requests).innerJoin(schema.requestStatuses,eq(schema.requests.statusId,schema.requestStatuses.id)).orderBy(sql`${schema.requests.createdAt} desc`);
+  const notificationItems=await db.select({userId:schema.notifications.userId,id:schema.notifications.id,title:schema.notifications.title,createdAt:schema.notifications.createdAt}).from(schema.notifications).orderBy(sql`${schema.notifications.createdAt} desc`);
+  const documentItems=await db.select({userId:schema.documents.recipientUserId,id:schema.documents.id,title:schema.documents.title,createdAt:schema.documents.createdAt}).from(schema.documents).orderBy(sql`${schema.documents.createdAt} desc`);
   return {
     tenants: tenants.map((t) => ({
       ...t,
@@ -434,6 +437,7 @@ export async function listTenantsAdmin() {
       notifications: notificationCounts.find(x=>x.userId===t.id)?.count||0,
       documents: documentCounts.find(x=>x.userId===t.id)?.count||0,
       interactions: interactions.filter(x=>x.userId===t.id).slice(0,5),
+      requestItems:requestItems.filter(x=>x.userId===t.id),notificationItems:notificationItems.filter(x=>x.userId===t.id),documentItems:documentItems.filter(x=>x.userId===t.id),
     })),
     premises, groups,
   };
