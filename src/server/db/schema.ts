@@ -905,7 +905,6 @@ export const expenses = pgTable(
   {
     id: text("id").primaryKey(),
     organizationId: text("organization_id")
-      .notNull()
       .references(() => organizations.id, { onDelete: "restrict" }),
     periodId: text("period_id")
       .notNull()

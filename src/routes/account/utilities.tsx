@@ -1,3 +1,124 @@
-import{createFileRoute,redirect}from"@tanstack/react-router";import{useState,type FormEvent}from"react";import{getCurrentAccount,loadTenantUtilities,submitMeterReading}from"@/lib/portal.functions";import{PortalShell}from"@/components/portal/PortalShell";
-export const Route=createFileRoute("/account/utilities")({beforeLoad:async()=>{const u=await getCurrentAccount();if(!u||u.kind!=="tenant")throw redirect({to:"/account/login"})},loader:()=>loadTenantUtilities(),component:Page});
-function Page(){const d=Route.useLoaderData(),[error,setError]=useState("");async function submit(e:FormEvent<HTMLFormElement>,meterId:string){e.preventDefault();const f=new FormData(e.currentTarget);try{await submitMeterReading({data:{meterId,value:Number(f.get("value"))}});location.reload()}catch(x){setError(x instanceof Error?x.message:"Не удалось сохранить")}}return <PortalShell title="Счётчики и коммунальные расходы"><a href="/account" className="mb-5 inline-block border px-3 py-2 text-sm">← Личный кабинет</a><section className="mb-6 border bg-background p-5"><h2 className="text-xl font-semibold">Счётчики</h2><div className="mt-4 space-y-4">{d.meters.map(m=><article key={m.id} className="border p-4"><b>{m.name||m.type}</b><p className="text-sm text-muted-foreground">{m.premise} · № {m.serial||"не указан"} · {m.unit}</p><p className="mt-2 text-sm">Предыдущее: {m.previous?`${m.previous.value} ${m.unit}, ${new Date(m.previous.at).toLocaleString("ru-RU")}`:"Нет показаний"}</p><form onSubmit={e=>submit(e,m.id)} className="mt-3 flex flex-wrap gap-2"><input name="value" type="number" min="0" max="1000000000000" step="0.0001" required className="min-w-0 flex-1 border p-3" placeholder="Новое показание"/><button className="bg-primary px-4 text-primary-foreground">Передать</button></form><details className="mt-3 text-sm"><summary>История показаний</summary>{m.readings.map(r=><p key={r.id}>{new Date(r.at).toLocaleString("ru-RU")} · {r.value} {m.unit}</p>)}</details></article>)}{!d.meters.length&&<p className="text-sm text-muted-foreground">Активных счётчиков пока нет.</p>}{error&&<p className="text-destructive">{error}</p>}</div></section><section className="border bg-background p-5"><h2 className="text-xl font-semibold">Расходы и аналитика</h2><div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="border p-4"><small>Текущий период</small><b className="block text-2xl">{d.summary.total.toLocaleString("ru-RU")} ₽</b></div><div className="border p-4"><small>К предыдущему периоду</small><b className="block text-xl">{d.summary.change===null?"Недостаточно данных":`${d.summary.change>=0?"+":""}${d.summary.change.toLocaleString("ru-RU")} ₽`}</b>{d.summary.percent!==null&&<span>{d.summary.percent.toFixed(1)}%</span>}</div><div className="border p-4"><small>Экономия</small><b className="block text-lg">Ожидает утверждённую формулу</b></div></div><div className="mt-4 space-y-2">{d.expenses.map(e=><div key={e.id} className="grid gap-1 border p-3 sm:grid-cols-4"><b>{e.period}</b><span>{e.premise}</span><span>{e.category}</span><span className="sm:text-right">{Number(e.amount).toLocaleString("ru-RU")} ₽</span></div>)}{!d.expenses.length&&<p className="text-sm text-muted-foreground">Расходы пока не внесены.</p>}</div></section></PortalShell>}
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { getCurrentAccount, loadTenantUtilities, submitMeterReading } from "@/lib/portal.functions";
+import { PortalShell } from "@/components/portal/PortalShell";
+export const Route = createFileRoute("/account/utilities")({
+  beforeLoad: async () => {
+    const u = await getCurrentAccount();
+    if (!u || u.kind !== "tenant") throw redirect({ to: "/account/login" });
+  },
+  loader: () => loadTenantUtilities(),
+  component: Page,
+});
+function fmt(v: string | number) {
+  return String(Number(v)).replace(".", ",");
+}
+function Page() {
+  const d = Route.useLoaderData(),
+    [error, setError] = useState("");
+  async function submit(e: FormEvent<HTMLFormElement>, meterId: string) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    try {
+      await submitMeterReading({ data: { meterId, value: Number(f.get("value")) } });
+      location.reload();
+    } catch (x) {
+      setError(x instanceof Error ? x.message : "Не удалось сохранить");
+    }
+  }
+  const premises = [...new Map(d.meters.map((m) => [m.premiseId, m.premise])).entries()];
+  return (
+    <PortalShell title="Счётчики и коммунальные расходы">
+      <a href="/account" className="mb-5 inline-block border px-3 py-2 text-sm">
+        ← Личный кабинет
+      </a>
+      <section className="mb-6 border bg-background p-5">
+        <h2 className="text-xl font-semibold">Счётчики</h2>
+        <div className="mt-4 space-y-6">
+          {premises.map(([premiseId, premise]) => (
+            <div key={premiseId}>
+              <h3 className="mb-3 text-lg font-semibold">{premise}</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {d.meters
+                  .filter((m) => m.premiseId === premiseId)
+                  .map((m) => (
+                    <article key={m.id} className="border p-4">
+                      <b>{m.name || m.type}</b>
+                      <p className="text-sm text-muted-foreground">
+                        {m.serial || "Без номера"} · {m.unit}
+                      </p>
+                      <p className="mt-2 text-sm">
+                        Последнее:{" "}
+                        {m.previous ? `${fmt(m.previous.value)} ${m.unit}` : "Нет показаний"}
+                      </p>
+                      <form onSubmit={(e) => submit(e, m.id)} className="mt-3 flex gap-2">
+                        <input
+                          name="value"
+                          type="number"
+                          min="0"
+                          max="1000000000000"
+                          step="0.0001"
+                          required
+                          className="min-w-0 flex-1 border p-3"
+                        />
+                        <button className="bg-primary px-4 text-primary-foreground">
+                          Передать
+                        </button>
+                      </form>
+                      <details className="mt-3 text-sm">
+                        <summary>История</summary>
+                        {m.readings.map((r) => (
+                          <p key={r.id}>
+                            {new Date(r.at).toLocaleString("ru-RU")} · {fmt(r.value)} {m.unit}
+                          </p>
+                        ))}
+                      </details>
+                    </article>
+                  ))}
+              </div>
+            </div>
+          ))}
+          {!d.meters.length && (
+            <p className="text-sm text-muted-foreground">Активных счётчиков пока нет.</p>
+          )}
+          {error && <p className="text-destructive">{error}</p>}
+        </div>
+      </section>
+      <section className="border bg-background p-5">
+        <h2 className="text-xl font-semibold">Расходы и аналитика</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="border p-4">
+            <small>Текущий период</small>
+            <b className="block text-2xl">{d.summary.total.toLocaleString("ru-RU")} ₽</b>
+          </div>
+          <div className="border p-4">
+            <small>К предыдущему периоду</small>
+            <b className="block text-xl">
+              {d.summary.change === null
+                ? "Недостаточно данных"
+                : `${d.summary.change >= 0 ? "+" : ""}${d.summary.change.toLocaleString("ru-RU")} ₽`}
+            </b>
+            {d.summary.percent !== null && <span>{d.summary.percent.toFixed(1)}%</span>}
+          </div>
+          <div className="border p-4">
+            <small>Экономия</small>
+            <b className="block text-lg">Ожидает утверждённую формулу</b>
+          </div>
+        </div>
+        <div className="mt-4 space-y-2">
+          {d.expenses.map((e) => (
+            <div key={e.id} className="grid gap-1 border p-3 sm:grid-cols-4">
+              <b>{e.period}</b>
+              <span>{e.premise}</span>
+              <span>{e.category}</span>
+              <span className="sm:text-right">{Number(e.amount).toLocaleString("ru-RU")} ₽</span>
+            </div>
+          ))}
+          {!d.expenses.length && (
+            <p className="text-sm text-muted-foreground">Расходы пока не внесены.</p>
+          )}
+        </div>
+      </section>
+    </PortalShell>
+  );
+}
