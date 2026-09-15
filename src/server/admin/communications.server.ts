@@ -32,7 +32,7 @@ export async function communicationsAdmin(kind: "notification" | "announcement" 
   const db = getDatabase();
   const [items, tenants, groups, objects, types] = await Promise.all([
     db.select().from(s.announcements).where(eq(s.announcements.kind, kind)).orderBy(sql`${s.announcements.createdAt} desc`),
-    db.select({ id: s.users.id, name: s.users.displayName }).from(s.users).where(and(eq(s.users.kind, "tenant"), eq(s.users.isActive, true))).orderBy(s.users.displayName),
+    db.select({ id: s.users.id, name: s.users.displayName, email: s.users.email }).from(s.users).where(and(eq(s.users.kind, "tenant"), eq(s.users.isActive, true))).orderBy(s.users.displayName),
     db.select({ id: s.tenantGroups.id, name: s.tenantGroups.name }).from(s.tenantGroups).orderBy(s.tenantGroups.name),
     db.select({ id: s.propertyObjects.id, name: s.propertyObjects.address }).from(s.propertyObjects).orderBy(s.propertyObjects.address),
     db.select({ id: s.premiseTypes.id, name: s.premiseTypes.name }).from(s.premiseTypes).orderBy(s.premiseTypes.name),
@@ -52,8 +52,20 @@ export async function saveCommunication(input: {
 }) {
   const actor = await requirePermission(permissionFor(input.kind));
   const db = getDatabase(), id = input.id || randomUUID(), now = new Date();
+  const existing = input.id ? (await db.select().from(s.announcements).where(eq(s.announcements.id, input.id)).limit(1))[0] : null;
+  const existingAudience = existing?.audience as Record<string, string | null> | undefined;
+  const waitlistRecipientId = existingAudience?.["waitlistId"] ? existingAudience["id"] : null;
+  if (waitlistRecipientId && (input.audience.scope !== "tenant" || input.audience.id !== waitlistRecipientId))
+    throw new Error("Получателя персонального уведомления из листа ожидания изменять нельзя");
+  const effectiveAudience = waitlistRecipientId ? { scope: "tenant" as const, id: waitlistRecipientId } : input.audience;
   const status = input.send ? "sent" : input.status;
-  const storedAudience = { scope: input.audience.scope, id: input.audience.id || null };
+  const storedAudience = { scope: effectiveAudience.scope, id: effectiveAudience.id || null, ...(existingAudience?.["waitlistId"] ? { waitlistId: existingAudience["waitlistId"] } : {}) };
+  const recipients = [...new Map((await resolveRecipients(effectiveAudience)).map((recipient) => [recipient.id, recipient])).values()];
+  if (input.send && recipients.length === 0) throw new Error("Для выбранного сегмента нет доступных получателей");
+  if (input.send && input.channels.includes("email")) {
+    const withoutEmail = recipients.filter((recipient) => !recipient.email);
+    if (withoutEmail.length) throw new Error("У получателя не указан email. Отправка по email невозможна");
+  }
   const values = { title: input.title, subject: input.subject || input.title, body: input.body, category: input.category || null,
     audience: storedAudience, channels: input.channels, status, startsAt: input.startsAt ? new Date(input.startsAt) : null,
     endsAt: input.endsAt ? new Date(input.endsAt) : null, publishedAt: input.kind === "announcement" && input.send ? now : null,
@@ -62,7 +74,6 @@ export async function saveCommunication(input: {
   else await db.insert(s.announcements).values({ id, kind: input.kind, ...values });
   if (!input.send) return { id, recipients: 0 };
 
-  const recipients = [...new Map((await resolveRecipients(input.audience)).map((recipient) => [recipient.id, recipient])).values()];
   const consentRows = await db.select().from(s.userChannelConsents);
   const consent = new Set(consentRows.filter((row) => row.status === "granted").map((row) => `${row.userId}:${row.channel}`));
   const { sendProjectEmail } = await import("@/server/portal/email.server");
@@ -126,7 +137,7 @@ export async function waitlistAdmin() {
     db.select({ id:s.propertyObjects.id,name:s.propertyObjects.address }).from(s.propertyObjects), db.select({ id:s.premiseTypes.id,name:s.premiseTypes.name }).from(s.premiseTypes),
     db.select({id:s.premises.id,typeId:s.premises.typeId,objectId:s.premises.objectId,area:s.premises.areaSqm,price:s.propertyOffers.rentPricePerSqm,title:s.premises.title}).from(s.premises).leftJoin(s.propertyOffers,eq(s.propertyOffers.premiseId,s.premises.id)).where(eq(s.premises.publicationStatus,"published")),
   ]);
-  return { items: items.map((item) => ({ ...item, matches: available.map((p) => ({ id:p.id,title:p.title,reasons:waitlistMatch(item,p) })).filter((x) => x.reasons.length) })), tenants, premises, objects, types };
+  return { items: items.map((item) => ({ ...item, matches: item.status === "active" ? available.map((p) => ({ id:p.id,title:p.title,reasons:waitlistMatch(item,p) })).filter((x) => x.reasons.length) : [] })), tenants, premises, objects, types };
 }
 
 export async function saveWaitlist(input: { id?:string|undefined;userId?:string|undefined;email?:string|undefined;phone?:string|undefined;name?:string|undefined;source:"favorite"|"interest"|"request"|"waitlist"|"similar";premiseId?:string|undefined;typeId?:string|undefined;objectId?:string|undefined;areaMin?:string|undefined;areaMax?:string|undefined;priceMin?:string|undefined;priceMax?:string|undefined;status:string;note?:string|undefined }) {
@@ -136,9 +147,18 @@ export async function saveWaitlist(input: { id?:string|undefined;userId?:string|
   if(input.id)await db.update(s.waitlistEntries).set(values).where(eq(s.waitlistEntries.id,id));else await db.insert(s.waitlistEntries).values({id,...values});return{id};
 }
 
+export async function deleteWaitlist(id:string) {
+  const actor=await requirePermission("waitlist.manage"),db=getDatabase();
+  const entry=(await db.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.id,id)).limit(1))[0];
+  if(!entry)throw new Error("Запись листа ожидания не найдена");
+  await db.transaction(async(tx)=>{await tx.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:"waitlist.deleted",entityType:"waitlist",entityId:id,before:entry});await tx.delete(s.waitlistEntries).where(eq(s.waitlistEntries.id,id))});
+  return{ok:true};
+}
+
 export async function prepareWaitlistNotification(id:string){
-  const actor=await requirePermission("waitlist.manage"),db=getDatabase();const entry=(await db.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.id,id)).limit(1))[0];if(!entry)throw new Error("Запись не найдена");if(!entry.userId)throw new Error("Для контакта без аккаунта уведомление в ЛК недоступно");
+  const actor=await requirePermission("waitlist.manage"),db=getDatabase();const entry=(await db.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.id,id)).limit(1))[0];if(!entry)throw new Error("Запись не найдена");if(entry.status!=="active")throw new Error("Уведомление можно подготовить только для активной записи");if(!entry.userId)throw new Error("Для контакта без аккаунта уведомление в личном кабинете недоступно");
   const data=await waitlistAdmin(),item=data.items.find(x=>x.id===id);if(!item?.matches.length)throw new Error("Подходящих помещений пока нет");const notificationId=randomUUID(),titles=item.matches.map(x=>x.title).join(", ");
-  await db.insert(s.announcements).values({id:notificationId,kind:"notification",title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,status:"draft",audience:{scope:"tenant",id:entry.userId},channels:["in_app"]});
+  const recipient=(await db.select({email:s.users.email}).from(s.users).where(eq(s.users.id,entry.userId)).limit(1))[0];
+  await db.insert(s.announcements).values({id:notificationId,kind:"notification",title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,status:"draft",audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels:recipient?.email?["in_app","email"]:["in_app"]});
   await db.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:"waitlist.notification_prepared",entityType:"waitlist",entityId:id,after:{notificationId}});return{notificationId};
 }
