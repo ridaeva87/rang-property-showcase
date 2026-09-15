@@ -135,6 +135,14 @@ export function waitlistMatch(entry: { premiseId?: string | null; premiseTypeId?
   return reasons;
 }
 
+export function decideWaitlistNotification(existing: { id: string; status: string; body: string }[], body: string) {
+  const sent = existing.find((item) => item.status === "sent" && item.body === body);
+  if (sent) return { action: "already_sent" as const, id: sent.id };
+  const draft = existing.find((item) => item.status === "draft");
+  if (draft) return { action: "reuse_draft" as const, id: draft.id };
+  return { action: "create" as const };
+}
+
 export async function waitlistAdmin() {
   await requirePermission("waitlist.manage"); const db = getDatabase();
   const [items, tenants, premises, objects, types, available] = await Promise.all([
@@ -164,10 +172,16 @@ export async function deleteWaitlist(id:string) {
 
 export async function prepareWaitlistNotification(id:string){
   const actor=await requirePermission("waitlist.manage"),db=getDatabase();const entry=(await db.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.id,id)).limit(1))[0];if(!entry)throw new Error("Запись не найдена");if(entry.status!=="active")throw new Error("Уведомление можно подготовить только для активной записи");if(!entry.userId)throw new Error("Для контакта без аккаунта уведомление в личном кабинете недоступно");
-  const data=await waitlistAdmin(),item=data.items.find(x=>x.id===id);if(!item?.matches.length)throw new Error("Подходящих помещений пока нет");const notificationId=randomUUID(),titles=item.matches.map(x=>x.title).join(", ");
+  const data=await waitlistAdmin(),item=data.items.find(x=>x.id===id);if(!item?.matches.length)throw new Error("Подходящих помещений пока нет");const titles=[...new Set(item.matches.map(x=>x.title))].sort((a,b)=>a.localeCompare(b,"ru")).join(", "),body=`Подобраны варианты: ${titles}`;
   const recipient=(await db.select({email:s.users.email}).from(s.users).where(eq(s.users.id,entry.userId)).limit(1))[0],channels=recipient?.email?["in_app","email"]:["in_app"];
-  const existing=(await db.select({id:s.announcements.id}).from(s.announcements).where(and(eq(s.announcements.kind,"notification"),eq(s.announcements.status,"draft"),sql`${s.announcements.audience}->>'waitlistId' = ${id}`)).orderBy(sql`${s.announcements.createdAt} desc`).limit(1))[0];
-  if(existing){await db.update(s.announcements).set({title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels,updatedAt:new Date()}).where(eq(s.announcements.id,existing.id));return{notificationId:existing.id}}
-  await db.insert(s.announcements).values({id:notificationId,kind:"notification",title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,status:"draft",audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels});
-  await db.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:"waitlist.notification_prepared",entityType:"waitlist",entityId:id,after:{notificationId}});return{notificationId};
+  return db.transaction(async(tx)=>{
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${id}))`);
+    const existing=await tx.select({id:s.announcements.id,status:s.announcements.status,body:s.announcements.body}).from(s.announcements).where(and(eq(s.announcements.kind,"notification"),sql`${s.announcements.audience}->>'waitlistId' = ${id}`)).orderBy(sql`${s.announcements.createdAt} desc`);
+    const decision=decideWaitlistNotification(existing,body);
+    if(decision.action==="already_sent")throw new Error("Уведомление по этому набору помещений уже отправлено");
+    if(decision.action==="reuse_draft"){await tx.update(s.announcements).set({title:"Подходящие помещения",subject:"Подходящие помещения RANG",body,audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels,updatedAt:new Date()}).where(eq(s.announcements.id,decision.id));return{notificationId:decision.id}}
+    const notificationId=randomUUID();
+    await tx.insert(s.announcements).values({id:notificationId,kind:"notification",title:"Подходящие помещения",subject:"Подходящие помещения RANG",body,status:"draft",audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels});
+    await tx.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:"waitlist.notification_prepared",entityType:"waitlist",entityId:id,after:{notificationId}});return{notificationId};
+  });
 }
