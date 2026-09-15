@@ -7,6 +7,8 @@ type Ref = { id: string; name: string | null };
 type CommunicationItem={id:string;title:string;body:string;category:string|null;status:string;channels:string[]};
 type Data = { items: CommunicationItem[]; tenants: Ref[]; groups: Ref[]; objects: Ref[]; types: Ref[] };
 const categories = ["Плановые работы","Электроснабжение","Водоснабжение","Технические работы","Режим работы","Безопасность","Движение по территории","Общие объявления"];
+const statusLabels:Record<string,string>={draft:"Черновик",scheduled:"Запланировано",sent:"Отправлено",published:"Опубликовано",completed:"Завершено"};
+const channelLabels:Record<string,string>={in_app:"Личный кабинет",email:"Email",telegram:"Telegram",sms:"SMS"};
 
 export function CommunicationsAdminPage({ kind, data, nav }: { kind: Kind; data: Data; nav: readonly (readonly [string,string,string])[] }) {
   const [scope,setScope]=useState<"all"|"tenant"|"group"|"object"|"type">("all"),[scopeId,setScopeId]=useState(""),[count,setCount]=useState<number|null>(null),[message,setMessage]=useState("");
@@ -24,5 +26,5 @@ export function CommunicationsAdminPage({ kind, data, nav }: { kind: Kind; data:
     <select name="status" className="border p-3"><option value="draft">Черновик</option>{kind==="announcement"&&<option value="scheduled">Запланировано</option>}</select><button type="button" onClick={preview} className="border p-3">Проверить получателей</button>
     <p className="border p-3 md:col-span-2">Сегмент: {scope==="all"?"Все арендаторы":refs.find(x=>x.id===scopeId)?.name||"не выбран"} · Получателей: {count??"не подсчитано"}</p>
     <button name="action" value="draft" className="border p-3">Сохранить черновик</button><button name="action" value="send" className="bg-primary p-3 text-primary-foreground">{kind==="announcement"?"Опубликовать":"Отправить"}</button>
-  </form>{message&&<p role="alert" className="mt-3 border p-3">{message}</p>}<div className="mt-6 space-y-2">{data.items.map(x=><article key={x.id} className="border bg-background p-4"><b>{x.title}</b><p className="text-sm">{x.category&&`${x.category} · `}{x.status} · {(x.channels||[]).join(", ")}</p><p className="text-sm text-muted-foreground">{x.body}</p></article>)}</div></AdminShell>;
+  </form>{message&&<p role="alert" className="mt-3 border p-3">{message}</p>}<div className="mt-6 space-y-2">{data.items.map(x=><article key={x.id} className="border bg-background p-4"><b>{x.title}</b><p className="text-sm">{x.category&&`${x.category} · `}{statusLabels[x.status]||x.status} · {(x.channels||[]).map(channel=>channelLabels[channel]||channel).join(", ")}</p><p className="text-sm text-muted-foreground">{x.body}</p></article>)}</div></AdminShell>;
 }
