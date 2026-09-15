@@ -53,6 +53,7 @@ export async function saveCommunication(input: {
   const actor = await requirePermission(permissionFor(input.kind));
   const db = getDatabase(), id = input.id || randomUUID(), now = new Date();
   const existing = input.id ? (await db.select().from(s.announcements).where(eq(s.announcements.id, input.id)).limit(1))[0] : null;
+  if(input.send&&existing?.status==="sent")throw new Error("Это уведомление уже отправлено");
   const existingAudience = existing?.audience as Record<string, string | null> | undefined;
   const waitlistRecipientId = existingAudience?.["waitlistId"] ? existingAudience["id"] : null;
   if (waitlistRecipientId && (input.audience.scope !== "tenant" || input.audience.id !== waitlistRecipientId))
@@ -72,28 +73,34 @@ export async function saveCommunication(input: {
     sentAt: input.send ? now : null, updatedAt: now };
   if (input.id) await db.update(s.announcements).set(values).where(and(eq(s.announcements.id, id), eq(s.announcements.kind, input.kind)));
   else await db.insert(s.announcements).values({ id, kind: input.kind, ...values });
-  if (!input.send) return { id, recipients: 0 };
+  if (!input.send) return { id, recipients: 0, sent: 0, errors: 0, skipped: 0 };
 
   const consentRows = await db.select().from(s.userChannelConsents);
   const consent = new Set(consentRows.filter((row) => row.status === "granted").map((row) => `${row.userId}:${row.channel}`));
   const { sendProjectEmail } = await import("@/server/portal/email.server");
+  let sent=0,errors=0,skipped=0;
   for (const recipient of recipients) {
-    await db.insert(s.announcementRecipients).values({ id: randomUUID(), announcementId: id, kind: "user", recipientId: recipient.id });
+    const linked=(await db.select({id:s.announcementRecipients.id}).from(s.announcementRecipients).where(and(eq(s.announcementRecipients.announcementId,id),eq(s.announcementRecipients.recipientId,recipient.id))).limit(1))[0];
+    if(!linked)await db.insert(s.announcementRecipients).values({ id: randomUUID(), announcementId: id, kind: "user", recipientId: recipient.id });
     for (const channel of input.channels) {
       let deliveryStatus: "sent" | "error" | "skipped" = "sent", reason: string | null = null;
       if (channel === "in_app") {
         await db.insert(s.notifications).values({ id: randomUUID(), userId: recipient.id, announcementId: id, channel, title: input.subject || input.title, body: input.body, deliveredAt: now });
       } else if (channel === "telegram" || channel === "sms") {
         deliveryStatus = "skipped"; reason = "Канал не подключён";
-      } else if (!consent.has(`${recipient.id}:email`)) {
+      } else if (!existingAudience?.["waitlistId"] && !consent.has(`${recipient.id}:email`)) {
         deliveryStatus = "skipped"; reason = "Нет согласия на email";
-      } else if (!recipient.email || !(await sendProjectEmail({ to: recipient.email, subject: input.subject || input.title, text: input.body }))) {
-        deliveryStatus = "error"; reason = "Email не принят провайдером";
+      } else if (!recipient.email) {
+        deliveryStatus = "error"; reason = "У получателя не указан email";
+      } else {
+        try{if(!(await sendProjectEmail({ to: recipient.email, subject: input.subject || input.title, text: input.body }))){deliveryStatus="error";reason="Email не принят провайдером"}}
+        catch{deliveryStatus="error";reason="Ошибка отправки email"}
       }
       await db.insert(s.deliveryLogs).values({ id: randomUUID(), announcementId: id, recipientUserId: recipient.id, channel, status: deliveryStatus, reason, initiatedByUserId: actor.id });
+      if(deliveryStatus==="sent")sent++;else if(deliveryStatus==="error")errors++;else skipped++;
     }
   }
-  return { id, recipients: recipients.length };
+  return { id, recipients: recipients.length, sent, errors, skipped };
 }
 
 export async function deliveryLogAdmin(filters: { channel?: string | undefined; status?: string | undefined; kind?: string | undefined; recipient?: string | undefined; date?: string | undefined }) {
@@ -158,7 +165,9 @@ export async function deleteWaitlist(id:string) {
 export async function prepareWaitlistNotification(id:string){
   const actor=await requirePermission("waitlist.manage"),db=getDatabase();const entry=(await db.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.id,id)).limit(1))[0];if(!entry)throw new Error("Запись не найдена");if(entry.status!=="active")throw new Error("Уведомление можно подготовить только для активной записи");if(!entry.userId)throw new Error("Для контакта без аккаунта уведомление в личном кабинете недоступно");
   const data=await waitlistAdmin(),item=data.items.find(x=>x.id===id);if(!item?.matches.length)throw new Error("Подходящих помещений пока нет");const notificationId=randomUUID(),titles=item.matches.map(x=>x.title).join(", ");
-  const recipient=(await db.select({email:s.users.email}).from(s.users).where(eq(s.users.id,entry.userId)).limit(1))[0];
-  await db.insert(s.announcements).values({id:notificationId,kind:"notification",title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,status:"draft",audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels:recipient?.email?["in_app","email"]:["in_app"]});
+  const recipient=(await db.select({email:s.users.email}).from(s.users).where(eq(s.users.id,entry.userId)).limit(1))[0],channels=recipient?.email?["in_app","email"]:["in_app"];
+  const existing=(await db.select({id:s.announcements.id}).from(s.announcements).where(and(eq(s.announcements.kind,"notification"),eq(s.announcements.status,"draft"),sql`${s.announcements.audience}->>'waitlistId' = ${id}`)).orderBy(sql`${s.announcements.createdAt} desc`).limit(1))[0];
+  if(existing){await db.update(s.announcements).set({title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels,updatedAt:new Date()}).where(eq(s.announcements.id,existing.id));return{notificationId:existing.id}}
+  await db.insert(s.announcements).values({id:notificationId,kind:"notification",title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,status:"draft",audience:{scope:"tenant",id:entry.userId,waitlistId:id},channels});
   await db.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:"waitlist.notification_prepared",entityType:"waitlist",entityId:id,after:{notificationId}});return{notificationId};
 }
