@@ -25,10 +25,12 @@ import { Route as AccountUtilitiesRouteImport } from './routes/account/utilities
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdsRouteImport } from './routes/admin/ads'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin/announcements'
+import { Route as AdminDeliveryLogRouteImport } from './routes/admin/delivery-log'
 import { Route as AdminDocumentsRouteImport } from './routes/admin/documents'
 import { Route as AdminEmployeesRouteImport } from './routes/admin/employees'
 import { Route as AdminLeadsRouteImport } from './routes/admin/leads'
 import { Route as AdminMailingsRouteImport } from './routes/admin/mailings'
+import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as AdminPremisesRouteImport } from './routes/admin/premises'
 import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
 import { Route as AdminServicesRouteImport } from './routes/admin/services'
@@ -36,6 +38,7 @@ import { Route as AdminStatisticsRouteImport } from './routes/admin/statistics'
 import { Route as AdminSupportRouteImport } from './routes/admin/support'
 import { Route as AdminTenantsRouteImport } from './routes/admin/tenants'
 import { Route as AdminUtilitiesRouteImport } from './routes/admin/utilities'
+import { Route as AdminWaitlistRouteImport } from './routes/admin/waitlist'
 import { Route as ObjectsIndexRouteImport } from './routes/objects/index'
 import { Route as ObjectsSlugRouteImport } from './routes/objects/$slug'
 import { Route as PropertiesIndexRouteImport } from './routes/properties/index'
@@ -124,6 +127,11 @@ const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   path: '/admin/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDeliveryLogRoute = AdminDeliveryLogRouteImport.update({
+  id: '/admin/delivery-log',
+  path: '/admin/delivery-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
   id: '/admin/documents',
   path: '/admin/documents',
@@ -142,6 +150,11 @@ const AdminLeadsRoute = AdminLeadsRouteImport.update({
 const AdminMailingsRoute = AdminMailingsRouteImport.update({
   id: '/admin/mailings',
   path: '/admin/mailings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/admin/notifications',
+  path: '/admin/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPremisesRoute = AdminPremisesRouteImport.update({
@@ -177,6 +190,11 @@ const AdminTenantsRoute = AdminTenantsRouteImport.update({
 const AdminUtilitiesRoute = AdminUtilitiesRouteImport.update({
   id: '/admin/utilities',
   path: '/admin/utilities',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminWaitlistRoute = AdminWaitlistRouteImport.update({
+  id: '/admin/waitlist',
+  path: '/admin/waitlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ObjectsIndexRoute = ObjectsIndexRouteImport.update({
@@ -230,10 +248,12 @@ export interface FileRoutesByFullPath {
   '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mailings': typeof AdminMailingsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/premises': typeof AdminPremisesRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/services': typeof AdminServicesRoute
@@ -241,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/admin/support': typeof AdminSupportRoute
   '/admin/tenants': typeof AdminTenantsRoute
   '/admin/utilities': typeof AdminUtilitiesRoute
+  '/admin/waitlist': typeof AdminWaitlistRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account/': typeof AccountIndexRoute
@@ -266,10 +287,12 @@ export interface FileRoutesByTo {
   '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mailings': typeof AdminMailingsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/premises': typeof AdminPremisesRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/services': typeof AdminServicesRoute
@@ -277,6 +300,7 @@ export interface FileRoutesByTo {
   '/admin/support': typeof AdminSupportRoute
   '/admin/tenants': typeof AdminTenantsRoute
   '/admin/utilities': typeof AdminUtilitiesRoute
+  '/admin/waitlist': typeof AdminWaitlistRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account': typeof AccountIndexRoute
@@ -303,10 +327,12 @@ export interface FileRoutesById {
   '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mailings': typeof AdminMailingsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/premises': typeof AdminPremisesRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/services': typeof AdminServicesRoute
@@ -314,6 +340,7 @@ export interface FileRoutesById {
   '/admin/support': typeof AdminSupportRoute
   '/admin/tenants': typeof AdminTenantsRoute
   '/admin/utilities': typeof AdminUtilitiesRoute
+  '/admin/waitlist': typeof AdminWaitlistRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account/': typeof AccountIndexRoute
@@ -341,10 +368,12 @@ export interface FileRouteTypes {
     | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
+    | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
     | '/admin/leads'
     | '/admin/mailings'
+    | '/admin/notifications'
     | '/admin/premises'
     | '/admin/requests'
     | '/admin/services'
@@ -352,6 +381,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/tenants'
     | '/admin/utilities'
+    | '/admin/waitlist'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account/'
@@ -377,10 +407,12 @@ export interface FileRouteTypes {
     | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
+    | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
     | '/admin/leads'
     | '/admin/mailings'
+    | '/admin/notifications'
     | '/admin/premises'
     | '/admin/requests'
     | '/admin/services'
@@ -388,6 +420,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/tenants'
     | '/admin/utilities'
+    | '/admin/waitlist'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account'
@@ -413,10 +446,12 @@ export interface FileRouteTypes {
     | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
+    | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
     | '/admin/leads'
     | '/admin/mailings'
+    | '/admin/notifications'
     | '/admin/premises'
     | '/admin/requests'
     | '/admin/services'
@@ -424,6 +459,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/tenants'
     | '/admin/utilities'
+    | '/admin/waitlist'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account/'
@@ -450,10 +486,12 @@ export interface RootRouteChildren {
   AccountUtilitiesRoute: typeof AccountUtilitiesRoute
   AdminAdsRoute: typeof AdminAdsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminDeliveryLogRoute: typeof AdminDeliveryLogRoute
   AdminDocumentsRoute: typeof AdminDocumentsRouteWithChildren
   AdminEmployeesRoute: typeof AdminEmployeesRoute
   AdminLeadsRoute: typeof AdminLeadsRoute
   AdminMailingsRoute: typeof AdminMailingsRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPremisesRoute: typeof AdminPremisesRouteWithChildren
   AdminRequestsRoute: typeof AdminRequestsRoute
   AdminServicesRoute: typeof AdminServicesRoute
@@ -461,6 +499,7 @@ export interface RootRouteChildren {
   AdminSupportRoute: typeof AdminSupportRoute
   AdminTenantsRoute: typeof AdminTenantsRoute
   AdminUtilitiesRoute: typeof AdminUtilitiesRoute
+  AdminWaitlistRoute: typeof AdminWaitlistRoute
   ObjectsSlugRoute: typeof ObjectsSlugRoute
   PropertiesSlugRoute: typeof PropertiesSlugRoute
   AccountIndexRoute: typeof AccountIndexRoute
@@ -584,6 +623,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/delivery-log': {
+      id: '/admin/delivery-log'
+      path: '/admin/delivery-log'
+      fullPath: '/admin/delivery-log'
+      preLoaderRoute: typeof AdminDeliveryLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/documents': {
       id: '/admin/documents'
       path: '/admin/documents'
@@ -610,6 +656,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/mailings'
       fullPath: '/admin/mailings'
       preLoaderRoute: typeof AdminMailingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/admin/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/premises': {
@@ -659,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/utilities'
       fullPath: '/admin/utilities'
       preLoaderRoute: typeof AdminUtilitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/waitlist': {
+      id: '/admin/waitlist'
+      path: '/admin/waitlist'
+      fullPath: '/admin/waitlist'
+      preLoaderRoute: typeof AdminWaitlistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/objects/': {
@@ -752,10 +812,12 @@ const rootRouteChildren: RootRouteChildren = {
   AccountUtilitiesRoute: AccountUtilitiesRoute,
   AdminAdsRoute: AdminAdsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminDeliveryLogRoute: AdminDeliveryLogRoute,
   AdminDocumentsRoute: AdminDocumentsRouteWithChildren,
   AdminEmployeesRoute: AdminEmployeesRoute,
   AdminLeadsRoute: AdminLeadsRoute,
   AdminMailingsRoute: AdminMailingsRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPremisesRoute: AdminPremisesRouteWithChildren,
   AdminRequestsRoute: AdminRequestsRoute,
   AdminServicesRoute: AdminServicesRoute,
@@ -763,6 +825,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSupportRoute: AdminSupportRoute,
   AdminTenantsRoute: AdminTenantsRoute,
   AdminUtilitiesRoute: AdminUtilitiesRoute,
+  AdminWaitlistRoute: AdminWaitlistRoute,
   ObjectsSlugRoute: ObjectsSlugRoute,
   PropertiesSlugRoute: PropertiesSlugRoute,
   AccountIndexRoute: AccountIndexRoute,

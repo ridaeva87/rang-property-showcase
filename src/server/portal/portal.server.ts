@@ -448,12 +448,12 @@ export async function listTenantsAdmin() {
 }
 
 export async function saveTenantAdmin(input: {
-  id?: string;
+  id?: string | undefined;
   name: string;
   email: string;
   active: boolean;
   premiseIds: string[];
-  groupIds?: string[];
+  groupIds?: string[] | undefined;
 }) {
   const actor = await requirePermission("tenants.manage");
   const db = getDatabase();

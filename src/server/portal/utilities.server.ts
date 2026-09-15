@@ -218,9 +218,9 @@ export async function utilitiesAdmin() {
 }
 
 export async function saveMeter(input: {
-  id?: string;
+  id?: string | undefined;
   name: string;
-  serial?: string;
+  serial?: string | undefined;
   premiseId: string;
   typeId: string;
   active: boolean;
@@ -256,14 +256,14 @@ export async function saveMeter(input: {
 }
 
 export async function saveExpense(input: {
-  id?: string;
+  id?: string | undefined;
   tenantId: string;
   premiseId: string;
   categoryId: string;
   period: string;
   amount: number;
-  consumption?: number;
-  note?: string;
+  consumption?: number | undefined;
+  note?: string | undefined;
 }) {
   const actor = await requirePermission("utilities.manage"),
     db = getDatabase();

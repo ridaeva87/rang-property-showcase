@@ -700,6 +700,11 @@ export const announcements = pgTable("announcements", {
   status: text("status").default("draft").notNull(),
   audienceGroupId: text("audience_group_id").references(() => tenantGroups.id, { onDelete: "set null" }),
   sentAt: timestamp("sent_at", { withTimezone: true }),
+  category: text("category"),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  audience: jsonb("audience").$type<Record<string, string | null>>().default({ scope: "all" }).notNull(),
+  channels: jsonb("channels").$type<string[]>().default(["in_app"]).notNull(),
   ...timestamps,
 });
 export const announcementRecipients = pgTable(
@@ -734,6 +739,46 @@ export const notifications = pgTable(
   },
   (table) => [index("notifications_user_read_idx").on(table.userId, table.readAt)],
 );
+
+export const userChannelConsents = pgTable("user_channel_consents", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  channel: deliveryChannel("channel").notNull(),
+  status: text("status").notNull(),
+  source: text("source").notNull(),
+  legalTextVersion: text("legal_text_version"),
+  consentedAt: timestamp("consented_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [primaryKey({ columns: [table.userId, table.channel] })]);
+
+export const deliveryLogs = pgTable("delivery_logs", {
+  id: text("id").primaryKey(),
+  announcementId: text("announcement_id").references(() => announcements.id, { onDelete: "set null" }),
+  recipientUserId: text("recipient_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  channel: deliveryChannel("channel").notNull(),
+  status: text("status").notNull(),
+  reason: text("reason"),
+  initiatedByUserId: text("initiated_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  ...timestamps,
+});
+
+export const waitlistEntries = pgTable("waitlist_entries", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  contactName: text("contact_name"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  premiseId: text("premise_id").references(() => premises.id, { onDelete: "set null" }),
+  premiseTypeId: text("premise_type_id").references(() => premiseTypes.id, { onDelete: "set null" }),
+  objectId: text("object_id").references(() => propertyObjects.id, { onDelete: "set null" }),
+  areaMin: decimal("area_min", { precision: 12, scale: 2 }),
+  areaMax: decimal("area_max", { precision: 12, scale: 2 }),
+  priceMin: decimal("price_min", { precision: 14, scale: 2 }),
+  priceMax: decimal("price_max", { precision: 14, scale: 2 }),
+  status: text("status").default("active").notNull(),
+  note: text("note"),
+  ...timestamps,
+});
 
 export const favorites = pgTable(
   "favorites",
