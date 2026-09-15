@@ -93,7 +93,9 @@ export async function deliveryLogAdmin(filters: { channel?: string | undefined; 
     recipient: s.users.displayName, message: s.announcements.title, kind: s.announcements.kind })
     .from(s.deliveryLogs).innerJoin(s.users, eq(s.deliveryLogs.recipientUserId, s.users.id))
     .leftJoin(s.announcements, eq(s.deliveryLogs.announcementId, s.announcements.id)).orderBy(sql`${s.deliveryLogs.createdAt} desc`);
-  return rows.filter((row) => (!filters.channel || row.channel === filters.channel) && (!filters.status || row.status === filters.status)
+  const planned = await db.select({ id:s.announcements.id,createdAt:s.announcements.createdAt,message:s.announcements.title,kind:s.announcements.kind,status:s.announcements.status,channels:s.announcements.channels,audience:s.announcements.audience }).from(s.announcements).where(sql`${s.announcements.status} in ('draft','scheduled')`);
+  const combined = [...rows, ...planned.flatMap((item) => item.channels.map((channel) => ({ id:`${item.id}:${channel}`,createdAt:item.createdAt,channel,status:"prepared",reason:null,recipientId:null,recipient:`Сегмент: ${item.audience["scope"]}`,message:item.message,kind:item.kind })))]
+  return combined.filter((row) => (!filters.channel || row.channel === filters.channel) && (!filters.status || row.status === filters.status)
     && (!filters.kind || row.kind === filters.kind) && (!filters.recipient || row.recipientId === filters.recipient)
     && (!filters.date || row.createdAt.toISOString().slice(0, 10) === filters.date));
 }
@@ -127,9 +129,16 @@ export async function waitlistAdmin() {
   return { items: items.map((item) => ({ ...item, matches: available.map((p) => ({ id:p.id,title:p.title,reasons:waitlistMatch(item,p) })).filter((x) => x.reasons.length) })), tenants, premises, objects, types };
 }
 
-export async function saveWaitlist(input: { id?:string|undefined;userId?:string|undefined;email?:string|undefined;phone?:string|undefined;name?:string|undefined;premiseId?:string|undefined;typeId?:string|undefined;objectId?:string|undefined;areaMin?:string|undefined;areaMax?:string|undefined;priceMin?:string|undefined;priceMax?:string|undefined;status:string;note?:string|undefined }) {
+export async function saveWaitlist(input: { id?:string|undefined;userId?:string|undefined;email?:string|undefined;phone?:string|undefined;name?:string|undefined;source:"favorite"|"interest"|"request"|"waitlist"|"similar";premiseId?:string|undefined;typeId?:string|undefined;objectId?:string|undefined;areaMin?:string|undefined;areaMax?:string|undefined;priceMin?:string|undefined;priceMax?:string|undefined;status:string;note?:string|undefined }) {
   await requirePermission("waitlist.manage"); const db=getDatabase(),id=input.id||randomUUID();
   if(!input.userId&&!input.email&&!input.phone) throw new Error("Укажите арендатора или контакт");
-  const values={userId:input.userId||null,contactEmail:input.email||null,contactPhone:input.phone||null,contactName:input.name||null,premiseId:input.premiseId||null,premiseTypeId:input.typeId||null,objectId:input.objectId||null,areaMin:input.areaMin||null,areaMax:input.areaMax||null,priceMin:input.priceMin||null,priceMax:input.priceMax||null,status:input.status,note:input.note||null,updatedAt:new Date()};
+  const values={userId:input.userId||null,contactEmail:input.email||null,contactPhone:input.phone||null,contactName:input.name||null,source:input.source,premiseId:input.premiseId||null,premiseTypeId:input.typeId||null,objectId:input.objectId||null,areaMin:input.areaMin||null,areaMax:input.areaMax||null,priceMin:input.priceMin||null,priceMax:input.priceMax||null,status:input.status,note:input.note||null,updatedAt:new Date()};
   if(input.id)await db.update(s.waitlistEntries).set(values).where(eq(s.waitlistEntries.id,id));else await db.insert(s.waitlistEntries).values({id,...values});return{id};
+}
+
+export async function prepareWaitlistNotification(id:string){
+  const actor=await requirePermission("waitlist.manage"),db=getDatabase();const entry=(await db.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.id,id)).limit(1))[0];if(!entry)throw new Error("Запись не найдена");if(!entry.userId)throw new Error("Для контакта без аккаунта уведомление в ЛК недоступно");
+  const data=await waitlistAdmin(),item=data.items.find(x=>x.id===id);if(!item?.matches.length)throw new Error("Подходящих помещений пока нет");const notificationId=randomUUID(),titles=item.matches.map(x=>x.title).join(", ");
+  await db.insert(s.announcements).values({id:notificationId,kind:"notification",title:"Подходящие помещения",subject:"Подходящие помещения RANG",body:`Подобраны варианты: ${titles}`,status:"draft",audience:{scope:"tenant",id:entry.userId},channels:["in_app"]});
+  await db.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:"waitlist.notification_prepared",entityType:"waitlist",entityId:id,after:{notificationId}});return{notificationId};
 }

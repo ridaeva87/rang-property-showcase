@@ -768,6 +768,7 @@ export const waitlistEntries = pgTable("waitlist_entries", {
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
+  source: text("source").default("waitlist").notNull(),
   premiseId: text("premise_id").references(() => premises.id, { onDelete: "set null" }),
   premiseTypeId: text("premise_type_id").references(() => premiseTypes.id, { onDelete: "set null" }),
   objectId: text("object_id").references(() => propertyObjects.id, { onDelete: "set null" }),
