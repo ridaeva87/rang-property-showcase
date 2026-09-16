@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as PersonalDataConsentRouteImport } from './routes/personal-data-consent'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RentRouteImport } from './routes/rent'
 import { Route as SaleRouteImport } from './routes/sale'
 import { Route as ServicesRouteImport } from './routes/services'
@@ -60,6 +62,16 @@ const AboutRoute = AboutRouteImport.update({
 const FavoritesRoute = FavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonalDataConsentRoute = PersonalDataConsentRouteImport.update({
+  id: '/personal-data-consent',
+  path: '/personal-data-consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RentRoute = RentRouteImport.update({
@@ -237,6 +249,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/favorites': typeof FavoritesRoute
+  '/personal-data-consent': typeof PersonalDataConsentRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
@@ -276,6 +290,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/favorites': typeof FavoritesRoute
+  '/personal-data-consent': typeof PersonalDataConsentRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
@@ -316,6 +332,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/favorites': typeof FavoritesRoute
+  '/personal-data-consent': typeof PersonalDataConsentRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
@@ -357,6 +375,8 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/favorites'
+    | '/personal-data-consent'
+    | '/privacy-policy'
     | '/rent'
     | '/sale'
     | '/services'
@@ -396,6 +416,8 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/favorites'
+    | '/personal-data-consent'
+    | '/privacy-policy'
     | '/rent'
     | '/sale'
     | '/services'
@@ -435,6 +457,8 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/favorites'
+    | '/personal-data-consent'
+    | '/privacy-policy'
     | '/rent'
     | '/sale'
     | '/services'
@@ -475,6 +499,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   FavoritesRoute: typeof FavoritesRoute
+  PersonalDataConsentRoute: typeof PersonalDataConsentRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RentRoute: typeof RentRoute
   SaleRoute: typeof SaleRoute
   ServicesRoute: typeof ServicesRoute
@@ -530,6 +556,20 @@ declare module '@tanstack/react-router' {
       path: '/favorites'
       fullPath: '/favorites'
       preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/personal-data-consent': {
+      id: '/personal-data-consent'
+      path: '/personal-data-consent'
+      fullPath: '/personal-data-consent'
+      preLoaderRoute: typeof PersonalDataConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rent': {
@@ -801,6 +841,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   FavoritesRoute: FavoritesRoute,
+  PersonalDataConsentRoute: PersonalDataConsentRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   RentRoute: RentRoute,
   SaleRoute: SaleRoute,
   ServicesRoute: ServicesRoute,

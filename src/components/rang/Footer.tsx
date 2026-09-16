@@ -2,9 +2,8 @@ import { NAV } from "@/data/rang";
 import { toast } from "sonner";
 
 const LEGAL = [
-  "Политика конфиденциальности",
-  "Согласие на обработку персональных данных",
-  "Согласие на получение информационных сообщений",
+  { label: "Политика конфиденциальности", href: "/privacy-policy" },
+  { label: "Согласие на обработку персональных данных", href: "/personal-data-consent" },
 ];
 
 export function Footer() {
@@ -42,14 +41,14 @@ export function Footer() {
             </button>
           </nav>
           <ul className="space-y-3 text-sm">
-            {LEGAL.map((l) => (
-              <li key={l}>
-                <button
-                  onClick={() => toast("Документ будет добавлен на следующем этапе")}
-                  className="text-left text-primary-foreground/60 transition-colors hover:text-accent"
+            {LEGAL.map((item) => (
+              <li key={item.href}>
+                <a
+                  href={item.href}
+                  className="text-primary-foreground/60 transition-colors hover:text-accent"
                 >
-                  {l}
-                </button>
+                  {item.label}
+                </a>
               </li>
             ))}
           </ul>
