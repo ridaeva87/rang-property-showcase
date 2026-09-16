@@ -50,6 +50,18 @@ export function formatCharacteristicValue(value: string) {
   );
 }
 
+export function formatNumericValue(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!/^-?\d+(?:\.\d+)?$/.test(normalized)) return value;
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 4 }).format(Number(normalized));
+}
+
+export function formatMeasurement(value: string, unit: string) {
+  if (value.toLocaleLowerCase("ru-RU").includes(unit.toLocaleLowerCase("ru-RU"))) return value;
+  if (!/\d/.test(value)) return value;
+  return `${formatNumericValue(value)} ${unit}`;
+}
+
 export function formatPremiseTitle(value: string) {
   const normalizedSpacing = value.replace(/(^|\s)пом\.\s*(?=\d)/giu, "$1пом. ");
   return normalizedSpacing.replace(/^\s*(\p{Ll})/u, (match) => match.toLocaleUpperCase("ru-RU"));
@@ -73,7 +85,7 @@ export const OBJECTS: PropertyObject[] = [
     slug: "tolbuhina-15-2",
     name: "Толбухина 15/2",
     address: "Казань, ул. Толбухина, 15, корп. 2",
-    description: "Административно-складское здание: офисные и комбинированные помещения.",
+    description: "Помещения свободного назначения",
     photos: [{ src: obj15, alt: "Объект компании «Ранг» на Толбухина, 15, корпус 2" }],
     territoryFeatures: [],
   },
@@ -82,7 +94,7 @@ export const OBJECTS: PropertyObject[] = [
     slug: "tolbuhina-19",
     name: "Толбухина 19",
     address: "Казань, ул. Толбухина, 19",
-    description: "Складские помещения различной площади, погрузочная зона.",
+    description: "Помещения свободного назначения",
     photos: [{ src: obj19, alt: "Объект компании «Ранг» на Толбухина, 19" }],
     territoryFeatures: [],
   },
@@ -91,7 +103,7 @@ export const OBJECTS: PropertyObject[] = [
     slug: "patrisa-lumumby-28b",
     name: "Патриса Лумумбы 28Б",
     address: "Казань, ул. Патриса Лумумбы, 28Б",
-    description: "Производственно-складская территория с помещениями под разные задачи.",
+    description: "Помещения свободного назначения",
     photos: [{ src: objLumumby, alt: "Объект компании «Ранг» на Патриса Лумумбы, 28Б" }],
     territoryFeatures: [],
   },

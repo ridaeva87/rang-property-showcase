@@ -1,5 +1,11 @@
 import type { ReactNode } from "react";
-import { formatCharacteristicValue, getPropertyObject, type Property } from "@/data/rang";
+import {
+  formatCharacteristicValue,
+  formatMeasurement,
+  formatNumericValue,
+  getPropertyObject,
+  type Property,
+} from "@/data/rang";
 
 type DetailItem = { label: string; value: ReactNode };
 
@@ -15,16 +21,12 @@ export function PropertyDetails({ property }: { property: Property }) {
       label: "Адрес",
       value: property.objectAddress ?? object!.address,
     },
-    property.areaSqm !== undefined && { label: "Общая площадь", value: `${property.areaSqm} м²` },
+    property.areaSqm !== undefined && { label: "Общая площадь", value: `${formatNumber(property.areaSqm)} м²` },
     property.usableAreaSqm !== undefined && {
       label: "Полезная площадь",
-      value: `${property.usableAreaSqm} м²`,
+      value: `${formatNumber(property.usableAreaSqm)} м²`,
     },
     { label: "Тип помещения", value: property.type },
-    property.purposes.length > 0 && {
-      label: "Назначение",
-      value: formatCharacteristicValue(property.purposes.join(", ")),
-    },
     (property.rentPricePerSqmLabel || property.rentPricePerSqm !== undefined) && {
       label: "Ставка аренды",
       value: `${property.rentPricePerSqmLabel ?? formatNumber(property.rentPricePerSqm!)} ₽/м²`,
@@ -41,7 +43,7 @@ export function PropertyDetails({ property }: { property: Property }) {
       label: "Цена за м²",
       value: `${formatNumber(property.pricePerSqm)} ₽/м²`,
     },
-    property.utilityCosts && { label: "Коммунальные расходы", value: property.utilityCosts },
+    property.utilityCosts && { label: "Коммунальные расходы", value: formatUtilityCosts(property.utilityCosts) },
     property.status && { label: "Статус аренды", value: property.status },
     property.status === "Скоро освободится" &&
       property.expectedRelease && {
@@ -51,7 +53,7 @@ export function PropertyDetails({ property }: { property: Property }) {
   ]);
 
   const technical: DetailItem[] = compact([
-    property.ceilingHeight && { label: "Высота потолков", value: property.ceilingHeight },
+    property.ceilingHeight && { label: "Высота потолков", value: formatMeasurement(property.ceilingHeight, "м") },
     property.heating && { label: "Отопление", value: formatCharacteristicValue(property.heating) },
     property.electricalSupply && {
       label: "Электроснабжение",
@@ -67,11 +69,11 @@ export function PropertyDetails({ property }: { property: Property }) {
     },
     property.electricPower && {
       label: "Электрическая мощность",
-      value: property.electricPower,
+      value: formatMeasurement(property.electricPower, "кВт"),
     },
     property.powerIncrease && {
       label: "Возможность увеличения мощности",
-      value: formatCharacteristicValue(property.powerIncrease),
+      value: formatMeasurement(formatCharacteristicValue(property.powerIncrease), "кВт"),
     },
     property.restroom && {
       label: "Санузел",
@@ -117,7 +119,7 @@ export function PropertyDetails({ property }: { property: Property }) {
     const items = grouped.get(group) ?? [];
     items.push({
       label: item.label,
-      value: `${formatCharacteristicValue(item.value)}${item.unit ? ` ${item.unit}` : ""}`,
+      value: `${formatCharacteristicValue(formatNumericValue(item.value))}${item.unit ? ` ${item.unit}` : ""}`,
     });
     grouped.set(group, items);
   }
@@ -185,6 +187,11 @@ function compact(items: Array<DetailItem | false | "" | null | undefined>) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value);
+}
+
+function formatUtilityCosts(value: string) {
+  if (value.includes("₽") || !/^\s*\d+(?:[.,]\d+)?\s*$/.test(value)) return value;
+  return `${formatNumericValue(value)} ₽`;
 }
 
 function formatGates(gates: NonNullable<Property["gates"]>) {
