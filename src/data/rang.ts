@@ -14,6 +14,7 @@ export const NAV = [
   { label: "Услуги", href: "/services" },
   { label: "Объекты", href: "/objects" },
   { label: "Арендаторам", href: "/#tenants" },
+  { label: "Бизнесы арендаторов", href: "/businesses" },
   { label: "О компании", href: "/about" },
   { label: "Контакты", href: "/#contacts" },
 ];

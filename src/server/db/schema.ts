@@ -833,9 +833,26 @@ export const adPlacements = pgTable(
     tenantUserId: text("tenant_user_id").references(() => users.id, { onDelete: "set null" }),
     mediaId: text("media_id").references(() => mediaAssets.id, { onDelete: "set null" }),
     linkUrl: text("link_url"),
+    slug: text("slug"),
+    description: text("description"),
+    services: text("services"),
+    contacts: jsonb("contacts").$type<{ phone?: string; email?: string; address?: string }>().default({}).notNull(),
+    socialLinks: jsonb("social_links").$type<Array<{ label: string; url: string }>>().default([]).notNull(),
+    videoUrl: text("video_url"),
+    logoMediaId: text("logo_media_id").references(() => mediaAssets.id, { onDelete: "set null" }),
+    bannerMediaId: text("banner_media_id").references(() => mediaAssets.id, { onDelete: "set null" }),
+    galleryMediaIds: jsonb("gallery_media_ids").$type<string[]>().default([]).notNull(),
+    specialOfferEnabled: boolean("special_offer_enabled").default(false).notNull(),
+    specialOfferTitle: text("special_offer_title"),
+    specialOfferType: text("special_offer_type"),
+    specialOfferValue: text("special_offer_value"),
+    specialOfferStartsAt: timestamp("special_offer_starts_at", { withTimezone: true }),
+    specialOfferEndsAt: timestamp("special_offer_ends_at", { withTimezone: true }),
+    partnerStatus: text("partner_status"),
+    placementTerms: jsonb("placement_terms").$type<Record<string, unknown>>().default({}).notNull(),
     ...timestamps,
   },
-  (table) => [index("ad_placements_org_idx").on(table.organizationId)],
+  (table) => [index("ad_placements_org_idx").on(table.organizationId), uniqueIndex("ad_placements_slug_uq").on(table.slug)],
 );
 export const adLeads = pgTable(
   "ad_leads",
@@ -852,6 +869,23 @@ export const adLeads = pgTable(
     ...timestamps,
   },
   (table) => [index("ad_leads_placement_idx").on(table.placementId)],
+);
+
+export const adEvents = pgTable(
+  "ad_events",
+  {
+    id: text("id").primaryKey(),
+    placementId: text("placement_id").notNull().references(() => adPlacements.id, { onDelete: "cascade" }),
+    tenantUserId: text("tenant_user_id").references(() => users.id, { onDelete: "set null" }),
+    eventType: text("event_type").notNull(),
+    cta: text("cta"),
+    source: text("source").default("rangpro.ru").notNull(),
+    targetUrl: text("target_url"),
+    isConfirmedConversion: boolean("is_confirmed_conversion").default(false).notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("ad_events_placement_created_idx").on(table.placementId, table.createdAt)],
 );
 
 export const meterTypes = pgTable(

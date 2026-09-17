@@ -41,11 +41,14 @@ import { Route as AdminSupportRouteImport } from './routes/admin/support'
 import { Route as AdminTenantsRouteImport } from './routes/admin/tenants'
 import { Route as AdminUtilitiesRouteImport } from './routes/admin/utilities'
 import { Route as AdminWaitlistRouteImport } from './routes/admin/waitlist'
+import { Route as BusinessesIndexRouteImport } from './routes/businesses/index'
+import { Route as BusinessesSlugRouteImport } from './routes/businesses/$slug'
 import { Route as ObjectsIndexRouteImport } from './routes/objects/index'
 import { Route as ObjectsSlugRouteImport } from './routes/objects/$slug'
 import { Route as PropertiesIndexRouteImport } from './routes/properties/index'
 import { Route as PropertiesSlugRouteImport } from './routes/properties/$slug'
 import { Route as AccountDocumentsIdRouteImport } from './routes/account/documents/$id'
+import { Route as AdminAdsUploadRouteImport } from './routes/admin/ads/upload'
 import { Route as AdminDocumentsUploadRouteImport } from './routes/admin/documents/upload'
 import { Route as AdminPremisesUploadRouteImport } from './routes/admin/premises/upload'
 
@@ -209,6 +212,16 @@ const AdminWaitlistRoute = AdminWaitlistRouteImport.update({
   path: '/admin/waitlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BusinessesIndexRoute = BusinessesIndexRouteImport.update({
+  id: '/businesses/',
+  path: '/businesses/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BusinessesSlugRoute = BusinessesSlugRouteImport.update({
+  id: '/businesses/$slug',
+  path: '/businesses/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObjectsIndexRoute = ObjectsIndexRouteImport.update({
   id: '/objects/',
   path: '/objects/',
@@ -233,6 +246,11 @@ const AccountDocumentsIdRoute = AccountDocumentsIdRouteImport.update({
   id: '/account/documents/$id',
   path: '/account/documents/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAdsUploadRoute = AdminAdsUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => AdminAdsRoute,
 } as any)
 const AdminDocumentsUploadRoute = AdminDocumentsUploadRouteImport.update({
   id: '/upload',
@@ -260,7 +278,7 @@ export interface FileRoutesByFullPath {
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/utilities': typeof AccountUtilitiesRoute
-  '/admin/ads': typeof AdminAdsRoute
+  '/admin/ads': typeof AdminAdsRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
@@ -276,13 +294,16 @@ export interface FileRoutesByFullPath {
   '/admin/tenants': typeof AdminTenantsRoute
   '/admin/utilities': typeof AdminUtilitiesRoute
   '/admin/waitlist': typeof AdminWaitlistRoute
+  '/businesses/$slug': typeof BusinessesSlugRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/businesses/': typeof BusinessesIndexRoute
   '/objects/': typeof ObjectsIndexRoute
   '/properties/': typeof PropertiesIndexRoute
   '/account/documents/$id': typeof AccountDocumentsIdRoute
+  '/admin/ads/upload': typeof AdminAdsUploadRoute
   '/admin/documents/upload': typeof AdminDocumentsUploadRoute
   '/admin/premises/upload': typeof AdminPremisesUploadRoute
 }
@@ -301,7 +322,7 @@ export interface FileRoutesByTo {
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/utilities': typeof AccountUtilitiesRoute
-  '/admin/ads': typeof AdminAdsRoute
+  '/admin/ads': typeof AdminAdsRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
@@ -317,13 +338,16 @@ export interface FileRoutesByTo {
   '/admin/tenants': typeof AdminTenantsRoute
   '/admin/utilities': typeof AdminUtilitiesRoute
   '/admin/waitlist': typeof AdminWaitlistRoute
+  '/businesses/$slug': typeof BusinessesSlugRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/businesses': typeof BusinessesIndexRoute
   '/objects': typeof ObjectsIndexRoute
   '/properties': typeof PropertiesIndexRoute
   '/account/documents/$id': typeof AccountDocumentsIdRoute
+  '/admin/ads/upload': typeof AdminAdsUploadRoute
   '/admin/documents/upload': typeof AdminDocumentsUploadRoute
   '/admin/premises/upload': typeof AdminPremisesUploadRoute
 }
@@ -343,7 +367,7 @@ export interface FileRoutesById {
   '/account/login': typeof AccountLoginRoute
   '/account/reset-password': typeof AccountResetPasswordRoute
   '/account/utilities': typeof AccountUtilitiesRoute
-  '/admin/ads': typeof AdminAdsRoute
+  '/admin/ads': typeof AdminAdsRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
@@ -359,13 +383,16 @@ export interface FileRoutesById {
   '/admin/tenants': typeof AdminTenantsRoute
   '/admin/utilities': typeof AdminUtilitiesRoute
   '/admin/waitlist': typeof AdminWaitlistRoute
+  '/businesses/$slug': typeof BusinessesSlugRoute
   '/objects/$slug': typeof ObjectsSlugRoute
   '/properties/$slug': typeof PropertiesSlugRoute
   '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/businesses/': typeof BusinessesIndexRoute
   '/objects/': typeof ObjectsIndexRoute
   '/properties/': typeof PropertiesIndexRoute
   '/account/documents/$id': typeof AccountDocumentsIdRoute
+  '/admin/ads/upload': typeof AdminAdsUploadRoute
   '/admin/documents/upload': typeof AdminDocumentsUploadRoute
   '/admin/premises/upload': typeof AdminPremisesUploadRoute
 }
@@ -402,13 +429,16 @@ export interface FileRouteTypes {
     | '/admin/tenants'
     | '/admin/utilities'
     | '/admin/waitlist'
+    | '/businesses/$slug'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account/'
     | '/admin/'
+    | '/businesses/'
     | '/objects/'
     | '/properties/'
     | '/account/documents/$id'
+    | '/admin/ads/upload'
     | '/admin/documents/upload'
     | '/admin/premises/upload'
   fileRoutesByTo: FileRoutesByTo
@@ -443,13 +473,16 @@ export interface FileRouteTypes {
     | '/admin/tenants'
     | '/admin/utilities'
     | '/admin/waitlist'
+    | '/businesses/$slug'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account'
     | '/admin'
+    | '/businesses'
     | '/objects'
     | '/properties'
     | '/account/documents/$id'
+    | '/admin/ads/upload'
     | '/admin/documents/upload'
     | '/admin/premises/upload'
   id:
@@ -484,13 +517,16 @@ export interface FileRouteTypes {
     | '/admin/tenants'
     | '/admin/utilities'
     | '/admin/waitlist'
+    | '/businesses/$slug'
     | '/objects/$slug'
     | '/properties/$slug'
     | '/account/'
     | '/admin/'
+    | '/businesses/'
     | '/objects/'
     | '/properties/'
     | '/account/documents/$id'
+    | '/admin/ads/upload'
     | '/admin/documents/upload'
     | '/admin/premises/upload'
   fileRoutesById: FileRoutesById
@@ -510,7 +546,7 @@ export interface RootRouteChildren {
   AccountLoginRoute: typeof AccountLoginRoute
   AccountResetPasswordRoute: typeof AccountResetPasswordRoute
   AccountUtilitiesRoute: typeof AccountUtilitiesRoute
-  AdminAdsRoute: typeof AdminAdsRoute
+  AdminAdsRoute: typeof AdminAdsRouteWithChildren
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminDeliveryLogRoute: typeof AdminDeliveryLogRoute
   AdminDocumentsRoute: typeof AdminDocumentsRouteWithChildren
@@ -526,10 +562,12 @@ export interface RootRouteChildren {
   AdminTenantsRoute: typeof AdminTenantsRoute
   AdminUtilitiesRoute: typeof AdminUtilitiesRoute
   AdminWaitlistRoute: typeof AdminWaitlistRoute
+  BusinessesSlugRoute: typeof BusinessesSlugRoute
   ObjectsSlugRoute: typeof ObjectsSlugRoute
   PropertiesSlugRoute: typeof PropertiesSlugRoute
   AccountIndexRoute: typeof AccountIndexRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  BusinessesIndexRoute: typeof BusinessesIndexRoute
   ObjectsIndexRoute: typeof ObjectsIndexRoute
   PropertiesIndexRoute: typeof PropertiesIndexRoute
   AccountDocumentsIdRoute: typeof AccountDocumentsIdRoute
@@ -761,6 +799,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWaitlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/businesses/': {
+      id: '/businesses/'
+      path: '/businesses'
+      fullPath: '/businesses/'
+      preLoaderRoute: typeof BusinessesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/businesses/$slug': {
+      id: '/businesses/$slug'
+      path: '/businesses/$slug'
+      fullPath: '/businesses/$slug'
+      preLoaderRoute: typeof BusinessesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/objects/': {
       id: '/objects/'
       path: '/objects'
@@ -796,6 +848,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountDocumentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/ads/upload': {
+      id: '/admin/ads/upload'
+      path: '/upload'
+      fullPath: '/admin/ads/upload'
+      preLoaderRoute: typeof AdminAdsUploadRouteImport
+      parentRoute: typeof AdminAdsRoute
+    }
     '/admin/documents/upload': {
       id: '/admin/documents/upload'
       path: '/upload'
@@ -812,6 +871,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminAdsRouteChildren {
+  AdminAdsUploadRoute: typeof AdminAdsUploadRoute
+}
+
+const AdminAdsRouteChildren: AdminAdsRouteChildren = {
+  AdminAdsUploadRoute: AdminAdsUploadRoute,
+}
+
+const AdminAdsRouteWithChildren = AdminAdsRoute._addFileChildren(
+  AdminAdsRouteChildren,
+)
 
 interface AdminDocumentsRouteChildren {
   AdminDocumentsUploadRoute: typeof AdminDocumentsUploadRoute
@@ -852,7 +923,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountLoginRoute: AccountLoginRoute,
   AccountResetPasswordRoute: AccountResetPasswordRoute,
   AccountUtilitiesRoute: AccountUtilitiesRoute,
-  AdminAdsRoute: AdminAdsRoute,
+  AdminAdsRoute: AdminAdsRouteWithChildren,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminDeliveryLogRoute: AdminDeliveryLogRoute,
   AdminDocumentsRoute: AdminDocumentsRouteWithChildren,
@@ -868,10 +939,12 @@ const rootRouteChildren: RootRouteChildren = {
   AdminTenantsRoute: AdminTenantsRoute,
   AdminUtilitiesRoute: AdminUtilitiesRoute,
   AdminWaitlistRoute: AdminWaitlistRoute,
+  BusinessesSlugRoute: BusinessesSlugRoute,
   ObjectsSlugRoute: ObjectsSlugRoute,
   PropertiesSlugRoute: PropertiesSlugRoute,
   AccountIndexRoute: AccountIndexRoute,
   AdminIndexRoute: AdminIndexRoute,
+  BusinessesIndexRoute: BusinessesIndexRoute,
   ObjectsIndexRoute: ObjectsIndexRoute,
   PropertiesIndexRoute: PropertiesIndexRoute,
   AccountDocumentsIdRoute: AccountDocumentsIdRoute,
