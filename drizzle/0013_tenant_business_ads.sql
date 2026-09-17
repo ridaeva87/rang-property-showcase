@@ -30,4 +30,8 @@ CREATE TABLE IF NOT EXISTS "ad_events" (
   "created_at" timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS "ad_events_placement_created_idx" ON "ad_events" ("placement_id", "created_at");
-ALTER TABLE "ad_events" OWNER TO "rang_app";
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rang_app') THEN
+    ALTER TABLE "ad_events" OWNER TO "rang_app";
+  END IF;
+END $$;
