@@ -59,7 +59,7 @@ export async function submitAdLead(input:{placementId:string;name:string;phone?:
   const placement=(await getDatabase().select({id:s.adPlacements.id,tenantId:s.adPlacements.tenantUserId,offer:s.adPlacements.specialOfferTitle}).from(s.adPlacements).where(and(activeWindow(),eq(s.adPlacements.id,input.placementId))).limit(1))[0];
   if(!placement)throw new Error("Рекламная карточка недоступна");
   await getDatabase().transaction(async(tx)=>{
-    await tx.insert(s.adLeads).values({id:randomUUID(),placementId:placement.id,source:"rangpro.ru/businesses",contactName:input.name,contactPhone:input.phone||null,contactEmail:input.email||null,promoApplied:placement.offer||null});
+    await tx.insert(s.adLeads).values({id:randomUUID(),placementId:placement.id,source:"Реклама арендатора / RANG",contactName:input.name,contactPhone:input.phone||null,contactEmail:input.email||null,promoApplied:placement.offer||null,message:input.message||null,cta:"contact_form",inquiryType:"internal_form",status:"new"});
     await tx.insert(s.adEvents).values({id:randomUUID(),placementId:placement.id,tenantUserId:placement.tenantId,eventType:"internal_lead",cta:"contact_form",isConfirmedConversion:true,metadata:{message:input.message||""}});
   });return{ok:true};
 }
