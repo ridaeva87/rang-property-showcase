@@ -15,3 +15,7 @@ SET "message" = (
   LIMIT 1
 )
 WHERE lead."message" IS NULL;
+
+UPDATE "ad_leads"
+SET "source" = 'Реклама арендатора / RANG'
+WHERE "source" = 'rangpro.ru/businesses';
