@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, MapPin } from "lucide-react";
 import { AiAssistant } from "@/components/rang/AiAssistant";
 import { Footer } from "@/components/rang/Footer";
@@ -13,6 +13,7 @@ import {
 import { getPropertyObject } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
 import { loadCatalogProperty } from "@/lib/catalog.loaders";
+import { trackPublicAnalytics } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/properties/$slug")({
   loader: async ({ params }) => {
@@ -58,7 +59,10 @@ function PropertyPage() {
   const favorite = hydrated && isFavorite(property.id);
   const object = getPropertyObject(property);
 
+  useEffect(()=>{void trackPublicAnalytics({data:{eventType:"premise_view",premiseId:property.id,objectId:property.objectId}})},[property.id,property.objectId]);
+
   const selectInterest = (type: PropertyInterestType) => {
+    void trackPublicAnalytics({data:{eventType:"premise_cta",premiseId:property.id,objectId:property.objectId,context:{cta:type}}});
     setInterestType(type);
     document.querySelector("#property-interest")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -126,7 +130,7 @@ function PropertyPage() {
                   Оставить заявку
                 </button>
                 <button
-                  onClick={() => setChatOpen(true)}
+                  onClick={() => {void trackPublicAnalytics({data:{eventType:"premise_cta",premiseId:property.id,objectId:property.objectId,context:{cta:"question"}}});setChatOpen(true)}}
                   className="border border-border px-5 py-3.5 text-sm font-semibold"
                 >
                   Задать вопрос
@@ -138,7 +142,7 @@ function PropertyPage() {
                   Узнать подробности
                 </button>
                 <button
-                  onClick={() => toggleFavorite(property.id)}
+                  onClick={() => {void trackPublicAnalytics({data:{eventType:favorite?"favorite_remove":"favorite_add",premiseId:property.id,objectId:property.objectId}});toggleFavorite(property.id)}}
                   aria-pressed={favorite}
                   className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3.5 text-sm font-semibold sm:col-span-2"
                 >

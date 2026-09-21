@@ -114,6 +114,7 @@ export async function login(email: string, password: string) {
       .set({ lastLoginAt: new Date(), updatedAt: new Date() })
       .where(eq(schema.users.id, user.id));
   });
+  if(user.kind==="tenant")await (await import("@/server/admin/analytics.server")).recordPortalLogin(user.id);
   setCookie(COOKIE, token, {
     httpOnly: true,
     secure: true,

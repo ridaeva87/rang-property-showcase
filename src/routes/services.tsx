@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { ArrowRight, Wrench } from "lucide-react";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { PageIntro, RequestIntegrationNotice } from "@/components/rang/CompanySections";
 import { ADDITIONAL_SERVICES } from "@/data/rang";
+import { trackPublicAnalytics } from "@/lib/admin.functions";
 
 const title = "Дополнительные услуги — Ранг";
 const description =
@@ -24,6 +26,7 @@ export const Route = createFileRoute("/services")({
 });
 
 function ServicesPage() {
+  useEffect(()=>{void trackPublicAnalytics({data:{eventType:"service_view"}})},[]);
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -45,6 +48,7 @@ function ServicesPage() {
                   <h2 className="mt-5 text-lg font-semibold">{service.title}</h2>
                   <a
                     href="#request"
+                    onClick={()=>void trackPublicAnalytics({data:{eventType:"service_cta",context:{service:service.id,title:service.title}}})}
                     className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-semibold text-primary"
                   >
                     Оставить заявку <ArrowRight className="size-4" />

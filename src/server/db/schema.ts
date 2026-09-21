@@ -893,6 +893,27 @@ export const adEvents = pgTable(
   (table) => [index("ad_events_placement_created_idx").on(table.placementId, table.createdAt)],
 );
 
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    source: text("source").notNull(),
+    eventType: text("event_type").notNull(),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+    objectId: text("object_id").references(() => propertyObjects.id, { onDelete: "set null" }),
+    premiseId: text("premise_id").references(() => premises.id, { onDelete: "set null" }),
+    serviceId: text("service_id").references(() => additionalServices.id, { onDelete: "set null" }),
+    adPlacementId: text("ad_placement_id").references(() => adPlacements.id, { onDelete: "set null" }),
+    context: jsonb("context").$type<Record<string, string | number | boolean | null>>().default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("analytics_events_type_created_idx").on(table.eventType, table.createdAt),
+    index("analytics_events_premise_created_idx").on(table.premiseId, table.createdAt),
+  ],
+);
+
 export const meterTypes = pgTable(
   "meter_types",
   {
