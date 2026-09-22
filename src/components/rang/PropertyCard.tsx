@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Building2, Heart, MapPin } from "lucide-react";
 import { getPropertyObject, type Property } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
+import { trackPublicAnalytics } from "@/lib/admin.functions";
 import { ResponsiveImage } from "./ResponsiveImage";
 
 export function PropertyCard({
@@ -58,7 +59,16 @@ export function PropertyCard({
         )}
         <button
           type="button"
-          onClick={() => toggleFavorite(property.id)}
+          onClick={() => {
+            toggleFavorite(property.id);
+            void trackPublicAnalytics({
+              data: {
+                eventType: favorite ? "favorite_remove" : "favorite_add",
+                premiseId: property.id,
+                objectId: property.objectId,
+              },
+            });
+          }}
           aria-label={favorite ? "Удалить из избранного" : "Добавить в избранное"}
           aria-pressed={favorite}
           className="absolute top-4 right-4 flex size-10 items-center justify-center bg-card text-primary shadow-card"
