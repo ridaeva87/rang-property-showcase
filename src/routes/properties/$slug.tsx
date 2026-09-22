@@ -158,10 +158,10 @@ function PropertyPage() {
             <PropertyDetails property={property} />
           </div>
         </section>
-        <PropertyInterestForm propertyId={property.id} interestType={interestType} />
+        <PropertyInterestForm propertyId={property.id} objectId={property.objectId} interestType={interestType} />
       </main>
       <Footer />
-      <AiAssistant open={chatOpen} setOpen={setChatOpen} />
+      <AiAssistant open={chatOpen} setOpen={setChatOpen} propertyId={property.id} objectId={property.objectId} />
     </div>
   );
 }

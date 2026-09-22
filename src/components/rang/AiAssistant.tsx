@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, X, Send, Headset } from "lucide-react";
 import { toast } from "sonner";
+import { sendPropertyInterest } from "@/lib/admin.functions";
 
-type Msg = { role: "bot" | "user"; text: string; action?: { label: string; toast: string } };
+type Msg = { role: "bot" | "user"; text: string };
 
 const GREETING: Msg = {
   role: "bot",
@@ -23,52 +24,38 @@ function reply(input: string): Msg {
     return {
       role: "bot",
       text: "Есть несколько вариантов, которые могут вам подойти. Показать свободные помещения?",
-      action: {
-        label: "Показать",
-        toast: "Демо-режим: подборка помещений откроется в рабочей версии",
-      },
     };
   }
   if (t.includes("переоборуд") || t.includes("услуг") || t.includes("работ")) {
     return {
       role: "bot",
       text: "Для арендаторов предусмотрена возможность оставить заявку на необходимые работы.",
-      action: { label: "О заявках", toast: "Демонстрационный режим: заявки пока не отправляются" },
     };
   }
   if (t.includes("найти") || t.includes("помещен") || t.includes("склад") || t.includes("офис")) {
     return {
       role: "bot",
       text: "Подскажите тип помещения и желаемую площадь — предложу подходящие варианты.",
-      action: {
-        label: "Показать свободные",
-        toast: "Демо-режим: каталог откроется в рабочей версии",
-      },
     };
   }
   if (t.includes("услови") || t.includes("аренд") || t.includes("стоим") || t.includes("цен")) {
     return {
       role: "bot",
       text: "Условия зависят от выбранного помещения. Подробную информацию можно получить у сотрудника компании.",
-      action: {
-        label: "О консультации",
-        toast: "Демонстрационный режим: запрос пока не отправляется",
-      },
     };
   }
   return {
     role: "bot",
-    text: "Записал ваш вопрос. В рабочей версии помощник ответит подробно или передаст вопрос сотруднику компании.",
-    action: {
-      label: "Передать вопрос сотруднику",
-      toast: "Демонстрационный режим: вопрос пока не передаётся",
-    },
+    text: "Передайте вопрос сотруднику RANG с помощью формы ниже.",
   };
 }
 
-export function AiAssistant({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
+export function AiAssistant({ open, setOpen, propertyId, objectId }: { open: boolean; setOpen: (v: boolean) => void; propertyId?: string; objectId?: string }) {
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
   const [value, setValue] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,6 +69,21 @@ export function AiAssistant({ open, setOpen }: { open: boolean; setOpen: (v: boo
     setTimeout(() => setMessages((m) => [...m, reply(text)]), 450);
   };
 
+  const transferQuestion = async () => {
+    const question = [...messages].reverse().find((message) => message.role === "user")?.text;
+    if (!propertyId || !objectId) { toast.info("Откройте карточку помещения, чтобы передать вопрос сотруднику"); return; }
+    if (!question) { toast.error("Сначала напишите вопрос"); return; }
+    if (name.trim().length < 2 || phone.trim().length < 6) { toast.error("Укажите имя и телефон"); return; }
+    setSending(true);
+    try {
+      await sendPropertyInterest({ data: { premiseId: propertyId, objectId, type: "question", name, phone, message: question } });
+      toast.success("Вопрос отправлен сотруднику RANG");
+      setMessages((current) => [...current, { role: "bot", text: "Вопрос отправлен сотруднику RANG." }]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отправить вопрос");
+    } finally { setSending(false); }
+  };
+
   return (
     <>
       {open && (
@@ -89,7 +91,7 @@ export function AiAssistant({ open, setOpen }: { open: boolean; setOpen: (v: boo
           <div className="flex items-center justify-between gap-3 bg-primary px-5 py-4">
             <div>
               <p className="text-sm font-semibold text-primary-foreground">Помощник Ранг</p>
-              <p className="text-[0.7rem] text-primary-foreground/60">Демонстрационный режим</p>
+              <p className="text-[0.7rem] text-primary-foreground/60">Онлайн-помощник</p>
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -111,14 +113,6 @@ export function AiAssistant({ open, setOpen }: { open: boolean; setOpen: (v: boo
                   }
                 >
                   {m.text}
-                  {m.action && (
-                    <button
-                      onClick={() => toast(m.action!.toast)}
-                      className="mt-3 block w-fit bg-accent px-4 py-2 text-xs font-semibold text-accent-foreground"
-                    >
-                      {m.action.label}
-                    </button>
-                  )}
                 </div>
               </div>
             ))}
@@ -158,12 +152,17 @@ export function AiAssistant({ open, setOpen }: { open: boolean; setOpen: (v: boo
                 <Send className="size-4" />
               </button>
             </form>
+            {propertyId && <div className="mt-3 grid grid-cols-2 gap-2">
+              <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Ваше имя" className="h-10 border border-input bg-background px-3 text-xs outline-none focus:border-accent" />
+              <input value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Телефон" className="h-10 border border-input bg-background px-3 text-xs outline-none focus:border-accent" />
+            </div>}
             <button
-              onClick={() => toast("Демонстрационный режим: вопрос пока не передаётся сотруднику")}
+              onClick={transferQuestion}
+              disabled={sending}
               className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary"
             >
               <Headset className="size-3.5" />
-              Передать вопрос сотруднику
+              {sending ? "Передаём…" : "Передать вопрос сотруднику"}
             </button>
           </div>
         </div>
