@@ -9,6 +9,7 @@ import {
 } from "@/lib/portal.functions";
 import { getCurrentAccount } from "@/lib/portal.functions";
 import { PortalShell } from "@/components/portal/PortalShell";
+import { AiAssistant } from "@/components/rang/AiAssistant";
 
 export const Route = createFileRoute("/account/")({
   beforeLoad: async () => {
@@ -35,6 +36,7 @@ const categories = [
 function AccountPage() {
   const data = Route.useLoaderData();
   const [message, setMessage] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
   async function createRequest(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -53,6 +55,7 @@ function AccountPage() {
     }
   }
   return (
+    <>
     <PortalShell title="Личный кабинет арендатора" name={data.user.displayName}>
       <div className="mb-6 flex flex-wrap gap-3">
         <a href="#premises" className="border bg-background px-3 py-2 text-sm">
@@ -167,7 +170,7 @@ function AccountPage() {
           )}
         </div>
       </section>
-      <section className="mb-6 border bg-background p-5">
+      <section id="new-request" className="mb-6 border bg-background p-5">
         <h2 className="text-xl font-semibold">Подать заявку</h2>
         <form onSubmit={createRequest} className="mt-4 grid gap-3 sm:grid-cols-2">
           <select name="category" required className="border bg-background px-3 py-3">
@@ -226,5 +229,7 @@ function AccountPage() {
         </div>
       </section>
     </PortalShell>
+    <AiAssistant open={chatOpen} setOpen={setChatOpen} source="tenant_portal" />
+    </>
   );
 }

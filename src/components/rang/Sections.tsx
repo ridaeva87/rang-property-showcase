@@ -607,7 +607,7 @@ export function AiTransition({ onOpen }: { onOpen: () => void }) {
             Поможем сориентироваться в помещениях
           </h2>
           <p className="mt-4 text-sm text-primary-foreground/70 sm:text-base">
-            Демонстрационный помощник ответит на базовые вопросы о помещениях, аренде и услугах.
+            Помощник использует актуальный каталог и подтверждённые данные RANG о помещениях и услугах.
           </p>
         </div>
         <button

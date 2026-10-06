@@ -42,6 +42,7 @@ function ServicesPage() {
               {ADDITIONAL_SERVICES.map((service) => (
                 <article
                   key={service.id}
+                  id={`service-${service.id}`}
                   className="flex min-h-48 flex-col border border-border bg-card p-6"
                 >
                   <Wrench className="size-6 text-accent" />

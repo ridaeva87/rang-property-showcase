@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, X, Send, Headset } from "lucide-react";
 import { toast } from "sonner";
-import { sendPropertyInterest } from "@/lib/admin.functions";
+import { askRangAssistant, transferRangAssistantQuestion } from "@/lib/assistant.functions";
 
-type Msg = { role: "bot" | "user"; text: string };
+type Msg = { role: "bot" | "user"; text: string; links?: Array<{ label: string; href: string }> };
 
 const GREETING: Msg = {
   role: "bot",
@@ -18,65 +18,48 @@ const QUICK = [
   "Задать вопрос",
 ];
 
-function reply(input: string): Msg {
-  const t = input.toLowerCase();
-  if (t.includes("склад") && /\d/.test(t)) {
-    return {
-      role: "bot",
-      text: "Есть несколько вариантов, которые могут вам подойти. Показать свободные помещения?",
-    };
-  }
-  if (t.includes("переоборуд") || t.includes("услуг") || t.includes("работ")) {
-    return {
-      role: "bot",
-      text: "Для арендаторов предусмотрена возможность оставить заявку на необходимые работы.",
-    };
-  }
-  if (t.includes("найти") || t.includes("помещен") || t.includes("склад") || t.includes("офис")) {
-    return {
-      role: "bot",
-      text: "Подскажите тип помещения и желаемую площадь — предложу подходящие варианты.",
-    };
-  }
-  if (t.includes("услови") || t.includes("аренд") || t.includes("стоим") || t.includes("цен")) {
-    return {
-      role: "bot",
-      text: "Условия зависят от выбранного помещения. Подробную информацию можно получить у сотрудника компании.",
-    };
-  }
-  return {
-    role: "bot",
-    text: "Передайте вопрос сотруднику RANG с помощью формы ниже.",
-  };
-}
-
-export function AiAssistant({ open, setOpen, propertyId, objectId }: { open: boolean; setOpen: (v: boolean) => void; propertyId?: string; objectId?: string }) {
+export function AiAssistant({ open, setOpen, propertyId, objectId, source = "public" }: { open: boolean; setOpen: (v: boolean) => void; propertyId?: string; objectId?: string; source?: "public" | "tenant_portal" }) {
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
   const [value, setValue] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
+  const [answering, setAnswering] = useState(false);
+  const [contextPremiseId, setContextPremiseId] = useState(propertyId);
+  const [contextObjectId, setContextObjectId] = useState(objectId);
+  const [contextServiceId, setContextServiceId] = useState<string>();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim()) return;
     setMessages((m) => [...m, { role: "user", text }]);
     setValue("");
-    setTimeout(() => setMessages((m) => [...m, reply(text)]), 450);
+    setAnswering(true);
+    try {
+      const response = await askRangAssistant({ data: { question: text, premiseId: propertyId, objectId, source } });
+      setMessages((m) => [...m, { role: "bot", text: response.text, links: response.links }]);
+      if (response.premiseId) setContextPremiseId(response.premiseId);
+      if (response.objectId) setContextObjectId(response.objectId);
+      if (response.serviceId) setContextServiceId(response.serviceId);
+    } catch {
+      setMessages((m) => [...m, { role: "bot", text: "Не удалось получить подтверждённые данные. Передайте вопрос сотруднику RANG." }]);
+    } finally {
+      setAnswering(false);
+    }
   };
 
   const transferQuestion = async () => {
     const question = [...messages].reverse().find((message) => message.role === "user")?.text;
-    if (!propertyId || !objectId) { toast.info("Откройте карточку помещения, чтобы передать вопрос сотруднику"); return; }
     if (!question) { toast.error("Сначала напишите вопрос"); return; }
-    if (name.trim().length < 2 || phone.trim().length < 6) { toast.error("Укажите имя и телефон"); return; }
+    if (source === "public" && (name.trim().length < 2 || phone.trim().length < 6)) { toast.error("Укажите имя и телефон"); return; }
     setSending(true);
     try {
-      await sendPropertyInterest({ data: { premiseId: propertyId, objectId, type: "question", name, phone, message: question } });
+      const context = messages.slice(-6).map((message) => `${message.role === "user" ? "Пользователь" : "Помощник"}: ${message.text}`).join("\n");
+      await transferRangAssistantQuestion({ data: { question, context, premiseId: contextPremiseId, objectId: contextObjectId, serviceId: contextServiceId, name: name || undefined, phone: phone || undefined, source } });
       toast.success("Вопрос отправлен сотруднику RANG");
       setMessages((current) => [...current, { role: "bot", text: "Вопрос отправлен сотруднику RANG." }]);
     } catch (error) {
@@ -113,6 +96,9 @@ export function AiAssistant({ open, setOpen, propertyId, objectId }: { open: boo
                   }
                 >
                   {m.text}
+                  {m.links?.length ? <div className="mt-2 flex flex-col gap-1.5">
+                    {m.links.map((link) => <a key={link.href} href={link.href} className="font-semibold text-primary underline underline-offset-2">{link.label}</a>)}
+                  </div> : null}
                 </div>
               </div>
             ))}
@@ -124,7 +110,7 @@ export function AiAssistant({ open, setOpen, propertyId, objectId }: { open: boo
               {QUICK.map((q) => (
                 <button
                   key={q}
-                  onClick={() => send(q)}
+                  onClick={() => void send(q)}
                   className="border border-border px-3 py-1.5 text-xs font-medium text-foreground/80 transition-colors hover:border-accent hover:text-accent"
                 >
                   {q}
@@ -134,7 +120,7 @@ export function AiAssistant({ open, setOpen, propertyId, objectId }: { open: boo
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                send(value);
+                  void send(value);
               }}
               className="mt-3 flex items-center gap-2"
             >
@@ -152,7 +138,8 @@ export function AiAssistant({ open, setOpen, propertyId, objectId }: { open: boo
                 <Send className="size-4" />
               </button>
             </form>
-            {propertyId && <div className="mt-3 grid grid-cols-2 gap-2">
+            {answering && <p className="mt-2 text-xs text-muted-foreground">Проверяю подтверждённые данные…</p>}
+            {source === "public" && <div className="mt-3 grid grid-cols-2 gap-2">
               <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Ваше имя" className="h-10 border border-input bg-background px-3 text-xs outline-none focus:border-accent" />
               <input value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Телефон" className="h-10 border border-input bg-background px-3 text-xs outline-none focus:border-accent" />
             </div>}

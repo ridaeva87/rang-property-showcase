@@ -800,7 +800,6 @@ export const propertyInterests = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     premiseId: text("premise_id")
-      .notNull()
       .references(() => premises.id, { onDelete: "cascade" }),
     kind: interestKind("kind").notNull(),
     contactName: text("contact_name"),
