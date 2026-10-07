@@ -3,10 +3,13 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { currentUser } from "@/server/portal/portal.server";
+import { publicRequestStatus } from "@/server/portal/security";
 import {
   APPROVED_FAQ,
   ASSISTANT_KNOWLEDGE_SOURCES,
   detectAssistantIntent,
+  isConfirmedAvailable,
+  isConfirmedPositive,
   normalizeAssistantText,
   parseAreaCriteria,
   requestCategoryForQuestion,
@@ -17,6 +20,31 @@ type AssistantAnswer = { text: string; links: AssistantLink[]; sources: string[]
 
 const valueText = (row: { valueText: string | null; valueNumber: string | null; unit: string | null }) =>
   row.valueText || (row.valueNumber ? `${Number(row.valueNumber).toLocaleString("ru-RU")}${row.unit ? ` ${row.unit}` : ""}` : "");
+
+async function tenantAssistantContext(userId: string) {
+  const db = getDatabase();
+  const direct = await db.select({ id: s.premises.id, title: s.premises.title, address: s.propertyObjects.address })
+    .from(s.tenantPremises)
+    .innerJoin(s.premises, eq(s.tenantPremises.premiseId, s.premises.id))
+    .innerJoin(s.propertyObjects, eq(s.premises.objectId, s.propertyObjects.id))
+    .where(eq(s.tenantPremises.userId, userId));
+  const organizationIds = (await db.select({ id: s.organizationUsers.organizationId }).from(s.organizationUsers).where(eq(s.organizationUsers.userId, userId))).map((row) => row.id);
+  const leased = organizationIds.length ? await db.selectDistinct({ id: s.premises.id, title: s.premises.title, address: s.propertyObjects.address })
+    .from(s.leaseContracts)
+    .innerJoin(s.leasePremises, eq(s.leaseContracts.id, s.leasePremises.contractId))
+    .innerJoin(s.premises, eq(s.leasePremises.premiseId, s.premises.id))
+    .innerJoin(s.propertyObjects, eq(s.premises.objectId, s.propertyObjects.id))
+    .where(and(inArray(s.leaseContracts.organizationId, organizationIds), eq(s.leaseContracts.status, "active"))) : [];
+  const premises = [...new Map([...direct, ...leased].map((row) => [row.id, row])).values()];
+  const requests = await db.select({ number: s.requests.requestNumber, subject: s.requests.subject, statusCode: s.requestStatuses.code, isClosed: s.requestStatuses.isClosed, premise: s.premises.title })
+    .from(s.requests)
+    .innerJoin(s.requestStatuses, eq(s.requests.statusId, s.requestStatuses.id))
+    .leftJoin(s.premises, eq(s.requests.premiseId, s.premises.id))
+    .where(eq(s.requests.createdByUserId, userId))
+    .orderBy(sql`${s.requests.createdAt} desc`)
+    .limit(20);
+  return { premises, requests };
+}
 
 async function logAssistant(input: { userId?: string | undefined; source: string; intent: string; sources: string[]; resultCount: number; handoff?: boolean | undefined; error?: boolean | undefined }) {
   await getDatabase().insert(s.analyticsEvents).values({
@@ -33,6 +61,26 @@ export async function answerAssistant(input: { question: string; premiseId?: str
   const intent = detectAssistantIntent(input.question);
   const db = getDatabase();
   try {
+    if (intent === "tenant_premises" || intent === "tenant_requests") {
+      if (input.source !== "tenant_portal" || user?.kind !== "tenant") {
+        await logAssistant({ userId: user?.id, source, intent, sources: [], resultCount: 0 });
+        return { text: "Персональные данные доступны только арендатору после входа в личный кабинет.", links: [{ label: "Войти в личный кабинет", href: "/account/login" }], sources: [], transferRecommended: false };
+      }
+      const context = await tenantAssistantContext(user.id);
+      if (intent === "tenant_premises") {
+        const text = context.premises.length
+          ? `Ваши помещения: ${context.premises.map((item) => `${item.title} — ${item.address}`).join("; ")}.`
+          : "К вашему аккаунту сейчас не привязаны помещения.";
+        await logAssistant({ userId: user.id, source, intent, sources: ["Связи арендатора с помещениями PostgreSQL"], resultCount: context.premises.length });
+        return { text, links: [{ label: "Мои помещения", href: "/account/#premises" }], sources: ["Связи арендатора с помещениями PostgreSQL"], transferRecommended: false };
+      }
+      const text = context.requests.length
+        ? `Ваши заявки: ${context.requests.map((item) => `№${item.number} «${item.subject}» — ${publicRequestStatus(item.statusCode, item.isClosed)}${item.premise ? `, ${item.premise}` : ""}`).join("; ")}.`
+        : "У вас пока нет заявок.";
+      await logAssistant({ userId: user.id, source, intent, sources: ["Заявки текущего арендатора PostgreSQL"], resultCount: context.requests.length });
+      return { text, links: [{ label: "Мои заявки", href: "/account/#requests" }], sources: ["Заявки текущего арендатора PostgreSQL"], transferRecommended: false };
+    }
+
     if (intent === "services") {
       const services = await db.select({ id: s.additionalServices.id, title: s.additionalServices.title }).from(s.additionalServices).where(eq(s.additionalServices.publicationStatus, "published")).orderBy(s.additionalServices.title);
       const answer = services.length ? `Доступные подтверждённые услуги: ${services.map((item) => item.title).join(", ")}.` : "В подтверждённом источнике сейчас нет опубликованного перечня услуг.";
@@ -52,7 +100,7 @@ export async function answerAssistant(input: { question: string; premiseId?: str
     const rows = await db.select({
       id: s.premises.id, slug: s.premises.slug, title: s.premises.title, objectId: s.premises.objectId,
       objectName: s.propertyObjects.name, address: s.propertyObjects.address, type: s.premiseTypes.name,
-      area: s.premises.areaSqm, available: s.premiseStatuses.isAvailable,
+      area: s.premises.areaSqm, statusCode: s.premiseStatuses.code, statusName: s.premiseStatuses.name, isAvailable: s.premiseStatuses.isAvailable,
     }).from(s.premises)
       .innerJoin(s.propertyObjects, eq(s.premises.objectId, s.propertyObjects.id))
       .innerJoin(s.premiseTypes, eq(s.premises.typeId, s.premiseTypes.id))
@@ -63,6 +111,18 @@ export async function answerAssistant(input: { question: string; premiseId?: str
     const normalizedQuestion = normalizeAssistantText(input.question);
     const explicit = input.premiseId ? rows.find((row) => row.id === input.premiseId) : rows.find((row) => normalizedQuestion.includes(normalizeAssistantText(row.title)));
     if (intent === "power_380" || intent === "power_increase") {
+      if (intent === "power_380" && !explicit) {
+        const characteristics = await db.select({ premiseId: s.premiseCharacteristics.premiseId, valueText: s.premiseCharacteristics.valueText })
+          .from(s.premiseCharacteristics).where(eq(s.premiseCharacteristics.key, "power-380"));
+        const confirmedIds = new Set(characteristics.filter((item) => isConfirmedPositive(item.valueText)).map((item) => item.premiseId));
+        const selected = rows.filter((row) => isConfirmedAvailable(row) && confirmedIds.has(row.id)).slice(0, 5);
+        const text = selected.length
+          ? `Свободные помещения с подтверждёнными 380 В: ${selected.map((row) => `${row.title} — ${Number(row.area).toLocaleString("ru-RU")} м²`).join("; ")}.`
+          : "Среди опубликованных свободных помещений сейчас нет карточек с подтверждённым признаком 380 В.";
+        await logAssistant({ userId: user?.id, source, intent, sources: [ASSISTANT_KNOWLEDGE_SOURCES.catalog, ASSISTANT_KNOWLEDGE_SOURCES.characteristics], resultCount: selected.length });
+        const first = selected[0];
+        return { text, links: selected.map((row) => ({ label: `${row.title} · ${Number(row.area).toLocaleString("ru-RU")} м²`, href: `/properties/${row.slug}` })), sources: [ASSISTANT_KNOWLEDGE_SOURCES.catalog, ASSISTANT_KNOWLEDGE_SOURCES.characteristics], transferRecommended: !selected.length, ...(first ? { premiseId: first.id, objectId: first.objectId } : {}) };
+      }
       if (!explicit) {
         await logAssistant({ userId: user?.id, source, intent, sources: [ASSISTANT_KNOWLEDGE_SOURCES.characteristics], resultCount: 0 });
         return { text: "Укажите конкретное помещение: эта характеристика проверяется отдельно для каждой карточки. Без подтверждённой записи я не могу дать ответ.", links: [{ label: "Открыть каталог", href: "/properties" }], sources: [ASSISTANT_KNOWLEDGE_SOURCES.characteristics], transferRecommended: true };
@@ -80,17 +140,19 @@ export async function answerAssistant(input: { question: string; premiseId?: str
       const area = parseAreaCriteria(input.question);
       const requestedType = q.includes("склад") && q.includes("офис") ? "Офис + склад" : q.includes("склад") ? "Склад" : q.includes("офис") ? "Офис" : undefined;
       const wants380 = /\b380\b/.test(q), wants220 = /\b220\b/.test(q);
-      const available = rows.filter((row) => row.available);
-      const electricalIds = wants380 || wants220 ? new Set((await db.select({ premiseId: s.premiseCharacteristics.premiseId }).from(s.premiseCharacteristics).where(and(eq(s.premiseCharacteristics.key, wants380 ? "power-380" : "power-220"), inArray(s.premiseCharacteristics.valueText, ["Есть", "есть", "Да", "да"])))) .map((item) => item.premiseId)) : null;
-      const typeMatches = available.filter((row) => (!requestedType || row.type === requestedType) && (!electricalIds || electricalIds.has(row.id)));
+      const available = rows.filter(isConfirmedAvailable);
+      const electricalIds = wants380 || wants220 ? new Set((await db.select({ premiseId: s.premiseCharacteristics.premiseId, valueText: s.premiseCharacteristics.valueText }).from(s.premiseCharacteristics).where(eq(s.premiseCharacteristics.key, wants380 ? "power-380" : "power-220"))).filter((item) => isConfirmedPositive(item.valueText)).map((item) => item.premiseId)) : null;
+      const matchesType = (actual: string) => !requestedType || (requestedType === "Склад" ? normalizeAssistantText(actual).includes("склад") : requestedType === "Офис" ? normalizeAssistantText(actual).includes("офис") : actual === requestedType);
+      const typeMatches = available.filter((row) => matchesType(row.type) && (!electricalIds || electricalIds.has(row.id)));
       const exact = typeMatches.filter((row) => {
         const value = Number(row.area);
         return (!area.min || value >= area.min) && (!area.max || value <= area.max);
       });
       const distance = (row: typeof rows[number]) => { const value = Number(row.area); return area.min && value < area.min ? area.min - value : area.max && value > area.max ? value - area.max : 0; };
-      const selected = (exact.length ? exact : [...typeMatches].sort((a, b) => distance(a) - distance(b))).slice(0, 5);
+      const fallback = typeMatches.length ? typeMatches : available.filter((row) => !electricalIds || electricalIds.has(row.id));
+      const selected = (exact.length ? exact : [...fallback].sort((a, b) => distance(a) - distance(b))).slice(0, 5);
       const criteria = [requestedType, area.min ? `от ${area.min} м²` : "", area.max ? `до ${area.max} м²` : "", wants380 ? "380 В" : "", wants220 ? "220 В" : ""].filter(Boolean).join(", ");
-      const text = selected.length ? `${exact.length ? "Найдены подходящие помещения" : "Точного совпадения нет; ближайшие реальные варианты"}${criteria ? ` (${criteria})` : ""}: ${selected.map((row) => `${row.title} — ${Number(row.area).toLocaleString("ru-RU")} м²`).join("; ")}.` : "По заданным подтверждённым критериям свободных помещений не найдено. Я не буду предлагать отсутствующие варианты; вопрос можно передать сотруднику RANG.";
+      const text = selected.length ? `${exact.length ? "Найдены подходящие помещения" : "Точного совпадения нет; ближайшие реальные варианты с отличием по типу или площади"}${criteria ? ` (${criteria})` : ""}: ${selected.map((row) => `${row.title} — ${row.type}, ${Number(row.area).toLocaleString("ru-RU")} м²`).join("; ")}.` : "По заданным подтверждённым критериям свободных помещений не найдено. Я не буду предлагать отсутствующие варианты; вопрос можно передать сотруднику RANG.";
       await logAssistant({ userId: user?.id, source, intent, sources: [ASSISTANT_KNOWLEDGE_SOURCES.catalog, ...(wants380 || wants220 ? [ASSISTANT_KNOWLEDGE_SOURCES.characteristics] : [])], resultCount: selected.length });
       const first = selected[0];
       return { text, links: selected.map((row) => ({ label: `${row.title} · ${Number(row.area).toLocaleString("ru-RU")} м²`, href: `/properties/${row.slug}` })), sources: [ASSISTANT_KNOWLEDGE_SOURCES.catalog], transferRecommended: !exact.length, ...(first ? { premiseId: first.id, objectId: first.objectId } : {}) };
