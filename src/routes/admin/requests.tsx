@@ -1,7 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { getCurrentAccount, loadRequestsAdmin, updateRequest } from "@/lib/portal.functions";
-import { PortalShell } from "@/components/portal/PortalShell";
+import { loadAdminNavigation } from "@/lib/admin.functions";
+import { AdminShell } from "@/components/portal/AdminShell";
 
 export const Route = createFileRoute("/admin/requests")({
   beforeLoad: async () => {
@@ -9,12 +10,12 @@ export const Route = createFileRoute("/admin/requests")({
     if (!user || user.kind !== "employee" || !user.permissions.includes("requests.manage"))
       throw redirect({ to: "/account/login" });
   },
-  loader: () => loadRequestsAdmin(),
+  loader: async () => ({ data: await loadRequestsAdmin(), nav: await loadAdminNavigation() }),
   component: RequestsAdminPage,
 });
 
 function RequestsAdminPage() {
-  const data = Route.useLoaderData();
+  const { data, nav } = Route.useLoaderData();
   const [status,setStatus]=useState(""); const [category,setCategory]=useState(""); const [tenant,setTenant]=useState("");
   const [direction,setDirection]=useState(""); const [assignee,setAssignee]=useState("");
   const requests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
@@ -35,7 +36,7 @@ function RequestsAdminPage() {
     location.reload();
   }
   return (
-    <PortalShell title="Заявки арендаторов">
+    <AdminShell title="Заявки арендаторов" sections={nav.sections}>
       <a href="/admin/tenants" className="mb-4 inline-block border px-3 py-2 text-sm">
         Арендаторы
       </a>
@@ -101,6 +102,6 @@ function RequestsAdminPage() {
           <p className="border bg-background p-5 text-sm text-muted-foreground">Заявок пока нет.</p>
         )}
       </div>
-    </PortalShell>
+    </AdminShell>
   );
 }

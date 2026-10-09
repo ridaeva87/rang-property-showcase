@@ -35,8 +35,8 @@ export const activateAccount = createServerFn({ method: "POST" })
   .validator(z.object({ token: z.string().min(32), password: z.string().min(12) }))
   .handler(async ({ data }) => {
     const { consumeAccessToken } = await import("@/server/portal/portal.server");
-    await consumeAccessToken(data.token, data.password, "activation");
-    return { ok: true };
+    const result = await consumeAccessToken(data.token, data.password, "activation");
+    return { ok: true, kind: result.kind };
   });
 
 export const changeAccountPassword = createServerFn({ method: "POST" })

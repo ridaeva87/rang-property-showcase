@@ -17,8 +17,8 @@ function ActivatePage() {
     const password = String(f.get("password"));
     if (password !== String(f.get("confirm"))) return setMessage("Пароли не совпадают");
     try {
-      await activateAccount({ data: { token: token || "", password } });
-      window.location.href = "/account/login";
+      const result = await activateAccount({ data: { token: token || "", password } });
+      window.location.href = result.kind === "employee" ? "/account/login?mode=employee" : "/account/login";
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Ссылка недействительна");
     }

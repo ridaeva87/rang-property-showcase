@@ -151,6 +151,8 @@ export async function consumeAccessToken(token: string, password: string, purpos
     )
     .limit(1);
   if (!rows[0]) throw new AuthenticationError("Ссылка недействительна или истекла");
+  const user = (await db.select({ kind: schema.users.kind }).from(schema.users).where(eq(schema.users.id, rows[0]!.userId)).limit(1))[0];
+  if (!user) throw new AuthenticationError("Аккаунт не найден");
   await db.transaction(async (tx) => {
     await tx
       .update(schema.users)
@@ -173,6 +175,7 @@ export async function consumeAccessToken(token: string, password: string, purpos
         and(eq(schema.userSessions.userId, rows[0]!.userId), isNull(schema.userSessions.revokedAt)),
       );
   });
+  return { kind: user.kind };
 }
 
 export async function changePassword(currentPassword: string, newPassword: string) {

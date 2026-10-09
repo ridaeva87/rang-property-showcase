@@ -103,6 +103,22 @@ export async function saveCommunication(input: {
   return { id, recipients: recipients.length, sent, errors, skipped };
 }
 
+export async function deleteCommunication(input: { id: string; kind: "notification" | "announcement" | "mailing" }) {
+  const actor = await requirePermission(permissionFor(input.kind));
+  const db = getDatabase();
+  const item = (await db.select({ id: s.announcements.id, status: s.announcements.status })
+    .from(s.announcements)
+    .where(and(eq(s.announcements.id, input.id), eq(s.announcements.kind, input.kind)))
+    .limit(1))[0];
+  if (!item) throw new Error("Черновик не найден");
+  if (item.status !== "draft") throw new Error("Удалить можно только черновик");
+  await db.transaction(async (tx) => {
+    await tx.delete(s.announcements).where(eq(s.announcements.id, item.id));
+    await tx.insert(s.auditLogs).values({ id: randomUUID(), actorUserId: actor.id, action: `${input.kind}.draft_deleted`, entityType: input.kind, entityId: item.id });
+  });
+  return { ok: true };
+}
+
 export async function deliveryLogAdmin(filters: { channel?: string | undefined; status?: string | undefined; kind?: string | undefined; recipient?: string | undefined; date?: string | undefined }) {
   await requirePermission("delivery_logs.view");
   const db = getDatabase();

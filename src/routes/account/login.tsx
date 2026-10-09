@@ -2,10 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { loginAccount } from "@/lib/portal.functions";
 import { PasswordInput } from "@/components/portal/PasswordInput";
+import { z } from "zod";
 
-export const Route = createFileRoute("/account/login")({ component: LoginPage });
+export const Route = createFileRoute("/account/login")({
+  validateSearch: z.object({ mode: z.enum(["employee"]).optional() }),
+  component: LoginPage,
+});
 
 function LoginPage() {
+  const { mode } = Route.useSearch();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -33,7 +38,7 @@ function LoginPage() {
           РАНГ
         </a>
         <h1 className="mt-8 text-2xl font-semibold">Личный кабинет</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Вход для действующих арендаторов</p>
+        <p className="mt-2 text-sm text-muted-foreground">{mode === "employee" ? "Вход для сотрудников RANG" : "Вход для действующих арендаторов"}</p>
         <label className="mt-6 block text-sm font-medium">
           Электронная почта
           <input
