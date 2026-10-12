@@ -34,20 +34,23 @@ export async function employeesAdmin() {
 }
 
 export async function saveEmployeeAdmin(input:{id?:string|undefined;name:string;email:string;jobTitle?:string|undefined;active:boolean;roleCodes:string[]}) {
-  const actor=await requirePermission("employees.manage"); const db=getDatabase(); const id=input.id||randomUUID();
+  const actor=await requirePermission("employees.manage"); const db=getDatabase(); const id=input.id||randomUUID(); const email=input.email.trim().toLowerCase();
   const allowed=await db.select({id:s.roles.id,code:s.roles.code}).from(s.roles).where(inArray(s.roles.code,input.roleCodes));
   if(!allowed.length||allowed.some(r=>r.code==="tenant")) throw new Error("Выберите роль сотрудника");
+  const emailOwner=(await db.select({id:s.users.id}).from(s.users).where(eq(s.users.email,email)).limit(1))[0];
+  if(emailOwner&&emailOwner.id!==id) throw new Error("Этот email уже используется другим аккаунтом");
   let token:string|undefined;
   await db.transaction(async tx=>{
-    if(input.id) await tx.update(s.users).set({displayName:input.name,email:input.email.trim().toLowerCase(),isActive:input.active,updatedAt:new Date()}).where(and(eq(s.users.id,id),eq(s.users.kind,"employee")));
-    else { await tx.insert(s.users).values({id,kind:"employee",displayName:input.name,email:input.email.trim().toLowerCase(),isActive:input.active}); token=createOpaqueToken(); await tx.insert(s.userAccessTokens).values({id:randomUUID(),userId:id,purpose:"activation",tokenHash:hashToken(token),expiresAt:new Date(Date.now()+72*3600000)}); }
+    if(input.id) await tx.update(s.users).set({displayName:input.name,email,isActive:input.active,updatedAt:new Date()}).where(and(eq(s.users.id,id),eq(s.users.kind,"employee")));
+    else { await tx.insert(s.users).values({id,kind:"employee",displayName:input.name,email,isActive:input.active}); token=createOpaqueToken(); await tx.insert(s.userAccessTokens).values({id:randomUUID(),userId:id,purpose:"activation",tokenHash:hashToken(token),expiresAt:new Date(Date.now()+72*3600000)}); }
     await tx.insert(s.employees).values({id:`employee-${id}`,userId:id,jobTitle:input.jobTitle||null}).onConflictDoUpdate({target:s.employees.userId,set:{jobTitle:input.jobTitle||null,updatedAt:new Date()}});
     await tx.delete(s.userRoles).where(eq(s.userRoles.userId,id)); await tx.insert(s.userRoles).values(allowed.map(r=>({userId:id,roleId:r.id})));
     if(!input.active) await tx.update(s.userSessions).set({revokedAt:new Date()}).where(and(eq(s.userSessions.userId,id),sql`${s.userSessions.revokedAt} is null`));
     await tx.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:input.id?"employee.updated":"employee.created",entityType:"user",entityId:id,after:{roles:input.roleCodes,active:input.active}});
   });
-  if(token){const {sendAccessEmail}=await import("@/server/portal/email.server");await sendAccessEmail({email:input.email,name:input.name,token,purpose:"activation"});}
-  return {id};
+  let emailSent:boolean|undefined;
+  if(token){const {sendAccessEmail}=await import("@/server/portal/email.server");try{emailSent=await sendAccessEmail({email,name:input.name,token,purpose:"activation"});}catch{emailSent=false;}}
+  return {id,emailSent};
 }
 
 export async function premisesAdmin() {
