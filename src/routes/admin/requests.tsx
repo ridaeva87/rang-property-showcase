@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { getCurrentAccount, loadRequestsAdmin, updateRequest } from "@/lib/portal.functions";
 import { loadAdminNavigation } from "@/lib/admin.functions";
 import { AdminShell } from "@/components/portal/AdminShell";
+import { filterAndSortRequests, requestsToCsv, type RequestSortOrder } from "@/lib/request-list";
 
 export const Route = createFileRoute("/admin/requests")({
   beforeLoad: async () => {
@@ -18,7 +19,18 @@ function RequestsAdminPage() {
   const { data, nav } = Route.useLoaderData();
   const [status,setStatus]=useState(""); const [category,setCategory]=useState(""); const [tenant,setTenant]=useState("");
   const [direction,setDirection]=useState(""); const [assignee,setAssignee]=useState("");
-  const requests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
+  const [search,setSearch]=useState(""); const [sortOrder,setSortOrder]=useState<RequestSortOrder>("newest");
+  const filteredRequests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
+  const requests=filterAndSortRequests(filteredRequests,search,sortOrder);
+  function exportCsv() {
+    const blob = new Blob([requestsToCsv(requests)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `rang-requests-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
   async function submit(event: FormEvent<HTMLFormElement>, requestId: string) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -41,6 +53,11 @@ function RequestsAdminPage() {
         Арендаторы
       </a>
       <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-2 lg:grid-cols-5"><select value={status} onChange={e=>setStatus(e.target.value)} className="border px-3 py-2"><option value="">Все статусы</option><option value="accepted">Принято</option><option value="in_progress">В работе</option><option value="completed">Выполнено</option></select><select value={category} onChange={e=>setCategory(e.target.value)} className="border px-3 py-2"><option value="">Все категории</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select><select value={direction} onChange={e=>setDirection(e.target.value)} className="border px-3 py-2"><option value="">Все направления</option>{data.directions.map(d=><option key={d.code} value={d.code}>{d.name}</option>)}</select><select value={tenant} onChange={e=>setTenant(e.target.value)} className="border px-3 py-2"><option value="">Все арендаторы</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><select value={assignee} onChange={e=>setAssignee(e.target.value)} className="border px-3 py-2"><option value="">Все ответственные</option><option value="unassigned">Не назначен</option>{data.employees.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
+      <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
+        <input value={search} onChange={e=>setSearch(e.target.value)} className="border px-3 py-2" placeholder="Поиск по номеру, теме, описанию, арендатору или помещению" aria-label="Поиск заявок" />
+        <select value={sortOrder} onChange={e=>setSortOrder(e.target.value as RequestSortOrder)} className="border px-3 py-2" aria-label="Порядок заявок"><option value="newest">Сначала новые</option><option value="oldest">Сначала старые</option></select>
+        <button type="button" onClick={exportCsv} disabled={!requests.length} className="border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50">Экспорт CSV</button>
+      </div>
       <div className="space-y-4">
         {requests.map((request) => (
           <article key={request.id} className="border bg-background p-5">
