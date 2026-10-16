@@ -116,7 +116,7 @@ function RentPage() {
                   помещения. Остальные условия зависят от выбранного помещения и договора.
                 </p>
               </div>
-              <RequestIntegrationNotice subject="Записаться на просмотр или уточнить условия" />
+              <RequestIntegrationNotice source="rent" subject="Записаться на просмотр или уточнить условия" />
             </div>
           </div>
         </section>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Wrench } from "lucide-react";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/services")({
 });
 
 function ServicesPage() {
+  const [selectedServiceId, setSelectedServiceId] = useState<string>();
   useEffect(()=>{void trackPublicAnalytics({data:{eventType:"service_view"}})},[]);
   return (
     <div className="min-h-screen bg-background">
@@ -49,7 +50,7 @@ function ServicesPage() {
                   <h2 className="mt-5 text-lg font-semibold">{service.title}</h2>
                   <a
                     href="#request"
-                    onClick={()=>void trackPublicAnalytics({data:{eventType:"service_cta",context:{service:service.id,title:service.title}}})}
+                    onClick={()=>{setSelectedServiceId(service.id);void trackPublicAnalytics({data:{eventType:"service_cta",serviceId:service.id,context:{service:service.id,title:service.title}}})}}
                     className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-semibold text-primary"
                   >
                     Оставить заявку <ArrowRight className="size-4" />
@@ -58,7 +59,7 @@ function ServicesPage() {
               ))}
             </div>
             <div className="mt-10">
-              <RequestIntegrationNotice subject="Заявка на дополнительные работы" />
+              <RequestIntegrationNotice key={selectedServiceId || "general"} source="services" serviceId={selectedServiceId} subject={selectedServiceId ? `Заявка на услугу: ${ADDITIONAL_SERVICES.find((service) => service.id === selectedServiceId)?.title || "Дополнительная услуга"}` : "Заявка на дополнительные работы"} />
             </div>
           </div>
         </section>

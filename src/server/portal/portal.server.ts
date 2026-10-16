@@ -3,6 +3,7 @@ import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 import { getDatabase } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
+import { createRequestFromIntake } from "@/server/requests/intake.server";
 import {
   createOpaqueToken,
   hashPassword,
@@ -345,29 +346,23 @@ export async function createTenantRequest(input: {
     if (!overview.premises.some((p) => p.id === input.premiseId))
       throw new AuthorizationError("Помещение недоступно");
   }
-  const [category] = await db
-    .select()
-    .from(schema.requestCategories)
-    .where(eq(schema.requestCategories.code, input.category))
-    .limit(1);
-  const [status] = await db
-    .select()
-    .from(schema.requestStatuses)
-    .where(eq(schema.requestStatuses.code, "accepted"))
-    .limit(1);
-  const [route] = category ? await db.select({ directionId: schema.requestCategoryRoutes.directionId }).from(schema.requestCategoryRoutes).where(eq(schema.requestCategoryRoutes.categoryId, category.id)).limit(1) : [];
-  if (!category || !status || !route) throw new Error("Справочники заявок не настроены");
   const [orgId] = await tenantOrganizationIds(user.id);
-  const id = randomUUID();
-  await db.transaction(async (tx) => {
-    await tx.insert(schema.requests).values({
-      id, organizationId: orgId, createdByUserId: user.id, categoryId: category.id,
-      directionId: route.directionId, statusId: status.id, premiseId: input.premiseId || null,
-      subject: input.subject, description: input.description,
-    });
-    await tx.insert(schema.requestEvents).values({ id: randomUUID(), requestId: id, eventType: "created", actorUserId: user.id });
+  const [contact] = await db.select({ phone: schema.users.phone }).from(schema.users).where(eq(schema.users.id, user.id)).limit(1);
+  const request = await createRequestFromIntake({
+    categoryCode: input.category,
+    source: "Личный кабинет",
+    interest: input.subject,
+    subject: input.subject,
+    description: input.description,
+    contactName: user.displayName,
+    contactPhone: contact?.phone || null,
+    contactEmail: user.email,
+    premiseId: input.premiseId || null,
+    organizationId: orgId || null,
+    createdByUserId: user.id,
+    actorUserId: user.id,
   });
-  return { id };
+  return { id: request.id };
 }
 
 export async function addRequestComment(requestId: string, body: string) {
@@ -593,10 +588,17 @@ export async function listRequestsAdmin() {
       direction: schema.requestDirections.name,
       directionCode: schema.requestDirections.code,
       assigneeEmployeeId: schema.requests.assigneeEmployeeId,
+      source: schema.requests.source,
+      contactName: schema.requests.contactName,
+      contactPhone: schema.requests.contactPhone,
+      contactEmail: schema.requests.contactEmail,
+      interest: schema.requests.interest,
+      service: schema.additionalServices.title,
     })
     .from(schema.requests)
     .leftJoin(schema.users, eq(schema.requests.createdByUserId, schema.users.id))
     .leftJoin(schema.premises, eq(schema.requests.premiseId, schema.premises.id))
+    .leftJoin(schema.additionalServices, eq(schema.requests.serviceId, schema.additionalServices.id))
     .innerJoin(schema.requestStatuses, eq(schema.requests.statusId, schema.requestStatuses.id))
     .innerJoin(schema.requestCategories, eq(schema.requests.categoryId, schema.requestCategories.id))
     .innerJoin(schema.requestDirections, eq(schema.requests.directionId, schema.requestDirections.id))
@@ -626,7 +628,60 @@ export async function listRequestsAdmin() {
     assignee: employees.find((employee) => employee.id === request.assigneeEmployeeId)?.name || null,
     comments: comments.filter((comment) => comment.requestId === request.id),
     events: events.filter((event) => event.requestId === request.id).map((event) => ({ ...event, from: eventLabel(event.from), to: eventLabel(event.to) })),
-  })), categories: await db.select({ code: schema.requestCategories.code, name: schema.requestCategories.name }).from(schema.requestCategories), tenants: await db.select({ id: schema.users.id, name: schema.users.displayName }).from(schema.users).where(eq(schema.users.kind, "tenant")), directions: directions.map(({ code, name }) => ({ code, name })), employees };
+  })), categories: await db.select({ code: schema.requestCategories.code, name: schema.requestCategories.name }).from(schema.requestCategories), tenants: await db.select({ id: schema.users.id, name: schema.users.displayName, email: schema.users.email, phone: schema.users.phone }).from(schema.users).where(eq(schema.users.kind, "tenant")), directions: directions.map(({ code, name }) => ({ code, name })), employees, premises: await db.select({ id: schema.premises.id, name: schema.premises.title, address: schema.propertyObjects.address }).from(schema.premises).innerJoin(schema.propertyObjects, eq(schema.premises.objectId, schema.propertyObjects.id)).orderBy(schema.propertyObjects.address, schema.premises.title), services: await db.select({ id: schema.additionalServices.id, name: schema.additionalServices.title }).from(schema.additionalServices).where(eq(schema.additionalServices.publicationStatus, "published")).orderBy(schema.additionalServices.title) };
+}
+
+export async function createRequestAdmin(input: {
+  tenantId?: string | null | undefined;
+  category: string;
+  premiseId?: string | null | undefined;
+  serviceId?: string | null | undefined;
+  subject: string;
+  description: string;
+  contactName?: string | null | undefined;
+  contactPhone?: string | null | undefined;
+  contactEmail?: string | null | undefined;
+  interest?: string | null | undefined;
+  assigneeEmployeeId?: string | null | undefined;
+}) {
+  const actor = await requireRequestManager();
+  const db = getDatabase();
+  const [category] = await db.select({ id: schema.requestCategories.id, directionCode: schema.requestDirections.code })
+    .from(schema.requestCategories)
+    .innerJoin(schema.requestCategoryRoutes, eq(schema.requestCategoryRoutes.categoryId, schema.requestCategories.id))
+    .innerJoin(schema.requestDirections, eq(schema.requestCategoryRoutes.directionId, schema.requestDirections.id))
+    .where(eq(schema.requestCategories.code, input.category)).limit(1);
+  if (!category) throw new Error("Категория заявки не найдена");
+  const scope = requestDirectionScope(actor.roles);
+  if (scope !== null && !scope.includes(category.directionCode)) throw new AuthorizationError("Доступ к направлению запрещён");
+
+  const tenant = input.tenantId ? (await db.select({ id: schema.users.id, name: schema.users.displayName, email: schema.users.email, phone: schema.users.phone }).from(schema.users).where(and(eq(schema.users.id, input.tenantId), eq(schema.users.kind, "tenant"), eq(schema.users.isActive, true))).limit(1))[0] : null;
+  if (input.tenantId && !tenant) throw new Error("Арендатор не найден");
+  if (input.premiseId) {
+    const [premise] = await db.select({ id: schema.premises.id }).from(schema.premises).where(eq(schema.premises.id, input.premiseId)).limit(1);
+    if (!premise) throw new Error("Помещение не найдено");
+  }
+  if (input.assigneeEmployeeId) {
+    const [assignee] = await db.select({ id: schema.employees.id }).from(schema.employees).where(eq(schema.employees.id, input.assigneeEmployeeId)).limit(1);
+    if (!assignee) throw new Error("Ответственный сотрудник не найден");
+  }
+  const [organizationId] = tenant ? await tenantOrganizationIds(tenant.id) : [];
+  return createRequestFromIntake({
+    categoryCode: input.category,
+    source: "Создано сотрудником",
+    interest: input.interest || input.subject,
+    subject: input.subject,
+    description: input.description,
+    contactName: input.contactName || tenant?.name || null,
+    contactPhone: input.contactPhone || tenant?.phone || null,
+    contactEmail: input.contactEmail || tenant?.email || null,
+    premiseId: input.premiseId || null,
+    serviceId: input.serviceId || null,
+    organizationId: organizationId || null,
+    createdByUserId: tenant?.id || null,
+    actorUserId: actor.id,
+    assigneeEmployeeId: input.assigneeEmployeeId || null,
+  });
 }
 
 export async function updateRequestAdmin(input: {

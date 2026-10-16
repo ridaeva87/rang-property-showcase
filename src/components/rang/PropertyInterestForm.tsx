@@ -27,7 +27,7 @@ export function PropertyInterestForm({
     const data = new FormData(form);
     setSending(true);
     try {
-      await sendPropertyInterest({ data: { premiseId: propertyId, objectId, type: interestType, name: String(data.get("name") || ""), phone: String(data.get("phone") || ""), message: String(data.get("comment") || "") } });
+      await sendPropertyInterest({ data: { premiseId: propertyId, objectId, type: interestType, name: String(data.get("name") || ""), phone: String(data.get("phone") || ""), email: String(data.get("email") || ""), message: String(data.get("comment") || "") } });
       form.reset();
       toast.success(interestType === "details" ? "Запрос отправлен" : "Заявка отправлена");
     } catch (error) {
@@ -64,6 +64,12 @@ export function PropertyInterestForm({
           </label>
           <label className="block sm:col-span-2">
             <span className="mb-2 block text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+              Email
+            </span>
+            <input name="email" type="email" placeholder="Необязательно" className="filter-control" />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-2 block text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
               Комментарий
             </span>
             <textarea
@@ -75,6 +81,7 @@ export function PropertyInterestForm({
           </label>
           <button
             type="submit"
+            disabled={sending}
             className="h-12 bg-primary px-6 text-sm font-semibold text-primary-foreground sm:col-span-2"
           >
             {sending ? "Отправляем…" : interestType === "details" ? "Отправить запрос" : "Отправить заявку"}

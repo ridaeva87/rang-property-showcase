@@ -56,7 +56,7 @@ function SalePage() {
               </div>
             )}
             <div className="mx-auto mt-8 max-w-3xl">
-              <RequestIntegrationNotice subject="Уточнить информацию о продаже" />
+              <RequestIntegrationNotice source="sale" subject="Уточнить информацию о продаже" />
             </div>
           </div>
         </section>

@@ -139,6 +139,25 @@ export const loadRequestsAdmin = createServerFn({ method: "GET" }).handler(async
   return listRequestsAdmin();
 });
 
+export const createRequestByEmployee = createServerFn({ method: "POST" })
+  .validator(z.object({
+    tenantId: z.string().uuid().nullable().optional(),
+    category: z.string().min(1),
+    premiseId: z.string().nullable().optional(),
+    serviceId: z.string().nullable().optional(),
+    subject: z.string().trim().min(3).max(160),
+    description: z.string().trim().min(5).max(5000),
+    contactName: z.string().trim().max(120).nullable().optional(),
+    contactPhone: z.string().trim().max(40).nullable().optional(),
+    contactEmail: z.string().email().nullable().optional().or(z.literal("")),
+    interest: z.string().trim().max(300).nullable().optional(),
+    assigneeEmployeeId: z.string().nullable().optional(),
+  }))
+  .handler(async ({ data }) => {
+    const { createRequestAdmin } = await import("@/server/portal/portal.server");
+    return createRequestAdmin(data);
+  });
+
 export const updateRequest = createServerFn({ method: "POST" })
   .validator(
     z.object({

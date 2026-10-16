@@ -4,6 +4,7 @@ import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { currentUser } from "@/server/portal/portal.server";
 import { publicRequestStatus } from "@/server/portal/security";
+import { createRequestFromIntake } from "@/server/requests/intake.server";
 import {
   APPROVED_FAQ,
   ASSISTANT_KNOWLEDGE_SOURCES,
@@ -177,15 +178,28 @@ export async function transferAssistantQuestion(input: { question: string; conte
   const email = tenant?.email || input.email?.trim() || null;
   if (!name || (!tenant && (!phone || phone.length < 6))) throw new Error("Укажите имя и телефон");
   const db = getDatabase();
-  const premise = input.premiseId ? (await db.select({ id: s.premises.id, objectId: s.premises.objectId }).from(s.premises).where(eq(s.premises.id, input.premiseId)).limit(1))[0] : undefined;
+  const premise = input.premiseId ? (await db.select({ id: s.premises.id, objectId: s.premises.objectId, title: s.premises.title }).from(s.premises).where(eq(s.premises.id, input.premiseId)).limit(1))[0] : undefined;
   const service = input.serviceId ? (await db.select({ id: s.additionalServices.id, title: s.additionalServices.title }).from(s.additionalServices).where(eq(s.additionalServices.id, input.serviceId)).limit(1))[0] : undefined;
+  const organization = tenant ? (await db.select({ id: s.organizationUsers.organizationId }).from(s.organizationUsers).where(eq(s.organizationUsers.userId, tenant.id)).limit(1))[0] : null;
   const assignee = (await db.select({ id: s.employees.id }).from(s.employees).innerJoin(s.users, eq(s.employees.userId, s.users.id)).innerJoin(s.userRoles, eq(s.userRoles.userId, s.users.id)).innerJoin(s.roles, eq(s.userRoles.roleId, s.roles.id)).where(and(eq(s.roles.code, "rental_manager"), eq(s.users.isActive, true))).orderBy(s.employees.createdAt).limit(1))[0];
-  const id = randomUUID();
   const note = [`CTA: Передать вопрос сотруднику`, `Вопрос: ${input.question.trim()}`, service ? `Услуга: ${service.title}` : "", input.context ? `Контекст диалога:\n${input.context.trim().slice(-2000)}` : ""].filter(Boolean).join("\n\n");
-  await db.transaction(async (tx) => {
-    await tx.insert(s.propertyInterests).values({ id, userId: tenant?.id || null, premiseId: premise?.id || null, kind: "details", contactName: name, contactPhone: phone || null, contactEmail: email, note, source: input.source === "tenant_portal" ? "Помощник RANG — личный кабинет" : "Помощник RANG", status: "new", assigneeEmployeeId: assignee?.id || null });
-    await tx.insert(s.auditLogs).values({ id: randomUUID(), actorUserId: tenant?.id || null, action: "assistant.handoff", entityType: "leads", entityId: id, after: { premiseId: premise?.id || null, serviceId: service?.id || null, source: input.source } });
+  const source = input.source === "tenant_portal" ? "Помощник RANG — личный кабинет" : "Помощник RANG";
+  const request = await createRequestFromIntake({
+    source,
+    interest: "Передать вопрос сотруднику",
+    subject: premise ? `Вопрос по помещению: ${premise.title}` : service ? `Вопрос по услуге: ${service.title}` : "Вопрос из Помощника RANG",
+    description: note,
+    contactName: name,
+    contactPhone: phone || null,
+    contactEmail: email,
+    premiseId: premise?.id || null,
+    serviceId: service?.id || null,
+    organizationId: organization?.id || null,
+    createdByUserId: tenant?.id || null,
+    actorUserId: tenant?.id || null,
+    assigneeEmployeeId: assignee?.id || null,
   });
+  await db.insert(s.auditLogs).values({ id: randomUUID(), actorUserId: tenant?.id || null, action: "assistant.handoff", entityType: "requests", entityId: request.id, after: { premiseId: premise?.id || null, serviceId: service?.id || null, source: input.source } });
   await logAssistant({ userId: tenant?.id, source: input.source === "tenant_portal" ? "Личный кабинет" : "Публичный сайт", intent: "handoff", sources: [], resultCount: 1, handoff: true });
-  return { ok: true, id };
+  return { ok: true, id: request.id };
 }

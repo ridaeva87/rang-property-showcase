@@ -1,8 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { getCurrentAccount, loadRequestsAdmin, updateRequest } from "@/lib/portal.functions";
+import { createRequestByEmployee, getCurrentAccount, loadRequestsAdmin, updateRequest } from "@/lib/portal.functions";
 import { loadAdminNavigation } from "@/lib/admin.functions";
 import { AdminShell } from "@/components/portal/AdminShell";
+import { GroupedPremiseOptions } from "@/components/portal/GroupedPremiseOptions";
 import { filterAndSortRequests, requestsToCsv, type RequestSortOrder } from "@/lib/request-list";
 
 export const Route = createFileRoute("/admin/requests")({
@@ -20,6 +21,7 @@ function RequestsAdminPage() {
   const [status,setStatus]=useState(""); const [category,setCategory]=useState(""); const [tenant,setTenant]=useState("");
   const [direction,setDirection]=useState(""); const [assignee,setAssignee]=useState("");
   const [search,setSearch]=useState(""); const [sortOrder,setSortOrder]=useState<RequestSortOrder>("newest");
+  const [createError,setCreateError]=useState("");
   const filteredRequests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
   const requests=filterAndSortRequests(filteredRequests,search,sortOrder);
   function exportCsv() {
@@ -47,11 +49,53 @@ function RequestsAdminPage() {
     });
     location.reload();
   }
+  async function createRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCreateError("");
+    const form = new FormData(event.currentTarget);
+    const value = (name: string) => String(form.get(name) || "").trim() || undefined;
+    try {
+      await createRequestByEmployee({ data: {
+        tenantId: value("tenantId"),
+        category: String(form.get("category") || ""),
+        premiseId: value("premiseId"),
+        serviceId: value("serviceId"),
+        subject: String(form.get("subject") || ""),
+        description: String(form.get("description") || ""),
+        contactName: value("contactName"),
+        contactPhone: value("contactPhone"),
+        contactEmail: value("contactEmail") || "",
+        interest: value("interest"),
+        assigneeEmployeeId: value("assigneeEmployeeId"),
+      } });
+      location.reload();
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Не удалось создать заявку");
+    }
+  }
   return (
     <AdminShell title="Заявки арендаторов" sections={nav.sections}>
       <a href="/admin/tenants" className="mb-4 inline-block border px-3 py-2 text-sm">
         Арендаторы
       </a>
+      <details className="mb-4 border bg-background p-4">
+        <summary className="cursor-pointer font-semibold">Создать заявку вручную</summary>
+        <form onSubmit={createRequest} className="mt-4 grid gap-3 md:grid-cols-2">
+          <select name="tenantId" className="border p-3"><option value="">Без привязки к арендатору</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>
+          <select name="category" required className="border p-3"><option value="">Категория</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select>
+          <select name="premiseId" className="border p-3"><option value="">Без помещения</option><GroupedPremiseOptions premises={data.premises}/></select>
+          <select name="serviceId" className="border p-3"><option value="">Без услуги</option>{data.services.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+          <input name="contactName" maxLength={120} placeholder="Контактное лицо" className="border p-3" />
+          <input name="contactPhone" maxLength={40} placeholder="Телефон" className="border p-3" />
+          <input name="contactEmail" type="email" placeholder="Email" className="border p-3" />
+          <input name="interest" maxLength={300} placeholder="Интерес пользователя" className="border p-3" />
+          <input name="subject" required minLength={3} maxLength={160} placeholder="Тема" className="border p-3 md:col-span-2" />
+          <textarea name="description" required minLength={5} maxLength={5000} placeholder="Описание" className="min-h-28 border p-3 md:col-span-2" />
+          <select name="assigneeEmployeeId" className="border p-3"><option value="">Не назначен</option>{data.employees.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>
+          <button className="bg-primary p-3 font-semibold text-primary-foreground">Создать заявку</button>
+          {createError&&<p className="text-sm text-destructive md:col-span-2">{createError}</p>}
+        </form>
+      </details>
       <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-2 lg:grid-cols-5"><select value={status} onChange={e=>setStatus(e.target.value)} className="border px-3 py-2"><option value="">Все статусы</option><option value="accepted">Принято</option><option value="in_progress">В работе</option><option value="completed">Выполнено</option></select><select value={category} onChange={e=>setCategory(e.target.value)} className="border px-3 py-2"><option value="">Все категории</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select><select value={direction} onChange={e=>setDirection(e.target.value)} className="border px-3 py-2"><option value="">Все направления</option>{data.directions.map(d=><option key={d.code} value={d.code}>{d.name}</option>)}</select><select value={tenant} onChange={e=>setTenant(e.target.value)} className="border px-3 py-2"><option value="">Все арендаторы</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><select value={assignee} onChange={e=>setAssignee(e.target.value)} className="border px-3 py-2"><option value="">Все ответственные</option><option value="unassigned">Не назначен</option>{data.employees.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
       <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
         <input value={search} onChange={e=>setSearch(e.target.value)} className="border px-3 py-2" placeholder="Поиск по номеру, теме, описанию, арендатору или помещению" aria-label="Поиск заявок" />
@@ -70,6 +114,9 @@ function RequestsAdminPage() {
                 </p>
                 <p className="text-sm font-medium">Категория: {request.category}</p>
                 <p className="text-sm">Направление: {request.direction} · Ответственный: {request.assignee || "Не назначен"}</p>
+                <p className="text-sm">Источник: {request.source || "Не указан"}{request.interest ? ` · Интерес: ${request.interest}` : ""}</p>
+                {(request.contactName || request.contactPhone || request.contactEmail) && <p className="text-sm">Контакт: {[request.contactName,request.contactPhone,request.contactEmail].filter(Boolean).join(" · ")}</p>}
+                {request.service&&<p className="text-sm">Услуга: {request.service}</p>}
               </div>
               <time className="text-xs text-muted-foreground">
                 {new Date(request.createdAt).toLocaleString("ru-RU")}

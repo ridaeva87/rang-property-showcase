@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { currentUser } from "@/server/portal/portal.server";
+import { createRequestFromIntake } from "@/server/requests/intake.server";
 
 export type PublicInterestType = "viewing" | "application" | "release-notification" | "details" | "question";
 
@@ -28,7 +29,7 @@ export async function submitPropertyInterest(input: {
   message?: string | undefined;
 }) {
   const db = getDatabase();
-  const premise = (await db.select({ id: s.premises.id, objectId: s.premises.objectId })
+  const premise = (await db.select({ id: s.premises.id, objectId: s.premises.objectId, title: s.premises.title })
     .from(s.premises)
     .where(and(eq(s.premises.id, input.premiseId), eq(s.premises.publicationStatus, "published")))
     .limit(1))[0];
@@ -36,6 +37,7 @@ export async function submitPropertyInterest(input: {
 
   const descriptor = PUBLIC_INTEREST_LABELS[input.type];
   const user = await currentUser();
+  const organization = user?.kind === "tenant" ? (await db.select({ id: s.organizationUsers.organizationId }).from(s.organizationUsers).where(eq(s.organizationUsers.userId, user.id)).limit(1))[0] : null;
   const assignee = (await db.select({ id: s.employees.id })
     .from(s.employees)
     .innerJoin(s.users, eq(s.employees.userId, s.users.id))
@@ -44,21 +46,21 @@ export async function submitPropertyInterest(input: {
     .where(and(eq(s.roles.code, "rental_manager"), eq(s.users.isActive, true)))
     .orderBy(s.employees.createdAt)
     .limit(1))[0];
-  const id = randomUUID();
+  const request = await createRequestFromIntake({
+    source: descriptor.source,
+    interest: descriptor.cta,
+    subject: `${descriptor.cta}: ${premise.title}`,
+    description: input.message?.trim() || descriptor.cta,
+    contactName: input.name,
+    contactPhone: input.phone,
+    contactEmail: input.email || null,
+    premiseId: premise.id,
+    organizationId: organization?.id || null,
+    createdByUserId: user?.kind === "tenant" ? user.id : null,
+    actorUserId: user?.id || null,
+    assigneeEmployeeId: assignee?.id || null,
+  });
   await db.transaction(async (tx) => {
-    await tx.insert(s.propertyInterests).values({
-      id,
-      userId: user?.id || null,
-      premiseId: premise.id,
-      kind: descriptor.kind,
-      contactName: input.name.trim(),
-      contactPhone: input.phone.trim(),
-      contactEmail: input.email?.trim() || null,
-      note: interestNote(input.message, descriptor.cta),
-      source: descriptor.source,
-      status: "new",
-      assigneeEmployeeId: assignee?.id || null,
-    });
     await tx.insert(s.analyticsEvents).values({
       id: randomUUID(),
       name: "Успешное обращение по помещению",
@@ -73,10 +75,58 @@ export async function submitPropertyInterest(input: {
       id: randomUUID(),
       actorUserId: user?.id || null,
       action: "lead.created.public",
-      entityType: "leads",
-      entityId: id,
+      entityType: "requests",
+      entityId: request.id,
       after: { source: descriptor.source, cta: descriptor.cta, premiseId: premise.id },
     });
   });
-  return { ok: true, id, assigned: Boolean(assignee) };
+  return { ok: true, id: request.id, assigned: Boolean(assignee) };
+}
+
+const PUBLIC_REQUEST_SOURCES = {
+  rent: "Публичный сайт — аренда",
+  sale: "Публичный сайт — продажа",
+  services: "Публичный сайт — услуги",
+} as const;
+
+export async function submitPublicRequest(input: {
+  source: keyof typeof PUBLIC_REQUEST_SOURCES;
+  subject: string;
+  name: string;
+  phone: string;
+  email?: string | undefined;
+  message?: string | undefined;
+  serviceId?: string | undefined;
+}) {
+  const db = getDatabase();
+  const service = input.serviceId ? (await db.select({ id: s.additionalServices.id, title: s.additionalServices.title }).from(s.additionalServices).where(and(eq(s.additionalServices.id, input.serviceId), eq(s.additionalServices.publicationStatus, "published"))).limit(1))[0] : null;
+  if (input.serviceId && !service) throw new Error("Услуга недоступна");
+  const assignee = (await db.select({ id: s.employees.id }).from(s.employees)
+    .innerJoin(s.users, eq(s.employees.userId, s.users.id))
+    .innerJoin(s.userRoles, eq(s.userRoles.userId, s.users.id))
+    .innerJoin(s.roles, eq(s.userRoles.roleId, s.roles.id))
+    .where(and(eq(s.roles.code, "rental_manager"), eq(s.users.isActive, true)))
+    .orderBy(s.employees.createdAt).limit(1))[0];
+  const source = PUBLIC_REQUEST_SOURCES[input.source];
+  const interest = service?.title || input.subject;
+  const request = await createRequestFromIntake({
+    source,
+    interest,
+    subject: service ? `Заявка на услугу: ${service.title}` : input.subject,
+    description: input.message?.trim() || input.subject,
+    contactName: input.name,
+    contactPhone: input.phone,
+    contactEmail: input.email || null,
+    serviceId: service?.id || null,
+    assigneeEmployeeId: assignee?.id || null,
+  });
+  await db.insert(s.analyticsEvents).values({
+    id: randomUUID(),
+    name: "Успешное публичное обращение",
+    source,
+    eventType: "premise_lead",
+    serviceId: service?.id || null,
+    context: { cta: input.subject, requestId: request.id },
+  });
+  return { ok: true, id: request.id };
 }

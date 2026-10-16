@@ -1,5 +1,8 @@
 import { ArrowRight, ExternalLink, MapPin } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import { COMPANY_DOCUMENTS, type PropertyObject } from "@/data/rang";
+import { sendPublicRequest } from "@/lib/admin.functions";
 import { ResponsiveImage } from "./ResponsiveImage";
 import {
   Dialog,
@@ -179,15 +182,45 @@ export function HistoricalLicense() {
   );
 }
 
-export function RequestIntegrationNotice({ subject }: { subject: string }) {
+export function RequestIntegrationNotice({ subject, source, serviceId }: { subject: string; source: "rent" | "sale" | "services"; serviceId?: string | undefined }) {
+  const [sending, setSending] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (sending) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setSending(true);
+    try {
+      await sendPublicRequest({ data: {
+        source,
+        subject,
+        name: String(data.get("name") || ""),
+        phone: String(data.get("phone") || ""),
+        email: String(data.get("email") || ""),
+        message: String(data.get("message") || ""),
+        ...(serviceId ? { serviceId } : {}),
+      } });
+      form.reset();
+      toast.success("Заявка отправлена");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отправить заявку");
+    } finally {
+      setSending(false);
+    }
+  }
   return (
     <div id="request" className="border border-border bg-card p-6 sm:p-8">
       <p className="eyebrow">Заявка</p>
       <h2 className="mt-3 text-2xl font-semibold">{subject}</h2>
-      <p className="mt-4 text-sm text-muted-foreground">
-        Онлайн-отправка и сохранение заявок будут подключены вместе с единой системой заявок RANG.
-        На этом этапе форма не имитирует отправку данных.
-      </p>
+      <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2">
+        <input name="name" required minLength={2} maxLength={120} placeholder="Имя" className="filter-control" />
+        <input name="phone" required minLength={6} maxLength={40} placeholder="Телефон" className="filter-control" />
+        <input name="email" type="email" placeholder="Email (необязательно)" className="filter-control sm:col-span-2" />
+        <textarea name="message" maxLength={2000} rows={4} placeholder="Комментарий" className="w-full border border-input bg-background p-3 text-sm sm:col-span-2" />
+        <button type="submit" disabled={sending} className="bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60 sm:col-span-2">
+          {sending ? "Отправляем…" : "Отправить заявку"}
+        </button>
+      </form>
     </div>
   );
 }
