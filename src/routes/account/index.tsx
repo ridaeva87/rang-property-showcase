@@ -134,7 +134,7 @@ function AccountPage() {
           {data.requests.map((r) => (
             <article key={r.id} className="border p-4">
               <div className="flex flex-wrap justify-between gap-2">
-                <strong>{r.subject}</strong>
+                <strong>№{String(r.requestNumber).padStart(6, "0")} · {r.subject}</strong>
                 <span className="bg-muted px-2 py-1 text-xs font-semibold">{r.publicStatus}</span>
               </div>
               <p className="mt-2 text-sm">{r.description}</p>
