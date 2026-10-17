@@ -28,9 +28,17 @@ export function hashToken(token: string) {
 }
 
 export function publicRequestStatus(code: string, isClosed = false) {
-  if (isClosed || ["completed", "done", "closed", "resolved"].includes(code)) return "Выполнено";
-  if (["in_progress", "assigned", "waiting", "processing"].includes(code)) return "В работе";
-  return "Принято";
+  const labels: Record<string, string> = {
+    new: "Новая",
+    in_progress: "В работе",
+    waiting_customer: "Ожидает клиента",
+    qualified: "Квалифицирована",
+    closed_won: "Закрыта успешно",
+    closed_lost: "Закрыта без результата",
+    accepted: "Принято",
+    completed: "Выполнено",
+  };
+  return labels[code] || (isClosed ? "Закрыта" : "Новая");
 }
 
 export function validatePassword(password: string) {

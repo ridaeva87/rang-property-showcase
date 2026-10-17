@@ -526,6 +526,8 @@ export const requestStatuses = pgTable(
     code: text("code").notNull(),
     name: text("name").notNull(),
     isClosed: boolean("is_closed").default(false).notNull(),
+    displayOrder: integer("display_order").default(0).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
     ...timestamps,
   },
   (table) => [uniqueIndex("request_statuses_code_uq").on(table.code)],

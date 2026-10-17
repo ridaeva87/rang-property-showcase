@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { createRequestByEmployee, getCurrentAccount, loadRequestsAdmin, updateRequest } from "@/lib/portal.functions";
+import { createRequestByEmployee, getCurrentAccount, loadRequestsAdmin, updateRequest, updateRequestStatusSettings } from "@/lib/portal.functions";
+import { ACTIVE_REQUEST_STATUS_CODES } from "@/lib/request-statuses";
 import { loadAdminNavigation } from "@/lib/admin.functions";
 import { AdminShell } from "@/components/portal/AdminShell";
 import { GroupedPremiseOptions } from "@/components/portal/GroupedPremiseOptions";
@@ -22,6 +23,7 @@ function RequestsAdminPage() {
   const [direction,setDirection]=useState(""); const [assignee,setAssignee]=useState("");
   const [search,setSearch]=useState(""); const [sortOrder,setSortOrder]=useState<RequestSortOrder>("newest");
   const [createError,setCreateError]=useState("");
+  const [statusSettingsError,setStatusSettingsError]=useState("");
   const filteredRequests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
   const requests=filterAndSortRequests(filteredRequests,search,sortOrder);
   function exportCsv() {
@@ -40,7 +42,7 @@ function RequestsAdminPage() {
     await updateRequest({
       data: {
         requestId,
-        status: String(form.get("status")) as "accepted" | "in_progress" | "completed",
+        status: String(form.get("status")),
         direction: String(form.get("direction")) as "technical" | "management" | "accounting" | "legal" | "documents" | "access" | "other",
         assigneeEmployeeId: String(form.get("assignee") || "") || null,
         visibility: String(form.get("visibility")) as "public" | "internal",
@@ -48,6 +50,21 @@ function RequestsAdminPage() {
       },
     });
     location.reload();
+  }
+  async function saveStatusSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatusSettingsError("");
+    const form = new FormData(event.currentTarget);
+    try {
+      await updateRequestStatusSettings({ data: { statuses: ACTIVE_REQUEST_STATUS_CODES.map((code) => ({
+        code,
+        displayOrder: Number(form.get(`${code}:order`)),
+        isActive: code === "new" || form.get(`${code}:active`) === "on",
+      })) } });
+      location.reload();
+    } catch (error) {
+      setStatusSettingsError(error instanceof Error ? error.message : "Не удалось сохранить стадии");
+    }
   }
   async function createRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,6 +96,19 @@ function RequestsAdminPage() {
         Арендаторы
       </a>
       <details className="mb-4 border bg-background p-4">
+        <summary className="cursor-pointer font-semibold">Настройка стадий</summary>
+        <form onSubmit={saveStatusSettings} className="mt-4 space-y-2">
+          {data.statuses.filter(s=>s.configurable).map(s=><div key={s.code} className="grid items-center gap-2 border p-3 sm:grid-cols-[minmax(0,1fr)_120px_140px]">
+            <span>{s.name}{s.isClosed?" · закрытая":""}</span>
+            <label className="text-sm">Порядок <input name={`${s.code}:order`} type="number" min="0" max="10000" required defaultValue={s.displayOrder} className="ml-2 w-16 border p-1"/></label>
+            <label className="text-sm"><input name={`${s.code}:active`} type="checkbox" defaultChecked={s.isActive} disabled={s.code==="new"} className="mr-2"/>Активна</label>
+          </div>)}
+          <p className="text-xs text-muted-foreground">Архивные статусы «Принято» и «Выполнено» сохранены только для старых заявок и истории.</p>
+          <button className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Сохранить стадии</button>
+          {statusSettingsError&&<p className="text-sm text-destructive">{statusSettingsError}</p>}
+        </form>
+      </details>
+      <details className="mb-4 border bg-background p-4">
         <summary className="cursor-pointer font-semibold">Создать заявку вручную</summary>
         <form onSubmit={createRequest} className="mt-4 grid gap-3 md:grid-cols-2">
           <select name="tenantId" className="border p-3"><option value="">Без привязки к арендатору</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>
@@ -96,7 +126,7 @@ function RequestsAdminPage() {
           {createError&&<p className="text-sm text-destructive md:col-span-2">{createError}</p>}
         </form>
       </details>
-      <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-2 lg:grid-cols-5"><select value={status} onChange={e=>setStatus(e.target.value)} className="border px-3 py-2"><option value="">Все статусы</option><option value="accepted">Принято</option><option value="in_progress">В работе</option><option value="completed">Выполнено</option></select><select value={category} onChange={e=>setCategory(e.target.value)} className="border px-3 py-2"><option value="">Все категории</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select><select value={direction} onChange={e=>setDirection(e.target.value)} className="border px-3 py-2"><option value="">Все направления</option>{data.directions.map(d=><option key={d.code} value={d.code}>{d.name}</option>)}</select><select value={tenant} onChange={e=>setTenant(e.target.value)} className="border px-3 py-2"><option value="">Все арендаторы</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><select value={assignee} onChange={e=>setAssignee(e.target.value)} className="border px-3 py-2"><option value="">Все ответственные</option><option value="unassigned">Не назначен</option>{data.employees.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
+      <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-2 lg:grid-cols-5"><select value={status} onChange={e=>setStatus(e.target.value)} className="border px-3 py-2"><option value="">Все статусы</option>{data.statuses.map(s=><option key={s.code} value={s.code}>{s.name}{s.configurable?"":" (архивный)"}</option>)}</select><select value={category} onChange={e=>setCategory(e.target.value)} className="border px-3 py-2"><option value="">Все категории</option>{data.categories.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select><select value={direction} onChange={e=>setDirection(e.target.value)} className="border px-3 py-2"><option value="">Все направления</option>{data.directions.map(d=><option key={d.code} value={d.code}>{d.name}</option>)}</select><select value={tenant} onChange={e=>setTenant(e.target.value)} className="border px-3 py-2"><option value="">Все арендаторы</option>{data.tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><select value={assignee} onChange={e=>setAssignee(e.target.value)} className="border px-3 py-2"><option value="">Все ответственные</option><option value="unassigned">Не назначен</option>{data.employees.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
       <div className="mb-4 grid gap-2 border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
         <input value={search} onChange={e=>setSearch(e.target.value)} className="border px-3 py-2" placeholder="Поиск по номеру, теме, описанию, арендатору или помещению" aria-label="Поиск заявок" />
         <select value={sortOrder} onChange={e=>setSortOrder(e.target.value as RequestSortOrder)} className="border px-3 py-2" aria-label="Порядок заявок"><option value="newest">Сначала новые</option><option value="oldest">Сначала старые</option></select>
@@ -141,9 +171,7 @@ function RequestsAdminPage() {
                 defaultValue={request.status}
                 className="border bg-background px-3 py-2"
               >
-                <option value="accepted">Принято</option>
-                <option value="in_progress">В работе</option>
-                <option value="completed">Выполнено</option>
+                {data.statuses.filter(s=>s.isActive||s.code===request.status).map(s=><option key={s.code} value={s.code}>{s.name}{s.isActive?"":" (архивный)"}</option>)}
               </select>
               <select name="direction" defaultValue={request.directionCode} className="border bg-background px-3 py-2">{data.directions.map(direction=><option key={direction.code} value={direction.code}>{direction.name}</option>)}</select>
               <select name="assignee" defaultValue={request.assigneeEmployeeId || ""} className="border bg-background px-3 py-2"><option value="">Не назначен</option>{data.employees.map(employee=><option key={employee.id} value={employee.id}>{employee.name}</option>)}</select>

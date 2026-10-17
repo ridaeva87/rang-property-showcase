@@ -12,6 +12,7 @@ const requests: RequestListItem[] = [
     category: "Электрика",
     direction: "Техническое",
     status: "accepted",
+    statusName: "Принято",
     assignee: "Иван Иванов",
   },
   {
@@ -24,6 +25,7 @@ const requests: RequestListItem[] = [
     category: "Бухгалтерия",
     direction: "Бухгалтерия",
     status: "completed",
+    statusName: "Выполнено",
     assignee: null,
   },
 ];

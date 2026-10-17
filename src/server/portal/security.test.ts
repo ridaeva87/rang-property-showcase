@@ -13,10 +13,14 @@ describe("tenant authentication and isolation primitives", () => {
     expect(() => validatePassword("Safe-password-2026")).not.toThrow();
   });
   it.each([
-    ["new", false, "Принято"],
-    ["assigned", false, "В работе"],
+    ["new", false, "Новая"],
     ["in_progress", false, "В работе"],
-    ["anything", true, "Выполнено"],
+    ["waiting_customer", false, "Ожидает клиента"],
+    ["qualified", false, "Квалифицирована"],
+    ["closed_won", true, "Закрыта успешно"],
+    ["closed_lost", true, "Закрыта без результата"],
+    ["accepted", false, "Принято"],
+    ["completed", true, "Выполнено"],
   ])("maps internal status %s", (code, closed, label) =>
     expect(publicRequestStatus(String(code), Boolean(closed))).toBe(label),
   );

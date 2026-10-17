@@ -8,6 +8,7 @@ export type RequestListItem = {
   category: string;
   direction: string;
   status: string;
+  statusName?: string;
   assignee: string | null;
 };
 
@@ -37,12 +38,6 @@ export function filterAndSortRequests<T extends RequestListItem>(
     });
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  accepted: "Принято",
-  in_progress: "В работе",
-  completed: "Выполнено",
-};
-
 function csvCell(value: unknown) {
   let text = String(value ?? "");
   // Prevent Excel from treating user-provided text as a formula.
@@ -60,7 +55,7 @@ export function requestsToCsv(requests: RequestListItem[]) {
     request.premise || "Без помещения",
     request.category,
     request.direction,
-    STATUS_LABELS[request.status] || request.status,
+    request.statusName || request.status,
     request.assignee || "Не назначен",
     request.description,
   ]);

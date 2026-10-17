@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { ACTIVE_REQUEST_STATUS_CODES } from "@/lib/request-statuses";
 
 const credentials = z.object({ email: z.string().email(), password: z.string().min(1) });
 const passwordChange = z.object({
@@ -162,7 +163,7 @@ export const updateRequest = createServerFn({ method: "POST" })
   .validator(
     z.object({
       requestId: z.string().uuid(),
-      status: z.enum(["accepted", "in_progress", "completed"]),
+      status: z.string().trim().min(1).max(64),
       direction: z.enum(["technical", "management", "accounting", "legal", "documents", "access", "other"]),
       assigneeEmployeeId: z.string().nullable().optional(),
       comment: z.string().max(5000).optional(),
@@ -179,6 +180,19 @@ export const updateRequest = createServerFn({ method: "POST" })
       ...(assigneeEmployeeId !== undefined ? { assigneeEmployeeId } : {}),
     });
     return { ok: true };
+  });
+
+export const updateRequestStatusSettings = createServerFn({ method: "POST" })
+  .validator(z.object({
+    statuses: z.array(z.object({
+      code: z.enum(ACTIVE_REQUEST_STATUS_CODES),
+      displayOrder: z.number().int().min(0).max(10_000),
+      isActive: z.boolean(),
+    })).length(ACTIVE_REQUEST_STATUS_CODES.length),
+  }))
+  .handler(async ({ data }) => {
+    const { updateRequestStatusSettingsAdmin } = await import("@/server/portal/portal.server");
+    return updateRequestStatusSettingsAdmin(data.statuses);
   });
 
 export const notifyTenant = createServerFn({ method: "POST" })

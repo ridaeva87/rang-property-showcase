@@ -42,7 +42,7 @@ export async function createRequestFromIntake(input: RequestIntakeInput) {
     ...(input.serviceId ? { serviceId: input.serviceId } : {}),
   });
   const [category] = await db.select({ id: s.requestCategories.id }).from(s.requestCategories).where(eq(s.requestCategories.code, categoryCode)).limit(1);
-  const [status] = await db.select({ id: s.requestStatuses.id }).from(s.requestStatuses).where(eq(s.requestStatuses.code, "accepted")).limit(1);
+  const [status] = await db.select({ id: s.requestStatuses.id }).from(s.requestStatuses).where(eq(s.requestStatuses.code, "new")).limit(1);
   const [route] = category ? await db.select({ directionId: s.requestCategoryRoutes.directionId }).from(s.requestCategoryRoutes).where(eq(s.requestCategoryRoutes.categoryId, category.id)).limit(1) : [];
   if (!category || !status || !route) throw new Error("Справочники заявок не настроены");
 
