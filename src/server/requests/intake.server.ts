@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
+import { notifyCreatedRequest } from "./notifications.server";
 
 const SERVICE_REQUEST_CATEGORIES: Record<string, string> = {
   refit: "refit",
@@ -61,7 +62,7 @@ export async function createRequestFromIntake(input: RequestIntakeInput) {
     if (!service) throw new Error("Услуга не найдена");
   }
 
-  return db.transaction(async (tx) => {
+  const request = await db.transaction(async (tx) => {
     const id = randomUUID();
     const [inserted] = await tx.insert(s.requests).values({
       id,
@@ -101,4 +102,6 @@ export async function createRequestFromIntake(input: RequestIntakeInput) {
     });
     return { ...inserted, created: true as const };
   });
+  await notifyCreatedRequest(request);
+  return request;
 }

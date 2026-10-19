@@ -4,6 +4,8 @@ import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server
 import { getDatabase } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
 import { createRequestFromIntake } from "@/server/requests/intake.server";
+import { hasPermission, requestDirectionScope } from "@/server/requests/access";
+import { notifyRequestStaffSafely } from "@/server/requests/notifications.server";
 import {
   ACTIVE_REQUEST_STATUS_CODES,
   canUseRequestStatus,
@@ -83,16 +85,7 @@ export async function requirePermission(permission: string) {
   return user;
 }
 
-export function hasPermission(roles:string[],permissions:string[],permission:string){return roles.includes("admin")||permissions.includes(permission)}
-
-export function requestDirectionScope(roles: string[]) {
-  if (roles.includes("admin") || roles.includes("request_manager")) return null;
-  if (roles.includes("accountant")) return ["accounting"];
-  if (roles.includes("lawyer")) return ["legal"];
-  if (roles.includes("technician")) return ["technical"];
-  if (roles.includes("rental_manager")) return ["management", "access", "documents", "other"];
-  return [];
-}
+export { hasPermission, requestDirectionScope };
 
 export async function requireRequestManager() {
   return requirePermission("requests.manage");
@@ -386,6 +379,11 @@ export async function addRequestComment(requestId: string, body: string) {
   await getDatabase()
     .insert(schema.requestComments)
     .values({ id: randomUUID(), requestId, authorUserId: user.id, visibility: "public", body });
+  await notifyRequestStaffSafely({
+    requestId,
+    eventTitle: "Новое сообщение арендатора",
+    fallbackWhenUnassigned: true,
+  });
 }
 
 export async function getDocumentForCurrentTenant(id: string) {
@@ -755,8 +753,11 @@ export async function updateRequestAdmin(input: {
   const [currentDirection] = await db.select({ code: schema.requestDirections.code }).from(schema.requestDirections).where(eq(schema.requestDirections.id, request.directionId)).limit(1);
   if (scope !== null && (!currentDirection || !scope.includes(currentDirection.code) || !scope.includes(input.direction)))
     throw new AuthorizationError("Доступ к направлению запрещён");
+  const statusChanged = request.statusId !== next.id;
+  const nextAssignee = input.assigneeEmployeeId || null;
+  const assigneeChanged = request.assigneeEmployeeId !== nextAssignee;
   await db.transaction(async (tx) => {
-    if (request.statusId !== next.id) {
+    if (statusChanged) {
       const transition = requestStatusTransition({ fromStatusId: request.statusId, toStatusId: next.id, isClosed: next.isClosed });
       await tx
         .update(schema.requests)
@@ -774,8 +775,7 @@ export async function updateRequestAdmin(input: {
       await tx.update(schema.requests).set({ directionId: direction.id, updatedAt: new Date() }).where(eq(schema.requests.id, input.requestId));
       await tx.insert(schema.requestEvents).values({ id: randomUUID(), requestId: input.requestId, eventType: "direction_changed", actorUserId: admin.id, fromValue: request.directionId, toValue: direction.id });
     }
-    const nextAssignee = input.assigneeEmployeeId || null;
-    if (request.assigneeEmployeeId !== nextAssignee) {
+    if (assigneeChanged) {
       await tx.update(schema.requests).set({ assigneeEmployeeId: nextAssignee, updatedAt: new Date() }).where(eq(schema.requests.id, input.requestId));
       await tx.insert(schema.requestEvents).values({ id: randomUUID(), requestId: input.requestId, eventType: "assignee_changed", actorUserId: admin.id, fromValue: request.assigneeEmployeeId, toValue: nextAssignee });
     }
@@ -788,6 +788,18 @@ export async function updateRequestAdmin(input: {
         body: input.comment.trim(),
       });
   });
+  if (assigneeChanged && nextAssignee)
+    await notifyRequestStaffSafely({
+      requestId: input.requestId,
+      eventTitle: "Вам назначена заявка",
+      fallbackWhenUnassigned: false,
+    });
+  if (statusChanged)
+    await notifyRequestStaffSafely({
+      requestId: input.requestId,
+      eventTitle: "Изменён статус заявки",
+      fallbackWhenUnassigned: false,
+    });
 }
 
 export async function notifyTenantAdmin(input: { userId: string; title: string; body: string }) {

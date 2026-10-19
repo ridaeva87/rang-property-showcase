@@ -12,6 +12,22 @@ export async function sendProjectEmail(input: { to: string; subject: string; tex
   return response.ok;
 }
 
+export function requestNotificationEmail(input: { requestNumber: number; eventTitle: string }) {
+  const number = String(input.requestNumber).padStart(6, "0");
+  return {
+    subject: `RANG: ${input.eventTitle} — заявка №${number}`,
+    text: `${input.eventTitle}\nЗаявка №${number}\nОткрыть в административной системе: ${APP_URL}/admin/requests`,
+  };
+}
+
+export async function sendRequestNotificationEmail(input: {
+  to: string;
+  requestNumber: number;
+  eventTitle: string;
+}) {
+  return sendProjectEmail({ to: input.to, ...requestNotificationEmail(input) });
+}
+
 export async function sendAccessEmail(input: { email: string; name: string; token: string; purpose: "activation" | "password_reset" }) {
   const key = process.env["EMAIL_API_KEY"];
   const from = process.env["EMAIL_FROM"];
