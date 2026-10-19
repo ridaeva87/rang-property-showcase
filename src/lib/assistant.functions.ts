@@ -12,6 +12,7 @@ export const askRangAssistant = createServerFn({ method: "POST" })
 
 export const transferRangAssistantQuestion = createServerFn({ method: "POST" })
   .validator(z.object({
+    idempotencyKey: z.string().uuid(),
     question: z.string().trim().min(2).max(2000),
     context: z.string().max(3000).optional(),
     premiseId: z.string().optional(),

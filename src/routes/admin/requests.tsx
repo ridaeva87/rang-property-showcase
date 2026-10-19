@@ -1,11 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { createRequestByEmployee, getCurrentAccount, loadRequestsAdmin, updateRequest, updateRequestStatusSettings } from "@/lib/portal.functions";
 import { ACTIVE_REQUEST_STATUS_CODES } from "@/lib/request-statuses";
 import { loadAdminNavigation } from "@/lib/admin.functions";
 import { AdminShell } from "@/components/portal/AdminShell";
 import { GroupedPremiseOptions } from "@/components/portal/GroupedPremiseOptions";
 import { filterAndSortRequests, requestsToCsv, type RequestSortOrder } from "@/lib/request-list";
+import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 
 export const Route = createFileRoute("/admin/requests")({
   beforeLoad: async () => {
@@ -23,6 +24,8 @@ function RequestsAdminPage() {
   const [direction,setDirection]=useState(""); const [assignee,setAssignee]=useState("");
   const [search,setSearch]=useState(""); const [sortOrder,setSortOrder]=useState<RequestSortOrder>("newest");
   const [createError,setCreateError]=useState("");
+  const [createSending,setCreateSending]=useState(false);
+  const createSendingRef=useRef(false);
   const [statusSettingsError,setStatusSettingsError]=useState("");
   const filteredRequests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
   const requests=filterAndSortRequests(filteredRequests,search,sortOrder);
@@ -68,11 +71,17 @@ function RequestsAdminPage() {
   }
   async function createRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if(createSendingRef.current)return;
     setCreateError("");
     const form = new FormData(event.currentTarget);
     const value = (name: string) => String(form.get(name) || "").trim() || undefined;
+    const scope="admin:new-request";
+    const idempotencyKey=getOrCreateRequestIdempotencyKey(scope);
+    createSendingRef.current=true;
+    setCreateSending(true);
     try {
       await createRequestByEmployee({ data: {
+        idempotencyKey,
         tenantId: value("tenantId"),
         category: String(form.get("category") || ""),
         premiseId: value("premiseId"),
@@ -85,9 +94,13 @@ function RequestsAdminPage() {
         interest: value("interest"),
         assigneeEmployeeId: value("assigneeEmployeeId"),
       } });
+      clearRequestIdempotencyKey(scope,idempotencyKey);
       location.reload();
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Не удалось создать заявку");
+    } finally {
+      createSendingRef.current=false;
+      setCreateSending(false);
     }
   }
   return (
@@ -122,7 +135,7 @@ function RequestsAdminPage() {
           <input name="subject" required minLength={3} maxLength={160} placeholder="Тема" className="border p-3 md:col-span-2" />
           <textarea name="description" required minLength={5} maxLength={5000} placeholder="Описание" className="min-h-28 border p-3 md:col-span-2" />
           <select name="assigneeEmployeeId" className="border p-3"><option value="">Не назначен</option>{data.employees.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>
-          <button className="bg-primary p-3 font-semibold text-primary-foreground">Создать заявку</button>
+          <button disabled={createSending} className="bg-primary p-3 font-semibold text-primary-foreground disabled:opacity-60">{createSending?"Создаём…":"Создать заявку"}</button>
           {createError&&<p className="text-sm text-destructive md:col-span-2">{createError}</p>}
         </form>
       </details>

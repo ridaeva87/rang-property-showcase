@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   Play,
@@ -37,6 +38,8 @@ import {
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { PropertyCard } from "@/components/rang/PropertyCard";
 import { ResponsiveImage } from "@/components/rang/ResponsiveImage";
+import { sendPublicRequest } from "@/lib/admin.functions";
+import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 import aboutImage from "@/assets/object-ak153.jpg";
 import videoWarehouse from "@/assets/type-warehouse.jpg";
 import videoTerritory from "@/assets/object-tolbuhina19.jpg";
@@ -624,40 +627,69 @@ export function AiTransition({ onOpen }: { onOpen: () => void }) {
 
 /* 17. CTA */
 export function CtaForm() {
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (sendingRef.current) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const scope = "public:homepage:premise-selection";
+    const idempotencyKey = getOrCreateRequestIdempotencyKey(scope);
+    sendingRef.current = true;
+    setSending(true);
+    try {
+      const premiseType = String(data.get("premiseType") || "");
+      const area = String(data.get("area") || "").trim();
+      const comment = String(data.get("comment") || "").trim();
+      await sendPublicRequest({ data: {
+        idempotencyKey,
+        source: "rent",
+        subject: "Подбор помещения",
+        name: String(data.get("name") || ""),
+        phone: String(data.get("phone") || ""),
+        message: [`Тип помещения: ${premiseType}`, area ? `Желаемая площадь: ${area} м²` : "", comment].filter(Boolean).join("\n"),
+      } });
+      clearRequestIdempotencyKey(scope, idempotencyKey);
+      form.reset();
+      toast.success("Заявка отправлена");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отправить заявку");
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
+  }
   return (
     <section id="cta" className="bg-primary py-20 lg:py-28">
       <div className="container-rang grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
         <SectionHead
           eyebrow="Заявка"
           title="Не нашли подходящее помещение?"
-          subtitle="Укажите необходимые параметры. Отправка заявки сотрудникам будет подключена на следующем этапе."
+          subtitle="Укажите необходимые параметры — сотрудник RANG свяжется с вами."
           tone="dark"
         />
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            toast.info(
-              "Форма пока не отправляет данные. Система заявок будет подключена на следующем этапе.",
-            );
-          }}
+          onSubmit={submit}
           className="bg-card p-6 shadow-card sm:p-8"
         >
           <div className="grid gap-5 sm:grid-cols-2">
-            <Input label="Имя" placeholder="Как к вам обращаться" />
-            <Input label="Телефон" placeholder="+7 ___ ___ __ __" />
+            <Input name="name" label="Имя" placeholder="Как к вам обращаться" required />
+            <Input name="phone" label="Телефон" placeholder="+7 ___ ___ __ __" required />
             <label className="block">
               <Lbl>Тип помещения</Lbl>
-              <select className="h-12 w-full border border-input bg-background px-3 text-sm outline-none focus:border-accent">
+              <select name="premiseType" className="h-12 w-full border border-input bg-background px-3 text-sm outline-none focus:border-accent">
                 <option>Офис</option>
                 <option>Склад</option>
                 <option>Офис + склад</option>
                 <option>Другое</option>
               </select>
             </label>
-            <Input label="Желаемая площадь, м²" placeholder="Например, 120" />
+            <Input name="area" label="Желаемая площадь, м²" placeholder="Например, 120" />
             <label className="block sm:col-span-2">
               <Lbl>Комментарий</Lbl>
               <textarea
+                name="comment"
                 rows={4}
                 placeholder="Задачи, сроки, пожелания"
                 className="w-full border border-input bg-background p-3 text-sm outline-none focus:border-accent"
@@ -665,13 +697,11 @@ export function CtaForm() {
             </label>
             <button
               type="submit"
-              className="h-12 bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent sm:col-span-2"
+              disabled={sending}
+              className="h-12 bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent disabled:opacity-60 sm:col-span-2"
             >
-              Проверить параметры
+              {sending ? "Отправляем…" : "Отправить заявку"}
             </button>
-            <p className="text-xs text-muted-foreground sm:col-span-2">
-              Демонстрационная форма: данные не отправляются и не сохраняются.
-            </p>
           </div>
         </form>
       </div>
@@ -687,11 +717,13 @@ function Lbl({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Input({ label, placeholder }: { label: string; placeholder: string }) {
+function Input({ name, label, placeholder, required = false }: { name: string; label: string; placeholder: string; required?: boolean }) {
   return (
     <label className="block">
       <Lbl>{label}</Lbl>
       <input
+        name={name}
+        required={required}
         placeholder={placeholder}
         className="h-12 w-full border border-input bg-background px-3 text-sm outline-none focus:border-accent"
       />

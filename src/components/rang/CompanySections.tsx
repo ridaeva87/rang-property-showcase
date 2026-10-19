@@ -1,8 +1,9 @@
 import { ArrowRight, ExternalLink, MapPin } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { COMPANY_DOCUMENTS, type PropertyObject } from "@/data/rang";
 import { sendPublicRequest } from "@/lib/admin.functions";
+import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 import { ResponsiveImage } from "./ResponsiveImage";
 import {
   Dialog,
@@ -184,14 +185,19 @@ export function HistoricalLicense() {
 
 export function RequestIntegrationNotice({ subject, source, serviceId }: { subject: string; source: "rent" | "sale" | "services"; serviceId?: string | undefined }) {
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (sending) return;
+    if (sendingRef.current) return;
     const form = event.currentTarget;
     const data = new FormData(form);
+    const scope = `public:${source}:${serviceId || "general"}`;
+    const idempotencyKey = getOrCreateRequestIdempotencyKey(scope);
+    sendingRef.current = true;
     setSending(true);
     try {
       await sendPublicRequest({ data: {
+        idempotencyKey,
         source,
         subject,
         name: String(data.get("name") || ""),
@@ -200,11 +206,13 @@ export function RequestIntegrationNotice({ subject, source, serviceId }: { subje
         message: String(data.get("message") || ""),
         ...(serviceId ? { serviceId } : {}),
       } });
+      clearRequestIdempotencyKey(scope, idempotencyKey);
       form.reset();
       toast.success("Заявка отправлена");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось отправить заявку");
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   }

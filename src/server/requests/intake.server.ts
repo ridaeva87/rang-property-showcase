@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
@@ -19,6 +19,8 @@ export function requestCategoryForIntake(input: { categoryCode?: string; service
 }
 
 export type RequestIntakeInput = {
+  idempotencyKey: string;
+  idempotencyScope: string;
   categoryCode?: string;
   source: string;
   interest?: string | null;
@@ -35,8 +37,16 @@ export type RequestIntakeInput = {
   assigneeEmployeeId?: string | null;
 };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function requestIdempotencyDigest(scope: string, key: string) {
+  if (!scope.trim() || !UUID_PATTERN.test(key)) throw new Error("Некорректный ключ отправки заявки");
+  return createHash("sha256").update(scope.trim()).update("\0").update(key.toLowerCase()).digest("hex");
+}
+
 export async function createRequestFromIntake(input: RequestIntakeInput) {
   const db = getDatabase();
+  const idempotencyKey = requestIdempotencyDigest(input.idempotencyScope, input.idempotencyKey);
   const categoryCode = requestCategoryForIntake({
     ...(input.categoryCode ? { categoryCode: input.categoryCode } : {}),
     ...(input.serviceId ? { serviceId: input.serviceId } : {}),
@@ -51,10 +61,11 @@ export async function createRequestFromIntake(input: RequestIntakeInput) {
     if (!service) throw new Error("Услуга не найдена");
   }
 
-  const id = randomUUID();
-  await db.transaction(async (tx) => {
-    await tx.insert(s.requests).values({
+  return db.transaction(async (tx) => {
+    const id = randomUUID();
+    const [inserted] = await tx.insert(s.requests).values({
       id,
+      idempotencyKey,
       organizationId: input.organizationId || null,
       createdByUserId: input.createdByUserId || null,
       categoryId: category.id,
@@ -70,13 +81,24 @@ export async function createRequestFromIntake(input: RequestIntakeInput) {
       interest: input.interest?.trim() || null,
       subject: input.subject.trim(),
       description: input.description.trim(),
+    }).onConflictDoNothing({ target: s.requests.idempotencyKey }).returning({
+      id: s.requests.id,
+      directionId: s.requests.directionId,
     });
+    if (!inserted) {
+      const [existing] = await tx.select({ id: s.requests.id, directionId: s.requests.directionId })
+        .from(s.requests)
+        .where(eq(s.requests.idempotencyKey, idempotencyKey))
+        .limit(1);
+      if (!existing) throw new Error("Не удалось проверить повторную отправку заявки");
+      return { ...existing, created: false as const };
+    }
     await tx.insert(s.requestEvents).values({
       id: randomUUID(),
-      requestId: id,
+      requestId: inserted.id,
       eventType: "created",
       actorUserId: input.actorUserId || input.createdByUserId || null,
     });
+    return { ...inserted, created: true as const };
   });
-  return { id, directionId: route.directionId };
 }

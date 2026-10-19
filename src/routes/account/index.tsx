@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import {
   loadPortal,
   logoutAccount,
@@ -10,6 +10,7 @@ import {
 import { getCurrentAccount } from "@/lib/portal.functions";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { AiAssistant } from "@/components/rang/AiAssistant";
+import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 
 export const Route = createFileRoute("/account/")({
   beforeLoad: async () => {
@@ -36,22 +37,34 @@ const categories = [
 function AccountPage() {
   const data = Route.useLoaderData();
   const [message, setMessage] = useState("");
+  const [requestSending, setRequestSending] = useState(false);
+  const requestSendingRef = useRef(false);
   const [chatOpen, setChatOpen] = useState(false);
   async function createRequest(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (requestSendingRef.current) return;
     const f = new FormData(e.currentTarget);
+    const scope = "tenant-portal:new-request";
+    const idempotencyKey = getOrCreateRequestIdempotencyKey(scope);
+    requestSendingRef.current = true;
+    setRequestSending(true);
     try {
       await submitPortalRequest({
         data: {
+          idempotencyKey,
           premiseId: String(f.get("premiseId") || "") || undefined,
           category: String(f.get("category")),
           subject: String(f.get("subject")),
           description: String(f.get("description")),
         },
       });
+      clearRequestIdempotencyKey(scope, idempotencyKey);
       location.reload();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Не удалось отправить заявку");
+    } finally {
+      requestSendingRef.current = false;
+      setRequestSending(false);
     }
   }
   return (
@@ -204,8 +217,8 @@ function AccountPage() {
             className="min-h-28 border px-3 py-3 sm:col-span-2"
             placeholder="Опишите вопрос"
           />
-          <button className="bg-primary px-4 py-3 font-semibold text-primary-foreground sm:col-span-2">
-            Отправить заявку
+          <button disabled={requestSending} className="bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:opacity-60 sm:col-span-2">
+            {requestSending ? "Отправляем…" : "Отправить заявку"}
           </button>
           {message && <p className="text-sm text-destructive sm:col-span-2">{message}</p>}
         </form>

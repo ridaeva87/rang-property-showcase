@@ -169,7 +169,7 @@ export async function answerAssistant(input: { question: string; premiseId?: str
   }
 }
 
-export async function transferAssistantQuestion(input: { question: string; context?: string | undefined; premiseId?: string | undefined; objectId?: string | undefined; serviceId?: string | undefined; name?: string | undefined; phone?: string | undefined; email?: string | undefined; source: "public" | "tenant_portal" }) {
+export async function transferAssistantQuestion(input: { idempotencyKey: string; question: string; context?: string | undefined; premiseId?: string | undefined; objectId?: string | undefined; serviceId?: string | undefined; name?: string | undefined; phone?: string | undefined; email?: string | undefined; source: "public" | "tenant_portal" }) {
   const user = await currentUser();
   const tenant = user?.kind === "tenant" ? user : null;
   const tenantContact = tenant ? (await getDatabase().select({ phone: s.users.phone }).from(s.users).where(eq(s.users.id, tenant.id)).limit(1))[0] : null;
@@ -185,6 +185,10 @@ export async function transferAssistantQuestion(input: { question: string; conte
   const note = [`CTA: Передать вопрос сотруднику`, `Вопрос: ${input.question.trim()}`, service ? `Услуга: ${service.title}` : "", input.context ? `Контекст диалога:\n${input.context.trim().slice(-2000)}` : ""].filter(Boolean).join("\n\n");
   const source = input.source === "tenant_portal" ? "Помощник RANG — личный кабинет" : "Помощник RANG";
   const request = await createRequestFromIntake({
+    idempotencyKey: input.idempotencyKey,
+    idempotencyScope: tenant
+      ? `user:${tenant.id}:assistant:${premise?.id || service?.id || "general"}`
+      : `public:${phone}:${email?.toLowerCase() || "-"}:assistant:${premise?.id || service?.id || "general"}`,
     source,
     interest: "Передать вопрос сотруднику",
     subject: premise ? `Вопрос по помещению: ${premise.title}` : service ? `Вопрос по услуге: ${service.title}` : "Вопрос из Помощника RANG",
@@ -199,7 +203,9 @@ export async function transferAssistantQuestion(input: { question: string; conte
     actorUserId: tenant?.id || null,
     assigneeEmployeeId: assignee?.id || null,
   });
-  await db.insert(s.auditLogs).values({ id: randomUUID(), actorUserId: tenant?.id || null, action: "assistant.handoff", entityType: "requests", entityId: request.id, after: { premiseId: premise?.id || null, serviceId: service?.id || null, source: input.source } });
-  await logAssistant({ userId: tenant?.id, source: input.source === "tenant_portal" ? "Личный кабинет" : "Публичный сайт", intent: "handoff", sources: [], resultCount: 1, handoff: true });
+  if (request.created) {
+    await db.insert(s.auditLogs).values({ id: randomUUID(), actorUserId: tenant?.id || null, action: "assistant.handoff", entityType: "requests", entityId: request.id, after: { premiseId: premise?.id || null, serviceId: service?.id || null, source: input.source } });
+    await logAssistant({ userId: tenant?.id, source: input.source === "tenant_portal" ? "Личный кабинет" : "Публичный сайт", intent: "handoff", sources: [], resultCount: 1, handoff: true });
+  }
   return { ok: true, id: request.id };
 }

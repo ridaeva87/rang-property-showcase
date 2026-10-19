@@ -8,6 +8,7 @@ const passwordChange = z.object({
   newPassword: z.string().min(12),
 });
 const requestInput = z.object({
+  idempotencyKey: z.string().uuid(),
   premiseId: z.string().optional(),
   category: z.string().min(1),
   subject: z.string().min(3).max(160),
@@ -142,6 +143,7 @@ export const loadRequestsAdmin = createServerFn({ method: "GET" }).handler(async
 
 export const createRequestByEmployee = createServerFn({ method: "POST" })
   .validator(z.object({
+    idempotencyKey: z.string().uuid(),
     tenantId: z.string().uuid().nullable().optional(),
     category: z.string().min(1),
     premiseId: z.string().nullable().optional(),

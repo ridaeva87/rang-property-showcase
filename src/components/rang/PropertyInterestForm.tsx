@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { sendPropertyInterest } from "@/lib/admin.functions";
+import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 
 export type PropertyInterestType = "viewing" | "application" | "release-notification" | "details";
 
@@ -21,18 +22,24 @@ export function PropertyInterestForm({
   interestType: PropertyInterestType;
 }) {
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (sendingRef.current) return;
     const form = event.currentTarget;
     const data = new FormData(form);
+    const scope = `property:${propertyId}:${interestType}`;
+    const idempotencyKey = getOrCreateRequestIdempotencyKey(scope);
+    sendingRef.current = true;
     setSending(true);
     try {
-      await sendPropertyInterest({ data: { premiseId: propertyId, objectId, type: interestType, name: String(data.get("name") || ""), phone: String(data.get("phone") || ""), email: String(data.get("email") || ""), message: String(data.get("comment") || "") } });
+      await sendPropertyInterest({ data: { idempotencyKey, premiseId: propertyId, objectId, type: interestType, name: String(data.get("name") || ""), phone: String(data.get("phone") || ""), email: String(data.get("email") || ""), message: String(data.get("comment") || "") } });
+      clearRequestIdempotencyKey(scope, idempotencyKey);
       form.reset();
       toast.success(interestType === "details" ? "Запрос отправлен" : "Заявка отправлена");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось отправить заявку");
-    } finally { setSending(false); }
+    } finally { sendingRef.current = false; setSending(false); }
   }
   return (
     <section id="property-interest" className="bg-primary py-16 lg:py-20">

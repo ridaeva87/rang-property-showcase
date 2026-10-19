@@ -341,6 +341,7 @@ export async function markNotificationRead(id: string) {
 }
 
 export async function createTenantRequest(input: {
+  idempotencyKey: string;
   premiseId?: string;
   category: string;
   subject: string;
@@ -356,6 +357,8 @@ export async function createTenantRequest(input: {
   const [orgId] = await tenantOrganizationIds(user.id);
   const [contact] = await db.select({ phone: schema.users.phone }).from(schema.users).where(eq(schema.users.id, user.id)).limit(1);
   const request = await createRequestFromIntake({
+    idempotencyKey: input.idempotencyKey,
+    idempotencyScope: `user:${user.id}:portal-request`,
     categoryCode: input.category,
     source: "Личный кабинет",
     interest: input.subject,
@@ -668,6 +671,7 @@ export async function updateRequestStatusSettingsAdmin(
 }
 
 export async function createRequestAdmin(input: {
+  idempotencyKey: string;
   tenantId?: string | null | undefined;
   category: string;
   premiseId?: string | null | undefined;
@@ -703,6 +707,8 @@ export async function createRequestAdmin(input: {
   }
   const [organizationId] = tenant ? await tenantOrganizationIds(tenant.id) : [];
   return createRequestFromIntake({
+    idempotencyKey: input.idempotencyKey,
+    idempotencyScope: `employee:${actor.id}:manual-request`,
     categoryCode: input.category,
     source: "Создано сотрудником",
     interest: input.interest || input.subject,

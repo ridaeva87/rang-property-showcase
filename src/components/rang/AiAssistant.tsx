@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageSquare, X, Send, Headset } from "lucide-react";
 import { toast } from "sonner";
 import { askRangAssistant, transferRangAssistantQuestion } from "@/lib/assistant.functions";
+import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 
 type Msg = { role: "bot" | "user"; text: string; links?: Array<{ label: string; href: string }> };
 
@@ -29,6 +30,7 @@ export function AiAssistant({ open, setOpen, propertyId, objectId, source = "pub
   const [contextObjectId, setContextObjectId] = useState(objectId);
   const [contextServiceId, setContextServiceId] = useState<string>();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const sendingRef = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,18 +55,23 @@ export function AiAssistant({ open, setOpen, propertyId, objectId, source = "pub
   };
 
   const transferQuestion = async () => {
+    if (sendingRef.current) return;
     const question = [...messages].reverse().find((message) => message.role === "user")?.text;
     if (!question) { toast.error("Сначала напишите вопрос"); return; }
     if (source === "public" && (name.trim().length < 2 || phone.trim().length < 6)) { toast.error("Укажите имя и телефон"); return; }
+    const scope = `assistant:${source}:${contextPremiseId || contextServiceId || "general"}`;
+    const idempotencyKey = getOrCreateRequestIdempotencyKey(scope);
+    sendingRef.current = true;
     setSending(true);
     try {
       const context = messages.slice(-6).map((message) => `${message.role === "user" ? "Пользователь" : "Помощник"}: ${message.text}`).join("\n");
-      await transferRangAssistantQuestion({ data: { question, context, premiseId: contextPremiseId, objectId: contextObjectId, serviceId: contextServiceId, name: name || undefined, phone: phone || undefined, source } });
+      await transferRangAssistantQuestion({ data: { idempotencyKey, question, context, premiseId: contextPremiseId, objectId: contextObjectId, serviceId: contextServiceId, name: name || undefined, phone: phone || undefined, source } });
+      clearRequestIdempotencyKey(scope, idempotencyKey);
       toast.success("Вопрос отправлен сотруднику RANG");
       setMessages((current) => [...current, { role: "bot", text: "Вопрос отправлен сотруднику RANG." }]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось отправить вопрос");
-    } finally { setSending(false); }
+    } finally { sendingRef.current = false; setSending(false); }
   };
 
   return (

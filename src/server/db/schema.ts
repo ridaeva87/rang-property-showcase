@@ -592,6 +592,7 @@ export const requests = pgTable(
     }),
     premiseId: text("premise_id").references(() => premises.id, { onDelete: "set null" }),
     serviceId: text("service_id").references(() => additionalServices.id, { onDelete: "set null" }),
+    idempotencyKey: text("idempotency_key"),
     source: text("source"),
     contactName: text("contact_name"),
     contactPhone: text("contact_phone"),
@@ -603,6 +604,7 @@ export const requests = pgTable(
   },
   (table) => [
     uniqueIndex("requests_number_uq").on(table.requestNumber),
+    uniqueIndex("requests_idempotency_key_uq").on(table.idempotencyKey),
     index("requests_org_idx").on(table.organizationId),
     index("requests_assignee_status_idx").on(table.assigneeEmployeeId, table.statusId),
   ],

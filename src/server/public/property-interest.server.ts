@@ -20,6 +20,7 @@ export function interestNote(message: string | undefined, cta: string) {
 }
 
 export async function submitPropertyInterest(input: {
+  idempotencyKey: string;
   premiseId: string;
   objectId?: string | undefined;
   type: PublicInterestType;
@@ -47,6 +48,10 @@ export async function submitPropertyInterest(input: {
     .orderBy(s.employees.createdAt)
     .limit(1))[0];
   const request = await createRequestFromIntake({
+    idempotencyKey: input.idempotencyKey,
+    idempotencyScope: user
+      ? `user:${user.id}:property:${premise.id}:${input.type}`
+      : `public:${input.phone.trim()}:${input.email?.trim().toLowerCase() || "-"}:property:${premise.id}:${input.type}`,
     source: descriptor.source,
     interest: descriptor.cta,
     subject: `${descriptor.cta}: ${premise.title}`,
@@ -60,7 +65,7 @@ export async function submitPropertyInterest(input: {
     actorUserId: user?.id || null,
     assigneeEmployeeId: assignee?.id || null,
   });
-  await db.transaction(async (tx) => {
+  if (request.created) await db.transaction(async (tx) => {
     await tx.insert(s.analyticsEvents).values({
       id: randomUUID(),
       name: "Успешное обращение по помещению",
@@ -90,6 +95,7 @@ const PUBLIC_REQUEST_SOURCES = {
 } as const;
 
 export async function submitPublicRequest(input: {
+  idempotencyKey: string;
   source: keyof typeof PUBLIC_REQUEST_SOURCES;
   subject: string;
   name: string;
@@ -110,6 +116,8 @@ export async function submitPublicRequest(input: {
   const source = PUBLIC_REQUEST_SOURCES[input.source];
   const interest = service?.title || input.subject;
   const request = await createRequestFromIntake({
+    idempotencyKey: input.idempotencyKey,
+    idempotencyScope: `public:${input.phone.trim()}:${input.email?.trim().toLowerCase() || "-"}:${input.source}:${service?.id || "general"}`,
     source,
     interest,
     subject: service ? `Заявка на услугу: ${service.title}` : input.subject,
@@ -120,7 +128,7 @@ export async function submitPublicRequest(input: {
     serviceId: service?.id || null,
     assigneeEmployeeId: assignee?.id || null,
   });
-  await db.insert(s.analyticsEvents).values({
+  if (request.created) await db.insert(s.analyticsEvents).values({
     id: randomUUID(),
     name: "Успешное публичное обращение",
     source,
