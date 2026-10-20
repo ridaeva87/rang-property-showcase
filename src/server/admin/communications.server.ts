@@ -46,6 +46,46 @@ export async function previewAudience(kind: string, audience: Audience) {
   return { count: new Set(recipients.map((recipient) => recipient.id)).size };
 }
 
+export function testMailingMessage(input: { subject: string; body: string }) {
+  return {
+    subject: `[Тест] ${input.subject}`,
+    text: `Тестовая отправка информационной рассылки RANG.\n\n${input.body}`,
+  };
+}
+
+type TestMailingDependencies = {
+  authorize: () => Promise<{ id: string }>;
+  loadEmployee: (id: string) => Promise<{ email: string | null; activatedAt: Date | null } | undefined>;
+  sendEmail: (input: { to: string; subject: string; text: string }) => Promise<boolean>;
+};
+
+export async function sendTestMailingWithDependencies(
+  input: { subject: string; body: string },
+  dependencies: TestMailingDependencies,
+) {
+  const actor = await dependencies.authorize();
+  const employee = await dependencies.loadEmployee(actor.id);
+  if (!employee?.activatedAt || !employee.email) throw new Error("Для тестовой отправки нужен активированный аккаунт сотрудника с подтверждённым email");
+  const message = testMailingMessage(input);
+  try {
+    if (!(await dependencies.sendEmail({ to: employee.email, ...message })))
+      throw new Error("Почтовый сервис не принял тестовое письмо");
+  } catch (error) {
+    if (error instanceof Error && error.message === "Почтовый сервис не принял тестовое письмо") throw error;
+    throw new Error("Не удалось отправить тестовое письмо");
+  }
+  return { ok: true as const, email: employee.email };
+}
+
+export async function sendTestMailing(input: { subject: string; body: string }) {
+  return sendTestMailingWithDependencies(input, {
+    authorize: () => requirePermission("mailings.manage"),
+    loadEmployee: async (id) => (await getDatabase().select({ email: s.users.email, activatedAt: s.users.activatedAt })
+      .from(s.users).where(and(eq(s.users.id, id), eq(s.users.kind, "employee"), eq(s.users.isActive, true))).limit(1))[0],
+    sendEmail: async (message) => (await import("@/server/portal/email.server")).sendProjectEmail(message),
+  });
+}
+
 export async function saveCommunication(input: {
   id?: string | undefined; kind: "notification" | "announcement" | "mailing"; title: string; subject?: string | undefined; body: string;
   category?: string | undefined; audience: Audience; channels: Channel[]; status: string; startsAt?: string | undefined; endsAt?: string | undefined; send: boolean;
