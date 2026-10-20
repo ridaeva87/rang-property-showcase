@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { requirePermission } from "@/server/portal/portal.server";
+import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus } from "./mailing-delivery";
 
 export type Audience = { scope: "all" | "tenant" | "group" | "object" | "type"; id?: string | undefined };
 export type Channel = "in_app" | "email" | "telegram" | "sms";
@@ -93,24 +94,22 @@ export async function saveCommunication(input: {
   const actor = await requirePermission(permissionFor(input.kind));
   const db = getDatabase(), id = input.id || randomUUID(), now = new Date();
   const existing = input.id ? (await db.select().from(s.announcements).where(eq(s.announcements.id, input.id)).limit(1))[0] : null;
-  if(input.send&&existing?.status==="sent")throw new Error("Это уведомление уже отправлено");
+  if (input.send && input.kind === "mailing") assertMailingCanSend(existing?.status);
+  else if(input.send&&existing?.status==="sent")throw new Error("Это уведомление уже отправлено");
   const existingAudience = existing?.audience as Record<string, string | null> | undefined;
   const waitlistRecipientId = existingAudience?.["waitlistId"] ? existingAudience["id"] : null;
   if (waitlistRecipientId && (input.audience.scope !== "tenant" || input.audience.id !== waitlistRecipientId))
     throw new Error("Получателя персонального уведомления из листа ожидания изменять нельзя");
   const effectiveAudience = waitlistRecipientId ? { scope: "tenant" as const, id: waitlistRecipientId } : input.audience;
-  const status = input.send ? "sent" : input.status;
+  const tracksMailingEmailResult = input.send && input.kind === "mailing" && input.channels.includes("email");
+  const status = tracksMailingEmailResult ? "draft" : input.send ? "sent" : input.status;
   const storedAudience = { scope: effectiveAudience.scope, id: effectiveAudience.id || null, ...(existingAudience?.["waitlistId"] ? { waitlistId: existingAudience["waitlistId"] } : {}) };
   const recipients = [...new Map((await resolveRecipients(effectiveAudience)).map((recipient) => [recipient.id, recipient])).values()];
   if (input.send && recipients.length === 0) throw new Error("Для выбранного сегмента нет доступных получателей");
-  if (input.send && input.channels.includes("email")) {
-    const withoutEmail = recipients.filter((recipient) => !recipient.email);
-    if (withoutEmail.length) throw new Error("У получателя не указан email. Отправка по email невозможна");
-  }
   const values = { title: input.title, subject: input.subject || input.title, body: input.body, category: input.category || null,
     audience: storedAudience, channels: input.channels, status, startsAt: input.startsAt ? new Date(input.startsAt) : null,
     endsAt: input.endsAt ? new Date(input.endsAt) : null, publishedAt: input.kind === "announcement" && input.send ? now : null,
-    sentAt: input.send ? now : null, updatedAt: now };
+    sentAt: input.send && !tracksMailingEmailResult ? now : null, updatedAt: now };
   if (input.id) await db.update(s.announcements).set(values).where(and(eq(s.announcements.id, id), eq(s.announcements.kind, input.kind)));
   else await db.insert(s.announcements).values({ id, kind: input.kind, ...values });
   if (!input.send) return { id, recipients: 0, sent: 0, errors: 0, skipped: 0 };
@@ -118,6 +117,12 @@ export async function saveCommunication(input: {
   const consentRows = await db.select().from(s.userChannelConsents);
   const consent = new Set(consentRows.filter((row) => row.status === "granted").map((row) => `${row.userId}:${row.channel}`));
   const { sendProjectEmail } = await import("@/server/portal/email.server");
+  const emailResult = tracksMailingEmailResult ? await deliverMailingEmails({
+    recipients,
+    canSend: (recipientId) => Boolean(existingAudience?.["waitlistId"]) || consent.has(`${recipientId}:email`),
+    sendEmail: (email) => sendProjectEmail({ to: email, subject: input.subject || input.title, text: input.body }),
+  }) : null;
+  const emailAttempts = new Map(emailResult?.attempts.map((attempt) => [attempt.recipientId, attempt]));
   let sent=0,errors=0,skipped=0;
   for (const recipient of recipients) {
     const linked=(await db.select({id:s.announcementRecipients.id}).from(s.announcementRecipients).where(and(eq(s.announcementRecipients.announcementId,id),eq(s.announcementRecipients.recipientId,recipient.id))).limit(1))[0];
@@ -128,17 +133,26 @@ export async function saveCommunication(input: {
         await db.insert(s.notifications).values({ id: randomUUID(), userId: recipient.id, announcementId: id, channel, title: input.subject || input.title, body: input.body, deliveredAt: now });
       } else if (channel === "telegram" || channel === "sms") {
         deliveryStatus = "skipped"; reason = "Канал не подключён";
-      } else if (!existingAudience?.["waitlistId"] && !consent.has(`${recipient.id}:email`)) {
+      } else if (input.kind !== "mailing" && !existingAudience?.["waitlistId"] && !consent.has(`${recipient.id}:email`)) {
         deliveryStatus = "skipped"; reason = "Нет согласия на email";
-      } else if (!recipient.email) {
+      } else if (input.kind !== "mailing" && !recipient.email) {
         deliveryStatus = "error"; reason = "У получателя не указан email";
-      } else {
-        try{if(!(await sendProjectEmail({ to: recipient.email, subject: input.subject || input.title, text: input.body }))){deliveryStatus="error";reason="Email не принят провайдером"}}
+      } else if (input.kind !== "mailing") {
+        try{if(!(await sendProjectEmail({ to: recipient.email!, subject: input.subject || input.title, text: input.body }))){deliveryStatus="error";reason="Email не принят провайдером"}}
         catch{deliveryStatus="error";reason="Ошибка отправки email"}
+      } else {
+        const attempt = emailAttempts.get(recipient.id);
+        deliveryStatus = attempt?.status ?? "skipped";
+        reason = attempt?.reason ?? "Email не указан или некорректен";
       }
       await db.insert(s.deliveryLogs).values({ id: randomUUID(), announcementId: id, recipientUserId: recipient.id, channel, status: deliveryStatus, reason, initiatedByUserId: actor.id });
       if(deliveryStatus==="sent")sent++;else if(deliveryStatus==="error")errors++;else skipped++;
     }
+  }
+  if (tracksMailingEmailResult) {
+    const finalStatus = finalMailingStatus({ emailSent: emailResult?.sent ?? 0, totalSent: sent });
+    await db.update(s.announcements).set({ status: finalStatus, sentAt: finalStatus === "sent" ? now : null, updatedAt: now })
+      .where(and(eq(s.announcements.id, id), eq(s.announcements.kind, input.kind)));
   }
   return { id, recipients: recipients.length, sent, errors, skipped };
 }
