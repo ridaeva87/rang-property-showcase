@@ -20,11 +20,11 @@ import {
   validatePassword,
   verifyPassword,
 } from "./security";
+import { AuthenticationError, recordLoginFailure } from "@/lib/login-errors";
 
 const COOKIE = "rang_session";
 const SESSION_DAYS = 14;
 
-export class AuthenticationError extends Error {}
 export class AuthorizationError extends Error {}
 
 export async function currentUser() {
@@ -100,8 +100,17 @@ export async function login(email: string, password: string) {
     .where(eq(schema.users.email, normalized))
     .limit(1);
   const user = rows[0];
-  if (!user || !user.isActive || !(await verifyPassword(password, user.passwordHash))) {
-    throw new AuthenticationError("Неверный логин или пароль");
+  if (!user) {
+    recordLoginFailure("account_not_found");
+    throw new AuthenticationError("account_not_found");
+  }
+  if (!user.isActive) {
+    recordLoginFailure("inactive_account");
+    throw new AuthenticationError("inactive_account");
+  }
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    recordLoginFailure("password_mismatch");
+    throw new AuthenticationError("password_mismatch");
   }
   const token = createOpaqueToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400000);

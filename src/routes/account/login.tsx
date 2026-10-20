@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { loginAccount } from "@/lib/portal.functions";
 import { PasswordInput } from "@/components/portal/PasswordInput";
+import { loginErrorMessage } from "@/lib/login-errors";
 import { z } from "zod";
 
 export const Route = createFileRoute("/account/login")({
@@ -22,9 +23,14 @@ function LoginPage() {
       const result = await loginAccount({
         data: { email: String(form.get("email")), password: String(form.get("password")) },
       });
+      if (!result.ok) {
+        setError(loginErrorMessage(result.error));
+        setBusy(false);
+        return;
+      }
       window.location.href = result.kind === "employee" ? "/admin" : "/account";
     } catch {
-      setError("Неверный логин или пароль");
+      setError(loginErrorMessage("technical_error"));
       setBusy(false);
     }
   }

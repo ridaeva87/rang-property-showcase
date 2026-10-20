@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { ACTIVE_REQUEST_STATUS_CODES } from "@/lib/request-statuses";
+import { publicLoginError, recordLoginFailure } from "@/lib/login-errors";
 
 const credentials = z.object({ email: z.string().email(), password: z.string().min(1) });
 const passwordChange = z.object({
@@ -21,10 +22,21 @@ export const getCurrentAccount = createServerFn({ method: "GET" }).handler(async
 });
 
 export const loginAccount = createServerFn({ method: "POST" })
-  .validator(credentials)
+  .validator(z.unknown())
   .handler(async ({ data }) => {
-    const { login } = await import("@/server/portal/portal.server");
-    return login(data.email, data.password);
+    const parsed = credentials.safeParse(data);
+    if (!parsed.success) {
+      recordLoginFailure("validation_error");
+      return { ok: false as const, error: "validation_error" as const };
+    }
+    try {
+      const { login } = await import("@/server/portal/portal.server");
+      return { ok: true as const, ...(await login(parsed.data.email, parsed.data.password)) };
+    } catch (error) {
+      const publicError = publicLoginError(error);
+      if (publicError === "technical_error") recordLoginFailure("technical_failure");
+      return { ok: false as const, error: publicError };
+    }
   });
 
 export const logoutAccount = createServerFn({ method: "POST" }).handler(async () => {
