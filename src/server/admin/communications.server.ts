@@ -4,6 +4,7 @@ import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { requirePermission } from "@/server/portal/portal.server";
 import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus } from "./mailing-delivery";
+import { aggregateMailingDeliveryResults } from "@/components/portal/mailing-results";
 
 export type Audience = { scope: "all" | "tenant" | "group" | "object" | "type"; id?: string | undefined };
 export type Channel = "in_app" | "email" | "telegram" | "sms";
@@ -31,14 +32,27 @@ export async function resolveRecipients(audience: Audience) {
 export async function communicationsAdmin(kind: "notification" | "announcement" | "mailing") {
   await requirePermission(permissionFor(kind));
   const db = getDatabase();
-  const [items, tenants, groups, objects, types] = await Promise.all([
+  const [items, tenants, groups, objects, types, deliveryRows] = await Promise.all([
     db.select().from(s.announcements).where(eq(s.announcements.kind, kind)).orderBy(sql`${s.announcements.createdAt} desc`),
     db.select({ id: s.users.id, name: s.users.displayName, email: s.users.email }).from(s.users).where(and(eq(s.users.kind, "tenant"), eq(s.users.isActive, true))).orderBy(s.users.displayName),
     db.select({ id: s.tenantGroups.id, name: s.tenantGroups.name }).from(s.tenantGroups).orderBy(s.tenantGroups.name),
     db.select({ id: s.propertyObjects.id, name: s.propertyObjects.address }).from(s.propertyObjects).orderBy(s.propertyObjects.address),
     db.select({ id: s.premiseTypes.id, name: s.premiseTypes.name }).from(s.premiseTypes).orderBy(s.premiseTypes.name),
+    kind === "mailing"
+      ? db.select({ announcementId: s.deliveryLogs.announcementId, status: s.deliveryLogs.status, createdAt: s.deliveryLogs.createdAt })
+        .from(s.deliveryLogs)
+        .innerJoin(s.announcements, eq(s.deliveryLogs.announcementId, s.announcements.id))
+        .where(eq(s.announcements.kind, "mailing"))
+      : Promise.resolve([]),
   ]);
-  return { items, tenants, groups, objects, types };
+  const deliveryResults = aggregateMailingDeliveryResults(deliveryRows);
+  return {
+    items: items.map((item) => ({ ...item, deliveryResult: deliveryResults.get(item.id) ?? null })),
+    tenants,
+    groups,
+    objects,
+    types,
+  };
 }
 
 export async function previewAudience(kind: string, audience: Audience) {

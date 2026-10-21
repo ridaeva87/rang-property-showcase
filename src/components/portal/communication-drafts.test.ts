@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { draftEditUrl, parseDraftSearch, savedDraftId } from "./communication-drafts";
+import { draftEditUrl, parseDraftSearch, parseMailingSearch, savedDraftId } from "./communication-drafts";
 
 describe("mailing draft lifecycle", () => {
   it("opens an existing draft from the route search parameter", () => {
@@ -9,6 +9,11 @@ describe("mailing draft lifecycle", () => {
 
   it("builds a stable edit link for the saved draft", () => {
     expect(draftEditUrl("/admin/mailings", "draft id/1")).toBe("/admin/mailings?draft=draft%20id%2F1");
+  });
+
+  it("keeps view and edit links as separate safe modes", () => {
+    expect(parseMailingSearch({ draft: "draft-1" })).toEqual({ draft: "draft-1", view: undefined });
+    expect(parseMailingSearch({ view: "sent-1" })).toEqual({ draft: undefined, view: "sent-1" });
   });
 
   it("keeps the ID returned by the first save for later edits", () => {
