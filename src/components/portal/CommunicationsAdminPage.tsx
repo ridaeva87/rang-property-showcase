@@ -4,12 +4,12 @@ import { deleteCommunicationAdmin, previewCommunicationAudience, saveCommunicati
 import { draftEditUrl, savedDraftId } from "./communication-drafts";
 import { createRecipientCountController, type RecipientCountState } from "./recipient-count";
 import { isMailingReadOnly, mailingDeliveryResultText, mailingViewUrl, type MailingDeliveryResult } from "./mailing-results";
+import { isServiceCommunicationCategory, serviceCommunicationCategories } from "@/lib/service-communications";
 
 type Kind = "notification" | "announcement" | "mailing";
 type Ref = { id: string; name: string | null; email?:string|null };
 type CommunicationItem={id:string;title:string;subject?:string|null;body:string;category:string|null;status:string;channels:string[];audience?:Record<string,string|null>;sentAt?:Date|string|null;deliveryResult?:MailingDeliveryResult|null};
 type Data = { items: CommunicationItem[]; tenants: Ref[]; groups: Ref[]; objects: Ref[]; types: Ref[] };
-const categories = ["Плановые работы","Электроснабжение","Водоснабжение","Технические работы","Режим работы","Безопасность","Движение по территории","Общие объявления"];
 const statusLabels:Record<string,string>={draft:"Черновик",scheduled:"Запланировано",sent:"Отправлено",partial:"Отправлено частично",failed:"Не отправлено",published:"Опубликовано",completed:"Завершено"};
 const channelLabels:Record<string,string>={in_app:"Личный кабинет",email:"Email",telegram:"Telegram",sms:"SMS"};
 
@@ -39,7 +39,7 @@ export function CommunicationsAdminPage({ kind, data, nav, initialId, initialMod
     <div className="md:col-span-2"><a href="/admin/mailings" className="text-sm font-medium text-primary">Вернуться к рассылкам</a></div>
   </section>:<form onSubmit={submit} className="grid gap-3 border bg-background p-5 md:grid-cols-2">
     <input name="title" required defaultValue={initial?.title||""} placeholder="Название" className="border p-3"/><input name="subject" required={kind==="mailing"} defaultValue={initial?.subject||""} placeholder="Тема сообщения" className="border p-3"/>
-    {kind==="announcement"&&<select name="category" required defaultValue={initial?.category||""} className="border p-3"><option value="">Категория</option>{categories.map(x=><option key={x}>{x}</option>)}</select>}
+    <select name="category" defaultValue={initial?.category||""} className="border p-3"><option value="">Основание служебного сообщения</option>{initial?.category&&!isServiceCommunicationCategory(initial.category)&&<option value={initial.category}>Требует подтверждения: {initial.category}</option>}{serviceCommunicationCategories.map(x=><option key={x}>{x}</option>)}</select>
     <select value={scope} disabled={lockedRecipient} onChange={e=>{setScope(e.target.value as any);setScopeId("");setRecipientCount({status:"idle",count:0})}} className="border p-3 disabled:bg-muted"><option value="all">Все арендаторы</option><option value="object">Объект / адрес</option><option value="type">Тип помещения</option><option value="group">Группа арендаторов</option><option value="tenant">Конкретный арендатор</option></select>
     {scope!=="all"&&<select value={scopeId} disabled={lockedRecipient} onChange={e=>{setScopeId(e.target.value);setRecipientCount({status:"idle",count:0})}} required className="border p-3 disabled:bg-muted"><option value="">Выберите сегмент</option>{refs.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>}
     {lockedRecipient&&<p className="border p-3 md:col-span-2"><b>Персональный получатель:</b> {refs.find(x=>x.id===scopeId)?.name||"Арендатор"}{refs.find(x=>x.id===scopeId)?.email?` · ${refs.find(x=>x.id===scopeId)?.email}`:" · Email не указан"}. Изменить адресата или выбрать всех арендаторов нельзя.</p>}

@@ -5,6 +5,7 @@ import * as s from "@/server/db/schema";
 import { requirePermission } from "@/server/portal/portal.server";
 import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus } from "./mailing-delivery";
 import { aggregateMailingDeliveryResults } from "@/components/portal/mailing-results";
+import { assertServiceCommunicationBasis } from "@/lib/service-communications";
 
 export type Audience = { scope: "all" | "tenant" | "group" | "object" | "type"; id?: string | undefined };
 export type Channel = "in_app" | "email" | "telegram" | "sms";
@@ -115,6 +116,11 @@ export async function saveCommunication(input: {
   if (waitlistRecipientId && (input.audience.scope !== "tenant" || input.audience.id !== waitlistRecipientId))
     throw new Error("Получателя персонального уведомления из листа ожидания изменять нельзя");
   const effectiveAudience = waitlistRecipientId ? { scope: "tenant" as const, id: waitlistRecipientId } : input.audience;
+  if (input.send) assertServiceCommunicationBasis({
+    category: input.category,
+    audience: effectiveAudience,
+    systemLinkedRecipient: Boolean(waitlistRecipientId),
+  });
   const tracksMailingEmailResult = input.send && input.kind === "mailing" && input.channels.includes("email");
   const status = tracksMailingEmailResult ? "draft" : input.send ? "sent" : input.status;
   const storedAudience = { scope: effectiveAudience.scope, id: effectiveAudience.id || null, ...(existingAudience?.["waitlistId"] ? { waitlistId: existingAudience["waitlistId"] } : {}) };
