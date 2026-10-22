@@ -5,23 +5,27 @@ import * as s from "@/server/db/schema";
 import { createOpaqueToken, hashToken } from "@/server/portal/security";
 import { requirePermission } from "@/server/portal/portal.server";
 import { assertLegacyAdminOperationSection } from "@/lib/admin-operation-sections";
+import { preferredCommunicationHref } from "@/lib/communication-navigation";
 
 export const ADMIN_SECTIONS = [
   ["/admin/premises", "Помещения", "premises.manage"], ["/admin/tenants", "Арендаторы", "tenants.manage"],
   ["/admin/leads", "Потенциальные клиенты", "leads.manage"], ["/admin/requests", "Заявки", "requests.view"],
-  ["/admin/mailings", "Рассылки", "mailings.manage"], ["/admin/announcements", "Объявления", "announcements.manage"],
   ["/admin/documents", "Документы", "documents.manage"], ["/admin/services", "Дополнительные услуги", "services.manage"],
   ["/admin/ads", "Реклама арендаторов", "ads.manage"], ["/admin/support", "Поддержка", "support.manage"],
   ["/admin/employees", "Сотрудники", "employees.manage"], ["/admin/statistics", "Статистика", "statistics.view"],
   ["/admin/utilities", "Счётчики и расходы", "utilities.manage"],
-  ["/admin/notifications", "Уведомления", "notifications.manage"],
   ["/admin/waitlist", "Лист ожидания", "waitlist.manage"],
   ["/admin/delivery-log", "Журнал отправок", "delivery_logs.view"],
 ] as const;
 
 export async function adminNavigation() {
   const user = await requirePermission("admin.access");
-  return { user, sections: ADMIN_SECTIONS.filter(([, , permission]) => user.roles.includes("admin") || user.permissions.includes(permission)) };
+  const sections = ADMIN_SECTIONS.filter(([, , permission]) => user.roles.includes("admin") || user.permissions.includes(permission));
+  const communicationHref = preferredCommunicationHref(user);
+  const requestIndex = sections.findIndex(([href]) => href === "/admin/requests");
+  return { user, sections: communicationHref
+    ? [...sections.slice(0, requestIndex + 1), [communicationHref, "Уведомления", "communications.manage"] as const, ...sections.slice(requestIndex + 1)]
+    : sections };
 }
 
 export async function employeesAdmin() {

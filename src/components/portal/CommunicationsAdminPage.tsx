@@ -5,21 +5,23 @@ import { draftEditUrl, savedDraftId } from "./communication-drafts";
 import { createRecipientCountController, type RecipientCountState } from "./recipient-count";
 import { isMailingReadOnly, mailingDeliveryResultText, mailingViewUrl, type MailingDeliveryResult } from "./mailing-results";
 import { isServiceCommunicationCategory, serviceCommunicationCategories } from "@/lib/service-communications";
+import type { communicationAdminTabs, CommunicationKind } from "@/lib/communication-navigation";
 
-type Kind = "notification" | "announcement" | "mailing";
+type Kind = CommunicationKind;
+type CommunicationTab = (typeof communicationAdminTabs)[number];
 type Ref = { id: string; name: string | null; email?:string|null };
 type CommunicationItem={id:string;title:string;subject?:string|null;body:string;category:string|null;status:string;channels:string[];audience?:Record<string,string|null>;sentAt?:Date|string|null;deliveryResult?:MailingDeliveryResult|null};
 type Data = { items: CommunicationItem[]; tenants: Ref[]; groups: Ref[]; objects: Ref[]; types: Ref[] };
 const statusLabels:Record<string,string>={draft:"Черновик",scheduled:"Запланировано",sent:"Отправлено",partial:"Отправлено частично",failed:"Не отправлено",published:"Опубликовано",completed:"Завершено"};
 const channelLabels:Record<string,string>={in_app:"Личный кабинет",email:"Email",telegram:"Telegram",sms:"SMS"};
 
-export function CommunicationsAdminPage({ kind, data, nav, initialId, initialMode="edit" }: { kind: Kind; data: Data; nav: readonly (readonly [string,string,string])[]; initialId?:string|undefined; initialMode?:"edit"|"view" }) {
+export function CommunicationsAdminPage({ kind, data, nav, tabs, initialId, initialMode="edit" }: { kind: Kind; data: Data; nav: readonly (readonly [string,string,string])[]; tabs?:readonly CommunicationTab[]|undefined; initialId?:string|undefined; initialMode?:"edit"|"view" }) {
   const initial=initialId?data.items.find(item=>item.id===initialId):undefined,initialAudience=initial?.audience;
   const initialScope=(initialAudience?.["scope"]||"all") as "all"|"tenant"|"group"|"object"|"type";
   const [draftId,setDraftId]=useState(initial?.id),[scope,setScope]=useState<"all"|"tenant"|"group"|"object"|"type">(initialScope),[scopeId,setScopeId]=useState(initialAudience?.["id"]||""),[recipientCount,setRecipientCount]=useState<RecipientCountState>({status:"idle",count:0}),[message,setMessage]=useState(""),[submitting,setSubmitting]=useState(false);
   const lockedRecipient=Boolean(initialAudience?.["waitlistId"]&&initialScope==="tenant"&&scopeId);
   const refs=scope==="tenant"?data.tenants:scope==="group"?data.groups:scope==="object"?data.objects:scope==="type"?data.types:[];
-  const label=kind==="mailing"?"Рассылки":kind==="announcement"?"Объявления":"Уведомления",audience={scope,id:scope==="all"?undefined:scopeId};
+  const label="Уведомления",audience={scope,id:scope==="all"?undefined:scopeId};
   const readOnly=Boolean(kind==="mailing"&&initial&&isMailingReadOnly(initial.status,initialMode));
   const audienceName=initialScope==="all"?"Все арендаторы":refs.find(x=>x.id===scopeId)?.name||"Сегмент не найден";
   const sentDate=initial?.sentAt||initial?.deliveryResult?.lastAttemptAt;
@@ -27,7 +29,7 @@ export function CommunicationsAdminPage({ kind, data, nav, initialId, initialMod
   useEffect(()=>{if(kind!=="mailing"||readOnly)return;void countController.select(scope==="all"||scopeId?audience:null);return()=>countController.cancel()},[kind,scope,scopeId,countController,readOnly]);
   async function preview(){if(scope!=="all"&&!scopeId){setMessage("Выберите сегмент");return;}setRecipientCount({status:"loading",count:0});try{const r=await previewCommunicationAudience({data:{kind,audience}});setRecipientCount({status:"ready",count:r.count});setMessage("")}catch{setRecipientCount({status:"error",count:0});setMessage("Не удалось подсчитать получателей")}}
   async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(submitting)return;const submitter=(e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement|null,f=new FormData(e.currentTarget),action=submitter?.value,send=action==="send";if(send&&recipientCount.status!=="ready"){setMessage(recipientCount.status==="error"?"Не удалось подсчитать получателей. Повторно выберите сегмент":"Дождитесь подсчёта получателей");return;}setSubmitting(true);try{if(action==="test"){const r=await sendTestMailingAdmin({data:{subject:String(f.get("subject")||""),body:String(f.get("body")||"")}});setMessage(`Тестовое письмо отправлено на ${r.email}`);return}const r=await saveCommunicationAdmin({data:{id:draftId,kind,title:String(f.get("title")),subject:String(f.get("subject")||"")||undefined,body:String(f.get("body")),category:String(f.get("category")||"")||undefined,audience,channels:f.getAll("channels") as any,status:String(f.get("status")||"draft"),startsAt:String(f.get("startsAt")||"")||undefined,endsAt:String(f.get("endsAt")||"")||undefined,send}});const id=savedDraftId(draftId,r.id);setDraftId(id);window.history.replaceState(null,"",draftEditUrl(window.location.pathname,id));if(!send){setMessage("Черновик сохранён");return}if(r.errors||r.skipped){setMessage(`Отправка завершена: успешно — ${r.sent}, ошибок — ${r.errors}, пропущено — ${r.skipped}. Подробности сохранены в журнале.`);return}setMessage(`Успешно отправлено получателю: ${r.recipients}. Записи добавлены в журнал отправок.`);setTimeout(()=>location.href="/admin/delivery-log",1200)}catch(error){setMessage(error instanceof Error?error.message:"Не удалось отправить уведомление")}finally{setSubmitting(false)}}
-  return <AdminShell title={label} sections={nav}>{readOnly&&initial?<section className="grid gap-3 border bg-background p-5 md:grid-cols-2" aria-label="Просмотр отправленной рассылки">
+  return <AdminShell title={label} sections={nav}>{tabs&&tabs.length>1&&<nav className="mb-4 flex flex-wrap gap-2" aria-label="Типы уведомлений">{tabs.map(tab=><a key={tab.kind} href={tab.href} aria-current={tab.kind===kind?"page":undefined} className={`border px-3 py-2 text-sm ${tab.kind===kind?"border-primary font-medium":"bg-background"}`}>{tab.label}</a>)}</nav>}{readOnly&&initial?<section className="grid gap-3 border bg-background p-5 md:grid-cols-2" aria-label="Просмотр отправленной рассылки">
     <div><p className="text-sm text-muted-foreground">Название</p><p className="font-medium">{initial.title}</p></div>
     <div><p className="text-sm text-muted-foreground">Тема</p><p className="font-medium">{initial.subject||initial.title}</p></div>
     <div><p className="text-sm text-muted-foreground">Сегмент</p><p>{audienceName}</p></div>
