@@ -3,6 +3,7 @@ import { and, desc, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { requirePermission } from "@/server/portal/portal.server";
+import { requirePersonalDataConsent } from "@/lib/consents";
 
 const activeWindow = () => and(
   eq(s.adPlacements.publicationStatus, "published"),
@@ -55,11 +56,14 @@ export async function trackAdEvent(input: { placementId: string; cta: string; ta
   return { ok:true };
 }
 
-export async function submitAdLead(input:{placementId:string;name:string;phone?:string|undefined;email?:string|undefined;message?:string|undefined}) {
+export async function submitAdLead(input:{placementId:string;name:string;phone?:string|undefined;email?:string|undefined;message?:string|undefined;personalDataConsent:boolean}) {
+  const personalDataConsent=requirePersonalDataConsent(input.personalDataConsent,"public_form:Реклама арендатора / RANG");
   const placement=(await getDatabase().select({id:s.adPlacements.id,tenantId:s.adPlacements.tenantUserId,offer:s.adPlacements.specialOfferTitle}).from(s.adPlacements).where(and(activeWindow(),eq(s.adPlacements.id,input.placementId))).limit(1))[0];
   if(!placement)throw new Error("Рекламная карточка недоступна");
   await getDatabase().transaction(async(tx)=>{
-    await tx.insert(s.adLeads).values({id:randomUUID(),placementId:placement.id,source:"Реклама арендатора / RANG",contactName:input.name,contactPhone:input.phone||null,contactEmail:input.email||null,promoApplied:placement.offer||null,message:input.message||null,cta:"contact_form",inquiryType:"internal_form",status:"new"});
+    const leadId=randomUUID();
+    await tx.insert(s.adLeads).values({id:leadId,placementId:placement.id,source:"Реклама арендатора / RANG",contactName:input.name,contactPhone:input.phone||null,contactEmail:input.email||null,promoApplied:placement.offer||null,message:input.message||null,cta:"contact_form",inquiryType:"internal_form",status:"new"});
+    await tx.insert(s.personalDataConsentRecords).values({id:randomUUID(),adLeadId:leadId,...personalDataConsent});
     await tx.insert(s.adEvents).values({id:randomUUID(),placementId:placement.id,tenantUserId:placement.tenantId,eventType:"internal_lead",cta:"contact_form",isConfirmedConversion:true,metadata:{message:input.message||""}});
   });return{ok:true};
 }

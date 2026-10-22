@@ -128,12 +128,12 @@ export async function saveCommunication(input: {
   else await db.insert(s.announcements).values({ id, kind: input.kind, ...values });
   if (!input.send) return { id, recipients: 0, sent: 0, errors: 0, skipped: 0 };
 
-  const consentRows = await db.select().from(s.userChannelConsents);
-  const consent = new Set(consentRows.filter((row) => row.status === "granted").map((row) => `${row.userId}:${row.channel}`));
   const { sendProjectEmail } = await import("@/server/portal/email.server");
   const emailResult = tracksMailingEmailResult ? await deliverMailingEmails({
     recipients,
-    canSend: (recipientId) => Boolean(existingAudience?.["waitlistId"]) || consent.has(`${recipientId}:email`),
+    // RANG uses this module only for service messages. Optional advertising
+    // mailings are not enabled, so no marketing subscription is inferred here.
+    canSend: () => true,
     sendEmail: (email) => sendProjectEmail({ to: email, subject: input.subject || input.title, text: input.body }),
   }) : null;
   const emailAttempts = new Map(emailResult?.attempts.map((attempt) => [attempt.recipientId, attempt]));
@@ -147,8 +147,6 @@ export async function saveCommunication(input: {
         await db.insert(s.notifications).values({ id: randomUUID(), userId: recipient.id, announcementId: id, channel, title: input.subject || input.title, body: input.body, deliveredAt: now });
       } else if (channel === "telegram" || channel === "sms") {
         deliveryStatus = "skipped"; reason = "Канал не подключён";
-      } else if (input.kind !== "mailing" && !existingAudience?.["waitlistId"] && !consent.has(`${recipient.id}:email`)) {
-        deliveryStatus = "skipped"; reason = "Нет согласия на email";
       } else if (input.kind !== "mailing" && !recipient.email) {
         deliveryStatus = "error"; reason = "У получателя не указан email";
       } else if (input.kind !== "mailing") {

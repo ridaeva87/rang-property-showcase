@@ -884,6 +884,22 @@ export const adLeads = pgTable(
   (table) => [index("ad_leads_placement_idx").on(table.placementId)],
 );
 
+export const personalDataConsentRecords = pgTable(
+  "personal_data_consent_records",
+  {
+    id: text("id").primaryKey(),
+    requestId: text("request_id").references(() => requests.id, { onDelete: "cascade" }),
+    adLeadId: text("ad_lead_id").references(() => adLeads.id, { onDelete: "cascade" }),
+    source: text("source").notNull(),
+    legalTextVersion: text("legal_text_version").notNull(),
+    consentedAt: timestamp("consented_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("personal_data_consent_records_request_uq").on(table.requestId),
+    uniqueIndex("personal_data_consent_records_ad_lead_uq").on(table.adLeadId),
+  ],
+);
+
 export const adEvents = pgTable(
   "ad_events",
   {

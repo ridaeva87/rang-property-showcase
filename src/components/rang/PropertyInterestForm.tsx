@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { sendPropertyInterest } from "@/lib/admin.functions";
 import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
+import { PersonalDataConsentField } from "@/components/rang/PersonalDataConsentField";
 
 export type PropertyInterestType = "viewing" | "application" | "release-notification" | "details";
 
@@ -33,7 +34,7 @@ export function PropertyInterestForm({
     sendingRef.current = true;
     setSending(true);
     try {
-      await sendPropertyInterest({ data: { idempotencyKey, premiseId: propertyId, objectId, type: interestType, name: String(data.get("name") || ""), phone: String(data.get("phone") || ""), email: String(data.get("email") || ""), message: String(data.get("comment") || "") } });
+      await sendPropertyInterest({ data: { idempotencyKey, premiseId: propertyId, objectId, type: interestType, name: String(data.get("name") || ""), phone: String(data.get("phone") || ""), email: String(data.get("email") || ""), message: String(data.get("comment") || ""), personalDataConsent: data.get("personalDataConsent") === "on" } });
       clearRequestIdempotencyKey(scope, idempotencyKey);
       form.reset();
       toast.success(interestType === "details" ? "Запрос отправлен" : "Заявка отправлена");
@@ -86,6 +87,7 @@ export function PropertyInterestForm({
               className="w-full border border-input bg-background p-3 text-sm outline-none focus:border-accent"
             />
           </label>
+          <PersonalDataConsentField className="sm:col-span-2" />
           <button
             type="submit"
             disabled={sending}

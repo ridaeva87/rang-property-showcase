@@ -5,6 +5,7 @@ import { COMPANY_DOCUMENTS, type PropertyObject } from "@/data/rang";
 import { sendPublicRequest } from "@/lib/admin.functions";
 import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 import { ResponsiveImage } from "./ResponsiveImage";
+import { PersonalDataConsentField } from "./PersonalDataConsentField";
 import {
   Dialog,
   DialogContent,
@@ -204,6 +205,7 @@ export function RequestIntegrationNotice({ subject, source, serviceId }: { subje
         phone: String(data.get("phone") || ""),
         email: String(data.get("email") || ""),
         message: String(data.get("message") || ""),
+        personalDataConsent: data.get("personalDataConsent") === "on",
         ...(serviceId ? { serviceId } : {}),
       } });
       clearRequestIdempotencyKey(scope, idempotencyKey);
@@ -225,6 +227,7 @@ export function RequestIntegrationNotice({ subject, source, serviceId }: { subje
         <input name="phone" required minLength={6} maxLength={40} placeholder="Телефон" className="filter-control" />
         <input name="email" type="email" placeholder="Email (необязательно)" className="filter-control sm:col-span-2" />
         <textarea name="message" maxLength={2000} rows={4} placeholder="Комментарий" className="w-full border border-input bg-background p-3 text-sm sm:col-span-2" />
+        <PersonalDataConsentField className="sm:col-span-2" />
         <button type="submit" disabled={sending} className="bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60 sm:col-span-2">
           {sending ? "Отправляем…" : "Отправить заявку"}
         </button>

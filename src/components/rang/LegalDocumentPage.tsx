@@ -41,11 +41,11 @@ function isHeading(value: string) {
 }
 
 function renderInlineLinks(value: string): ReactNode[] {
-  return value.split(/(https:\/\/rangpro\.ru(?:\/privacy-policy)?|noreply@rangpro\.ru)/g).map((part, index) => {
+  return value.split(/(https:\/\/rangpro\.ru(?:\/privacy-policy)?|zaorang@mail\.ru)/g).map((part, index) => {
     if (part.startsWith("https://")) {
       return <a key={index} href={part} className="font-medium text-primary underline underline-offset-4">{part}</a>;
     }
-    if (part === "noreply@rangpro.ru") {
+    if (part === "zaorang@mail.ru") {
       return <a key={index} href={`mailto:${part}`} className="font-medium text-primary underline underline-offset-4">{part}</a>;
     }
     return part;

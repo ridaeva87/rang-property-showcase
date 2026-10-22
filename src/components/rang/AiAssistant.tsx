@@ -3,6 +3,7 @@ import { MessageSquare, X, Send, Headset } from "lucide-react";
 import { toast } from "sonner";
 import { askRangAssistant, transferRangAssistantQuestion } from "@/lib/assistant.functions";
 import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
+import { PersonalDataConsentField } from "@/components/rang/PersonalDataConsentField";
 
 type Msg = { role: "bot" | "user"; text: string; links?: Array<{ label: string; href: string }> };
 
@@ -24,6 +25,7 @@ export function AiAssistant({ open, setOpen, propertyId, objectId, source = "pub
   const [value, setValue] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [personalDataConsent, setPersonalDataConsent] = useState(false);
   const [sending, setSending] = useState(false);
   const [answering, setAnswering] = useState(false);
   const [contextPremiseId, setContextPremiseId] = useState(propertyId);
@@ -59,13 +61,14 @@ export function AiAssistant({ open, setOpen, propertyId, objectId, source = "pub
     const question = [...messages].reverse().find((message) => message.role === "user")?.text;
     if (!question) { toast.error("Сначала напишите вопрос"); return; }
     if (source === "public" && (name.trim().length < 2 || phone.trim().length < 6)) { toast.error("Укажите имя и телефон"); return; }
+    if (source === "public" && !personalDataConsent) { toast.error("Подтвердите согласие на обработку персональных данных"); return; }
     const scope = `assistant:${source}:${contextPremiseId || contextServiceId || "general"}`;
     const idempotencyKey = getOrCreateRequestIdempotencyKey(scope);
     sendingRef.current = true;
     setSending(true);
     try {
       const context = messages.slice(-6).map((message) => `${message.role === "user" ? "Пользователь" : "Помощник"}: ${message.text}`).join("\n");
-      await transferRangAssistantQuestion({ data: { idempotencyKey, question, context, premiseId: contextPremiseId, objectId: contextObjectId, serviceId: contextServiceId, name: name || undefined, phone: phone || undefined, source } });
+      await transferRangAssistantQuestion({ data: { idempotencyKey, question, context, premiseId: contextPremiseId, objectId: contextObjectId, serviceId: contextServiceId, name: name || undefined, phone: phone || undefined, source, ...(source === "public" ? { personalDataConsent } : {}) } });
       clearRequestIdempotencyKey(scope, idempotencyKey);
       toast.success("Вопрос отправлен сотруднику RANG");
       setMessages((current) => [...current, { role: "bot", text: "Вопрос отправлен сотруднику RANG." }]);
@@ -150,6 +153,11 @@ export function AiAssistant({ open, setOpen, propertyId, objectId, source = "pub
               <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Ваше имя" className="h-10 border border-input bg-background px-3 text-xs outline-none focus:border-accent" />
               <input value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Телефон" className="h-10 border border-input bg-background px-3 text-xs outline-none focus:border-accent" />
             </div>}
+            {source === "public" && (
+              <div onChange={(event) => setPersonalDataConsent((event.target as HTMLInputElement).checked)}>
+                <PersonalDataConsentField className="mt-3" />
+              </div>
+            )}
             <button
               onClick={transferQuestion}
               disabled={sending}

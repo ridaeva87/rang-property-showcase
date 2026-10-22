@@ -6,7 +6,7 @@ describe("published legal documents", () => {
     const text = [...PRIVACY_POLICY.paragraphs, ...PERSONAL_DATA_CONSENT.paragraphs].join("\n");
     expect(text).toContain("https://rangpro.ru");
     expect(text).toContain("https://rangpro.ru/privacy-policy");
-    expect(text).toContain("noreply@rangpro.ru");
+    expect(text).toContain("zaorang@mail.ru");
     expect(text).not.toMatch(/_{5,}/);
   });
 });

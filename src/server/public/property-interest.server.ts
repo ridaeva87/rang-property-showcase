@@ -4,6 +4,7 @@ import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { currentUser } from "@/server/portal/portal.server";
 import { createRequestFromIntake } from "@/server/requests/intake.server";
+import { requirePersonalDataConsent } from "@/lib/consents";
 
 export type PublicInterestType = "viewing" | "application" | "release-notification" | "details" | "question";
 
@@ -28,6 +29,7 @@ export async function submitPropertyInterest(input: {
   phone: string;
   email?: string | undefined;
   message?: string | undefined;
+  personalDataConsent: boolean;
 }) {
   const db = getDatabase();
   const premise = (await db.select({ id: s.premises.id, objectId: s.premises.objectId, title: s.premises.title })
@@ -37,6 +39,7 @@ export async function submitPropertyInterest(input: {
   if (!premise) throw new Error("Помещение недоступно");
 
   const descriptor = PUBLIC_INTEREST_LABELS[input.type];
+  const personalDataConsent = requirePersonalDataConsent(input.personalDataConsent, `public_form:${descriptor.source}`);
   const user = await currentUser();
   const organization = user?.kind === "tenant" ? (await db.select({ id: s.organizationUsers.organizationId }).from(s.organizationUsers).where(eq(s.organizationUsers.userId, user.id)).limit(1))[0] : null;
   const assignee = (await db.select({ id: s.employees.id })
@@ -64,6 +67,7 @@ export async function submitPropertyInterest(input: {
     createdByUserId: user?.kind === "tenant" ? user.id : null,
     actorUserId: user?.id || null,
     assigneeEmployeeId: assignee?.id || null,
+    personalDataConsent,
   });
   if (request.created) await db.transaction(async (tx) => {
     await tx.insert(s.analyticsEvents).values({
@@ -103,6 +107,7 @@ export async function submitPublicRequest(input: {
   email?: string | undefined;
   message?: string | undefined;
   serviceId?: string | undefined;
+  personalDataConsent: boolean;
 }) {
   const db = getDatabase();
   const service = input.serviceId ? (await db.select({ id: s.additionalServices.id, title: s.additionalServices.title }).from(s.additionalServices).where(and(eq(s.additionalServices.id, input.serviceId), eq(s.additionalServices.publicationStatus, "published"))).limit(1))[0] : null;
@@ -114,6 +119,7 @@ export async function submitPublicRequest(input: {
     .where(and(eq(s.roles.code, "rental_manager"), eq(s.users.isActive, true)))
     .orderBy(s.employees.createdAt).limit(1))[0];
   const source = PUBLIC_REQUEST_SOURCES[input.source];
+  const personalDataConsent = requirePersonalDataConsent(input.personalDataConsent, `public_form:${source}`);
   const interest = service?.title || input.subject;
   const request = await createRequestFromIntake({
     idempotencyKey: input.idempotencyKey,
@@ -127,6 +133,7 @@ export async function submitPublicRequest(input: {
     contactEmail: input.email || null,
     serviceId: service?.id || null,
     assigneeEmployeeId: assignee?.id || null,
+    personalDataConsent,
   });
   if (request.created) await db.insert(s.analyticsEvents).values({
     id: randomUUID(),

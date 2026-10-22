@@ -7,6 +7,11 @@ export const askRangAssistant = createServerFn({ method: "POST" })
     premiseId: z.string().optional(),
     objectId: z.string().optional(),
     source: z.enum(["public", "tenant_portal"]).default("public"),
+    personalDataConsent: z.boolean().optional(),
+  }).superRefine((value, context) => {
+    if (value.source === "public" && value.personalDataConsent !== true) {
+      context.addIssue({ code: "custom", path: ["personalDataConsent"], message: "Подтвердите согласие на обработку персональных данных" });
+    }
   }))
   .handler(async ({ data }) => (await import("@/server/assistant/assistant.server")).answerAssistant(data));
 

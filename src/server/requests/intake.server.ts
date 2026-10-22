@@ -36,6 +36,10 @@ export type RequestIntakeInput = {
   createdByUserId?: string | null;
   actorUserId?: string | null;
   assigneeEmployeeId?: string | null;
+  personalDataConsent?: {
+    source: string;
+    legalTextVersion: string;
+  };
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -100,6 +104,14 @@ export async function createRequestFromIntake(input: RequestIntakeInput) {
       eventType: "created",
       actorUserId: input.actorUserId || input.createdByUserId || null,
     });
+    if (input.personalDataConsent) {
+      await tx.insert(s.personalDataConsentRecords).values({
+        id: randomUUID(),
+        requestId: inserted.id,
+        source: input.personalDataConsent.source,
+        legalTextVersion: input.personalDataConsent.legalTextVersion,
+      });
+    }
     return { ...inserted, created: true as const };
   });
   await notifyCreatedRequest(request);

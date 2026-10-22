@@ -38,6 +38,7 @@ import {
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { PropertyCard } from "@/components/rang/PropertyCard";
 import { ResponsiveImage } from "@/components/rang/ResponsiveImage";
+import { PersonalDataConsentField } from "@/components/rang/PersonalDataConsentField";
 import { sendPublicRequest } from "@/lib/admin.functions";
 import { clearRequestIdempotencyKey, getOrCreateRequestIdempotencyKey } from "@/lib/request-idempotency";
 import aboutImage from "@/assets/object-ak153.jpg";
@@ -648,6 +649,7 @@ export function CtaForm() {
         subject: "Подбор помещения",
         name: String(data.get("name") || ""),
         phone: String(data.get("phone") || ""),
+        personalDataConsent: data.get("personalDataConsent") === "on",
         message: [`Тип помещения: ${premiseType}`, area ? `Желаемая площадь: ${area} м²` : "", comment].filter(Boolean).join("\n"),
       } });
       clearRequestIdempotencyKey(scope, idempotencyKey);
@@ -695,6 +697,7 @@ export function CtaForm() {
                 className="w-full border border-input bg-background p-3 text-sm outline-none focus:border-accent"
               />
             </label>
+            <PersonalDataConsentField className="sm:col-span-2" />
             <button
               type="submit"
               disabled={sending}
