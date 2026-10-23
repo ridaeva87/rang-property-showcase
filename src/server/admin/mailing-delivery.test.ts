@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus } from "./mailing-delivery";
+import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus, mailingAttemptLog } from "./mailing-delivery";
 
 describe("mailing email delivery", () => {
+  it("does not attach an email warning to a successful attempt", () => {
+    expect(mailingAttemptLog({ recipientId: "valid", status: "sent", reason: null }))
+      .toEqual({ status: "sent", reason: null });
+  });
+
   it("sends only to valid consented emails in a mixed segment", async () => {
     const sendEmail = vi.fn(async () => true);
     const result = await deliverMailingEmails({

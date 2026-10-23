@@ -7,6 +7,12 @@ export type MailingEmailAttempt = {
   reason: string | null;
 };
 
+export function mailingAttemptLog(attempt: MailingEmailAttempt | undefined) {
+  return attempt
+    ? { status: attempt.status, reason: attempt.reason }
+    : { status: "skipped" as const, reason: "Email не указан или некорректен" };
+}
+
 const emailSchema = z.string().trim().email();
 
 export function normalizeMailingEmail(email: string | null) {

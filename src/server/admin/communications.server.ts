@@ -3,7 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { requirePermission } from "@/server/portal/portal.server";
-import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus } from "./mailing-delivery";
+import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus, mailingAttemptLog } from "./mailing-delivery";
 import { aggregateMailingDeliveryResults } from "@/components/portal/mailing-results";
 import { assertServiceCommunicationBasis } from "@/lib/service-communications";
 
@@ -159,9 +159,9 @@ export async function saveCommunication(input: {
         try{if(!(await sendProjectEmail({ to: recipient.email!, subject: input.subject || input.title, text: input.body }))){deliveryStatus="error";reason="Email не принят провайдером"}}
         catch{deliveryStatus="error";reason="Ошибка отправки email"}
       } else {
-        const attempt = emailAttempts.get(recipient.id);
-        deliveryStatus = attempt?.status ?? "skipped";
-        reason = attempt?.reason ?? "Email не указан или некорректен";
+        const attempt = mailingAttemptLog(emailAttempts.get(recipient.id));
+        deliveryStatus = attempt.status;
+        reason = attempt.reason;
       }
       await db.insert(s.deliveryLogs).values({ id: randomUUID(), announcementId: id, recipientUserId: recipient.id, channel, status: deliveryStatus, reason, initiatedByUserId: actor.id });
       if(deliveryStatus==="sent")sent++;else if(deliveryStatus==="error")errors++;else skipped++;
