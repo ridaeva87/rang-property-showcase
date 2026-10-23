@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useRef, useState, type FormEvent } from "react";
-import { createRequestByEmployee, getCurrentAccount, loadRequestsAdmin, updateRequest, updateRequestStatusSettings } from "@/lib/portal.functions";
-import { ACTIVE_REQUEST_STATUS_CODES } from "@/lib/request-statuses";
+import { createRequestByEmployee, getCurrentAccount, loadRequestsAdmin, updateRequest } from "@/lib/portal.functions";
 import { loadAdminNavigation } from "@/lib/admin.functions";
 import { AdminShell } from "@/components/portal/AdminShell";
 import { GroupedPremiseOptions } from "@/components/portal/GroupedPremiseOptions";
@@ -26,7 +25,6 @@ function RequestsAdminPage() {
   const [createError,setCreateError]=useState("");
   const [createSending,setCreateSending]=useState(false);
   const createSendingRef=useRef(false);
-  const [statusSettingsError,setStatusSettingsError]=useState("");
   const filteredRequests=data.requests.filter(r=>(!status||r.status===status)&&(!category||r.categoryCode===category)&&(!tenant||r.tenantId===tenant)&&(!direction||r.directionCode===direction)&&(!assignee||(assignee==="unassigned"?!r.assigneeEmployeeId:r.assigneeEmployeeId===assignee)));
   const requests=filterAndSortRequests(filteredRequests,search,sortOrder);
   function exportCsv() {
@@ -53,21 +51,6 @@ function RequestsAdminPage() {
       },
     });
     location.reload();
-  }
-  async function saveStatusSettings(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setStatusSettingsError("");
-    const form = new FormData(event.currentTarget);
-    try {
-      await updateRequestStatusSettings({ data: { statuses: ACTIVE_REQUEST_STATUS_CODES.map((code) => ({
-        code,
-        displayOrder: Number(form.get(`${code}:order`)),
-        isActive: code === "new" || form.get(`${code}:active`) === "on",
-      })) } });
-      location.reload();
-    } catch (error) {
-      setStatusSettingsError(error instanceof Error ? error.message : "Не удалось сохранить стадии");
-    }
   }
   async function createRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,19 +91,6 @@ function RequestsAdminPage() {
       <a href="/admin/tenants" className="mb-4 inline-block border px-3 py-2 text-sm">
         Арендаторы
       </a>
-      <details className="mb-4 border bg-background p-4">
-        <summary className="cursor-pointer font-semibold">Настройка стадий</summary>
-        <form onSubmit={saveStatusSettings} className="mt-4 space-y-2">
-          {data.statuses.filter(s=>s.configurable).map(s=><div key={s.code} className="grid items-center gap-2 border p-3 sm:grid-cols-[minmax(0,1fr)_120px_140px]">
-            <span>{s.name}{s.isClosed?" · закрытая":""}</span>
-            <label className="text-sm">Порядок <input name={`${s.code}:order`} type="number" min="0" max="10000" required defaultValue={s.displayOrder} className="ml-2 w-16 border p-1"/></label>
-            <label className="text-sm"><input name={`${s.code}:active`} type="checkbox" defaultChecked={s.isActive} disabled={s.code==="new"} className="mr-2"/>Активна</label>
-          </div>)}
-          <p className="text-xs text-muted-foreground">Архивные статусы «Принято» и «Выполнено» сохранены только для старых заявок и истории.</p>
-          <button className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Сохранить стадии</button>
-          {statusSettingsError&&<p className="text-sm text-destructive">{statusSettingsError}</p>}
-        </form>
-      </details>
       <details className="mb-4 border bg-background p-4">
         <summary className="cursor-pointer font-semibold">Создать заявку вручную</summary>
         <form onSubmit={createRequest} className="mt-4 grid gap-3 md:grid-cols-2">

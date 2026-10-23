@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { legacyAdminOperationSectionSchema } from "@/lib/admin-operation-sections";
+import {
+  adminOperationDeletePermission,
+  adminOperationDeleteSectionSchema,
+  adminOperationReadPermission,
+  adminOperationReadSectionSchema,
+  legacyAdminOperationSectionSchema,
+} from "@/lib/admin-operation-sections";
 
 const dependencies = vi.hoisted(() => ({
   getDatabase: vi.fn(),
@@ -11,7 +17,7 @@ vi.mock("@/server/db/client", () => ({ getDatabase: dependencies.getDatabase }))
 vi.mock("@/server/portal/portal.server", () => ({ requirePermission: dependencies.requirePermission }));
 vi.mock("@/server/portal/email.server", () => ({ sendProjectEmail: dependencies.sendProjectEmail }));
 
-import { createAdminOperation } from "./admin.server";
+import { adminOperations, createAdminOperation, deleteAdminOperation } from "./admin.server";
 
 describe("legacy mailing path", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -32,5 +38,28 @@ describe("legacy mailing path", () => {
     expect(dependencies.requirePermission).not.toHaveBeenCalled();
     expect(dependencies.getDatabase).not.toHaveBeenCalled();
     expect(dependencies.sendProjectEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("legacy admin operation access", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("rejects unknown read and delete sections instead of falling back to admin.access", async () => {
+    expect(adminOperationReadSectionSchema.safeParse("employees").success).toBe(false);
+    expect(adminOperationDeleteSectionSchema.safeParse("employees").success).toBe(false);
+    expect(() => adminOperationReadPermission("employees")).toThrow("Недопустимый административный раздел");
+    expect(() => adminOperationDeletePermission("employees")).toThrow("Удаление в этом административном разделе запрещено");
+    await expect(adminOperations("employees")).rejects.toThrow("Недопустимый административный раздел");
+    await expect(deleteAdminOperation({ section: "employees", id: "employee-id" })).rejects.toThrow("Удаление в этом административном разделе запрещено");
+    expect(dependencies.requirePermission).not.toHaveBeenCalled();
+    expect(dependencies.getDatabase).not.toHaveBeenCalled();
+  });
+
+  it("maps permitted operations to their explicit existing permissions", () => {
+    expect(adminOperationReadPermission("support")).toBe("support.manage");
+    expect(adminOperationReadPermission("statistics")).toBe("statistics.view");
+    expect(adminOperationDeletePermission("leads")).toBe("leads.manage");
+    expect(adminOperationDeletePermission("services")).toBe("services.manage");
+    expect(adminOperationDeletePermission("ads")).toBe("ads.manage");
   });
 });
