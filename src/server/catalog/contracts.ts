@@ -46,6 +46,7 @@ export type CatalogProperty = {
   objectName: string;
   objectAddress: string;
   areaSqm?: number | undefined;
+  usableAreaSqm?: number | undefined;
   rentPricePerSqm?: number | undefined;
   rentPricePerSqmLabel?: string | undefined;
   totalMonthlyRent?: number | undefined;

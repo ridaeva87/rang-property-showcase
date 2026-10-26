@@ -36,6 +36,7 @@ export class CatalogRepository {
         type: schema.premiseTypes.name,
         status: schema.premiseStatuses.name,
         areaSqm: schema.premises.areaSqm,
+        usableAreaSqm: schema.premises.usableAreaSqm,
         expectedRelease: schema.premises.expectedReleaseLabel,
         offerType: schema.propertyOffers.type,
         rentPricePerSqm: schema.propertyOffers.rentPricePerSqm,
@@ -69,6 +70,7 @@ export class CatalogRepository {
           type: schema.premiseTypes.name,
           status: schema.premiseStatuses.name,
           areaSqm: schema.premises.areaSqm,
+          usableAreaSqm: schema.premises.usableAreaSqm,
           expectedRelease: schema.premises.expectedReleaseLabel,
           offerType: schema.propertyOffers.type,
           rentPricePerSqm: schema.propertyOffers.rentPricePerSqm,
@@ -146,6 +148,7 @@ export class CatalogRepository {
     type: string;
     status: string | null;
     areaSqm: string | null;
+    usableAreaSqm: string | null;
     expectedRelease: string | null;
     offerType: "rent" | "sale";
     rentPricePerSqm: string | null;
@@ -169,6 +172,7 @@ export class CatalogRepository {
       type: string;
       status: string | null;
       areaSqm: string | null;
+      usableAreaSqm: string | null;
       expectedRelease: string | null;
       offerType: "rent" | "sale";
       rentPricePerSqm: string | null;
@@ -266,6 +270,7 @@ export class CatalogRepository {
         status: row.status ?? undefined,
         description: row.description ?? undefined,
         areaSqm: numberValue(row.areaSqm) ?? (rowComponents.length ? componentArea : undefined),
+        usableAreaSqm: numberValue(row.usableAreaSqm),
         expectedRelease: row.expectedRelease ?? undefined,
         rentPricePerSqm: numberValue(row.rentPricePerSqm),
         rentPricePerSqmLabel: componentRates.length > 1 ? componentRates.join("/") : undefined,

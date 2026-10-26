@@ -32,6 +32,7 @@ const characteristic = (property: CatalogProperty, key: string) =>
   property.characteristics.find((item) => item.key === key)?.value;
 
 export function catalogPropertyToViewModel(property: CatalogProperty): Property {
+  const video = property.media.find((item) => item.kind === "video");
   const gatesCount = Number(characteristic(property, "gates-count"));
   const gatesWidth = Number(characteristic(property, "gates-width"));
   const gatesHeight = Number(characteristic(property, "gates-height"));
@@ -60,6 +61,7 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
     objectName: property.objectName,
     objectAddress: property.objectAddress,
     ...(property.areaSqm !== undefined ? { areaSqm: property.areaSqm } : {}),
+    ...(property.usableAreaSqm !== undefined ? { usableAreaSqm: property.usableAreaSqm } : {}),
     ...(property.rentPricePerSqm !== undefined
       ? { rentPricePerSqm: property.rentPricePerSqm }
       : {}),
@@ -103,6 +105,9 @@ export function catalogPropertyToViewModel(property: CatalogProperty): Property 
         ...(item.srcSet ? { srcSet: item.srcSet } : {}),
         ...(item.role ? { role: item.role } : {}),
       })),
+    ...(video
+      ? { video: { url: video.url, title: video.title || "Видео помещения", kind: "file" as const } }
+      : {}),
     characteristics: property.characteristics.map((item) => ({
       ...item,
       value: formatCharacteristicValue(item.value),

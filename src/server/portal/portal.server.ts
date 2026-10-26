@@ -398,7 +398,14 @@ export async function addRequestComment(requestId: string, body: string) {
 export async function getDocumentForCurrentTenant(id: string) {
   const user = await requireUser();
   const orgIds = await tenantOrganizationIds(user.id);
-  const scope = user.roles.includes("admin") ? undefined : or(eq(schema.documents.recipientUserId, user.id), ...(orgIds.length ? [inArray(schema.documents.organizationId, orgIds)] : []));
+  const canManageDocuments =
+    user.kind === "employee" && hasPermission(user.roles, user.permissions, "documents.manage");
+  const scope = canManageDocuments
+    ? undefined
+    : or(
+        eq(schema.documents.recipientUserId, user.id),
+        ...(orgIds.length ? [inArray(schema.documents.organizationId, orgIds)] : []),
+      );
   const rows = await getDatabase()
     .select({
       url: schema.mediaAssets.publicUrl,
@@ -835,18 +842,34 @@ export async function listDocumentsAdmin() {
   const db = getDatabase();
   return {
     tenants: await db.select({ id: schema.users.id, name: schema.users.displayName }).from(schema.users).where(eq(schema.users.kind, "tenant")).orderBy(schema.users.displayName),
+    objects: await db.select({ id: schema.propertyObjects.id, name: schema.propertyObjects.name }).from(schema.propertyObjects).orderBy(schema.propertyObjects.name),
+    premises: await db.select({ id: schema.premises.id, name: schema.premises.title, object: schema.propertyObjects.name }).from(schema.premises).innerJoin(schema.propertyObjects, eq(schema.premises.objectId, schema.propertyObjects.id)).orderBy(schema.propertyObjects.name, schema.premises.title),
     types: await db.select({ code: schema.documentTypes.code, name: schema.documentTypes.name }).from(schema.documentTypes).orderBy(schema.documentTypes.name),
-    documents: await db.select({ id: schema.documents.id, title: schema.documents.title, date: schema.documents.documentDate, active: schema.documents.isActive, tenant: schema.users.displayName, type: schema.documentTypes.name }).from(schema.documents).innerJoin(schema.documentTypes, eq(schema.documents.typeId, schema.documentTypes.id)).leftJoin(schema.users, eq(schema.documents.recipientUserId, schema.users.id)).orderBy(sql`${schema.documents.createdAt} desc`),
+    documents: await db.select({ id: schema.documents.id, title: schema.documents.title, date: schema.documents.documentDate, active: schema.documents.isActive, tenant: schema.users.displayName, premise: schema.premises.title, object: schema.propertyObjects.name, type: schema.documentTypes.name }).from(schema.documents).innerJoin(schema.documentTypes, eq(schema.documents.typeId, schema.documentTypes.id)).leftJoin(schema.users, eq(schema.documents.recipientUserId, schema.users.id)).leftJoin(schema.premises, eq(schema.documents.premiseId, schema.premises.id)).leftJoin(schema.propertyObjects, eq(schema.documents.objectId, schema.propertyObjects.id)).orderBy(sql`${schema.documents.createdAt} desc`),
   };
 }
 
-export async function savePrivateDocumentAdmin(input: { userId: string; title: string; type: string; date?: string; file: File }) {
+export function documentTarget(input: { userId?: string; premiseId?: string; objectId?: string }) {
+  const targets = [input.userId, input.premiseId, input.objectId].filter(Boolean);
+  if (targets.length !== 1) throw new Error("Выберите одного получателя документа");
+  return {
+    recipientUserId: input.userId || null,
+    premiseId: input.premiseId || null,
+    objectId: input.objectId || null,
+  };
+}
+
+export async function savePrivateDocumentAdmin(input: { userId?: string; premiseId?: string; objectId?: string; title: string; type: string; date?: string; file: File }) {
   await requirePermission("documents.manage");
   if (input.file.size < 1 || input.file.size > 20 * 1024 * 1024) throw new Error("Размер документа должен быть до 20 МБ");
   const db = getDatabase();
-  const [tenant] = await db.select({ id: schema.users.id }).from(schema.users).where(and(eq(schema.users.id, input.userId), eq(schema.users.kind, "tenant"))).limit(1);
+  const target = documentTarget(input);
+  const [tenant] = input.userId ? await db.select({ id: schema.users.id }).from(schema.users).where(and(eq(schema.users.id, input.userId), eq(schema.users.kind, "tenant"))).limit(1) : [];
+  const [premise] = input.premiseId ? await db.select({ id: schema.premises.id }).from(schema.premises).where(eq(schema.premises.id, input.premiseId)).limit(1) : [];
+  const [object] = input.objectId ? await db.select({ id: schema.propertyObjects.id }).from(schema.propertyObjects).where(eq(schema.propertyObjects.id, input.objectId)).limit(1) : [];
   const [type] = await db.select({ id: schema.documentTypes.id }).from(schema.documentTypes).where(eq(schema.documentTypes.code, input.type)).limit(1);
-  if (!tenant || !type) throw new Error("Некорректный арендатор или тип документа");
+  if ((input.userId && !tenant) || (input.premiseId && !premise) || (input.objectId && !object) || !type)
+    throw new Error("Некорректный получатель или тип документа");
   const { createHash } = await import("node:crypto");
   const { mkdir, writeFile, unlink } = await import("node:fs/promises");
   const { join } = await import("node:path");
@@ -861,7 +884,7 @@ export async function savePrivateDocumentAdmin(input: { userId: string; title: s
   try {
     await db.transaction(async (tx) => {
       await tx.insert(schema.mediaAssets).values({ id, kind: "document", storageKey, mimeType: input.file.type || "application/octet-stream", byteSize: bytes.length, checksumSha256: createHash("sha256").update(bytes).digest("hex"), publicUrl: null });
-      await tx.insert(schema.documents).values({ id: randomUUID(), typeId: type.id, mediaId: id, recipientUserId: input.userId, title: input.title.trim(), documentDate: input.date || null });
+      await tx.insert(schema.documents).values({ id: randomUUID(), typeId: type.id, mediaId: id, ...target, title: input.title.trim(), documentDate: input.date || null });
     });
   } catch (error) { await unlink(path).catch(() => undefined); throw error; }
 }
