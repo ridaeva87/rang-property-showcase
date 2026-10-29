@@ -23,6 +23,7 @@ import {
 import { Footer } from "@/components/rang/Footer";
 import { AiAssistant } from "@/components/rang/AiAssistant";
 import { loadCatalogObjects, loadCatalogProperties } from "@/lib/catalog.loaders";
+import { loadPublicFaq } from "@/lib/faq.functions";
 
 const title = "Ранг — аренда офисов и складов в Казани с 1993 года";
 const description =
@@ -30,11 +31,12 @@ const description =
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [properties, objects] = await Promise.all([
+    const [properties, objects, faq] = await Promise.all([
       loadCatalogProperties({ offerType: "rent" }),
       loadCatalogObjects(),
+      loadPublicFaq(),
     ]);
-    return { properties, objects };
+    return { properties, objects, faq };
   },
   head: () => ({
     meta: [
@@ -50,7 +52,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { properties, objects } = Route.useLoaderData();
+  const { properties, objects, faq } = Route.useLoaderData();
   const [chatOpen, setChatOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
@@ -81,7 +83,7 @@ function Index() {
         <Tenants />
         <About />
         <HowTo />
-        <Faq onAskAi={() => setChatOpen(true)} />
+        <Faq items={faq} onAskAi={() => setChatOpen(true)} />
         <AiTransition onOpen={() => setChatOpen(true)} />
         <CtaForm />
         <Contacts objects={objects} />

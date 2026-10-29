@@ -29,12 +29,12 @@ import {
 } from "@/components/ui/accordion";
 import {
   ADDITIONAL_SERVICES,
-  FAQ,
   PREMISE_TYPES,
   type Property,
   type PropertyFilters,
   type PropertyObject,
 } from "@/data/rang";
+import type { PublicFaqItem } from "@/lib/faq";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { PropertyCard } from "@/components/rang/PropertyCard";
 import { ResponsiveImage } from "@/components/rang/ResponsiveImage";
@@ -566,7 +566,8 @@ export function HowTo() {
 }
 
 /* 15. FAQ */
-export function Faq({ onAskAi }: { onAskAi: () => void }) {
+export function Faq({ items, onAskAi }: { items: PublicFaqItem[]; onAskAi: () => void }) {
+  const categories = Array.from(new Set(items.map((item) => item.category)));
   return (
     <section className="container-rang py-20 lg:py-28">
       <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
@@ -583,18 +584,25 @@ export function Faq({ onAskAi }: { onAskAi: () => void }) {
             </button>
           </div>
         </div>
-        <Accordion type="single" collapsible className="w-full">
-          {FAQ.map((item, i) => (
-            <AccordionItem key={item.q} value={`item-${i}`} className="border-b border-border">
-              <AccordionTrigger className="py-5 text-left text-base font-semibold hover:no-underline">
-                {item.q}
-              </AccordionTrigger>
-              <AccordionContent className="pb-5 text-sm text-muted-foreground">
-                {item.a}
-              </AccordionContent>
-            </AccordionItem>
+        <div className="space-y-8">
+          {categories.map((category) => (
+            <div key={category}>
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">{category}</h3>
+              <Accordion type="single" collapsible className="w-full">
+                {items.filter((item) => item.category === category).map((item) => (
+                  <AccordionItem key={item.id} value={item.id} className="border-b border-border">
+                    <AccordionTrigger className="py-5 text-left text-base font-semibold hover:no-underline">
+                      {item.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-5 text-sm text-muted-foreground">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
           ))}
-        </Accordion>
+        </div>
       </div>
     </section>
   );

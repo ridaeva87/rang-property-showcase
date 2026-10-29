@@ -30,6 +30,7 @@ import { Route as AdminAnnouncementsRouteImport } from './routes/admin/announcem
 import { Route as AdminDeliveryLogRouteImport } from './routes/admin/delivery-log'
 import { Route as AdminDocumentsRouteImport } from './routes/admin/documents'
 import { Route as AdminEmployeesRouteImport } from './routes/admin/employees'
+import { Route as AdminFaqRouteImport } from './routes/admin/faq'
 import { Route as AdminLeadsRouteImport } from './routes/admin/leads'
 import { Route as AdminMailingsRouteImport } from './routes/admin/mailings'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
@@ -155,6 +156,11 @@ const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
 const AdminEmployeesRoute = AdminEmployeesRouteImport.update({
   id: '/admin/employees',
   path: '/admin/employees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminFaqRoute = AdminFaqRouteImport.update({
+  id: '/admin/faq',
+  path: '/admin/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLeadsRoute = AdminLeadsRouteImport.update({
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/faq': typeof AdminFaqRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mailings': typeof AdminMailingsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
@@ -327,6 +334,7 @@ export interface FileRoutesByTo {
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/faq': typeof AdminFaqRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mailings': typeof AdminMailingsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/faq': typeof AdminFaqRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mailings': typeof AdminMailingsRoute
   '/admin/notifications': typeof AdminNotificationsRoute
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
     | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
+    | '/admin/faq'
     | '/admin/leads'
     | '/admin/mailings'
     | '/admin/notifications'
@@ -462,6 +472,7 @@ export interface FileRouteTypes {
     | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
+    | '/admin/faq'
     | '/admin/leads'
     | '/admin/mailings'
     | '/admin/notifications'
@@ -506,6 +517,7 @@ export interface FileRouteTypes {
     | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
+    | '/admin/faq'
     | '/admin/leads'
     | '/admin/mailings'
     | '/admin/notifications'
@@ -551,6 +563,7 @@ export interface RootRouteChildren {
   AdminDeliveryLogRoute: typeof AdminDeliveryLogRoute
   AdminDocumentsRoute: typeof AdminDocumentsRouteWithChildren
   AdminEmployeesRoute: typeof AdminEmployeesRoute
+  AdminFaqRoute: typeof AdminFaqRoute
   AdminLeadsRoute: typeof AdminLeadsRoute
   AdminMailingsRoute: typeof AdminMailingsRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
@@ -720,6 +733,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/employees'
       fullPath: '/admin/employees'
       preLoaderRoute: typeof AdminEmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/faq': {
+      id: '/admin/faq'
+      path: '/admin/faq'
+      fullPath: '/admin/faq'
+      preLoaderRoute: typeof AdminFaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/leads': {
@@ -928,6 +948,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDeliveryLogRoute: AdminDeliveryLogRoute,
   AdminDocumentsRoute: AdminDocumentsRouteWithChildren,
   AdminEmployeesRoute: AdminEmployeesRoute,
+  AdminFaqRoute: AdminFaqRoute,
   AdminLeadsRoute: AdminLeadsRoute,
   AdminMailingsRoute: AdminMailingsRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,

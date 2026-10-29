@@ -567,6 +567,23 @@ export const additionalServices = pgTable("additional_services", {
   ...timestamps,
 });
 
+export const faqItems = pgTable(
+  "faq_items",
+  {
+    id: text("id").primaryKey(),
+    question: text("question").notNull(),
+    answer: text("answer").notNull(),
+    category: text("category").notNull(),
+    displayOrder: integer("display_order").default(0).notNull(),
+    publicationStatus: publicationStatus("publication_status").default("draft").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("faq_items_publication_order_idx").on(table.publicationStatus, table.displayOrder),
+    index("faq_items_category_order_idx").on(table.category, table.displayOrder),
+  ],
+);
+
 export const requests = pgTable(
   "requests",
   {
