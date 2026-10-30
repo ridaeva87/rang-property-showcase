@@ -85,7 +85,7 @@ export function ObjectsMapPlaceholder({ objects }: { objects: PropertyObject[] }
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
             <p className="eyebrow">Карта объектов</p>
-            <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">Расположение объектов RANG</h2>
+            <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">Расположение объектов РАНГ</h2>
             <p className="mt-5 text-muted-foreground">
               Адреса подтверждены. Координаты и картографический сервис пока не предоставлены,
               поэтому интерактивная карта не подключена.
@@ -151,7 +151,7 @@ export function HistoricalLicense() {
           <DialogContent className="max-h-[92vh] max-w-[96vw] overflow-auto border-border bg-background p-3 sm:max-w-6xl sm:p-5">
             <DialogTitle>{document.title}</DialogTitle>
             <DialogDescription>
-              Оригинальный исторический документ, предоставленный компанией RANG.
+              Оригинальный исторический документ, предоставленный компанией РАНГ.
             </DialogDescription>
             <img
               src={document.previewUrl}

@@ -153,7 +153,7 @@ function AccountPage() {
               <p className="mt-2 text-sm">{r.description}</p>
               {r.comments.map((c) => (
                 <p key={c.id} className="mt-2 border-l-2 border-primary pl-3 text-sm">
-                  <span className="text-muted-foreground">{c.mine ? "Вы" : "RANG"}: </span>
+                  <span className="text-muted-foreground">{c.mine ? "Вы" : "РАНГ"}: </span>
                   {c.body}
                 </p>
               ))}

@@ -50,7 +50,7 @@ export function AiAssistant({ open, setOpen, propertyId, objectId, source = "pub
       if (response.objectId) setContextObjectId(response.objectId);
       if (response.serviceId) setContextServiceId(response.serviceId);
     } catch {
-      setMessages((m) => [...m, { role: "bot", text: "Не удалось получить подтверждённые данные. Передайте вопрос сотруднику RANG." }]);
+      setMessages((m) => [...m, { role: "bot", text: "Не удалось получить подтверждённые данные. Передайте вопрос сотруднику РАНГ." }]);
     } finally {
       setAnswering(false);
     }
@@ -70,8 +70,8 @@ export function AiAssistant({ open, setOpen, propertyId, objectId, source = "pub
       const context = messages.slice(-6).map((message) => `${message.role === "user" ? "Пользователь" : "Помощник"}: ${message.text}`).join("\n");
       await transferRangAssistantQuestion({ data: { idempotencyKey, question, context, premiseId: contextPremiseId, objectId: contextObjectId, serviceId: contextServiceId, name: name || undefined, phone: phone || undefined, source, ...(source === "public" ? { personalDataConsent } : {}) } });
       clearRequestIdempotencyKey(scope, idempotencyKey);
-      toast.success("Вопрос отправлен сотруднику RANG");
-      setMessages((current) => [...current, { role: "bot", text: "Вопрос отправлен сотруднику RANG." }]);
+      toast.success("Вопрос отправлен сотруднику РАНГ");
+      setMessages((current) => [...current, { role: "bot", text: "Вопрос отправлен сотруднику РАНГ." }]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось отправить вопрос");
     } finally { sendingRef.current = false; setSending(false); }

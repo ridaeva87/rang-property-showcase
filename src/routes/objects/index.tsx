@@ -4,9 +4,9 @@ import { Header } from "@/components/rang/Header";
 import { ObjectCard, ObjectsMapPlaceholder, PageIntro } from "@/components/rang/CompanySections";
 import { loadCatalogObjects, loadCatalogProperties } from "@/lib/catalog.loaders";
 
-const title = "Объекты компании RANG — Казань";
+const title = "Объекты компании РАНГ — Казань";
 const description =
-  "Объекты коммерческой недвижимости компании RANG и помещения внутри каждого объекта.";
+  "Объекты коммерческой недвижимости компании РАНГ и помещения внутри каждого объекта.";
 
 export const Route = createFileRoute("/objects/")({
   loader: async () => {
@@ -37,7 +37,7 @@ function ObjectsPage() {
       <main className="pt-20">
         <PageIntro
           eyebrow="Объекты компании"
-          title="Площадки RANG в Казани"
+          title="Площадки РАНГ в Казани"
           description="Объект хранит общие сведения об адресе и территории, а помещения связаны с ним через единый каталог без дублирования данных."
         />
         <section className="container-rang pb-16 lg:pb-24">

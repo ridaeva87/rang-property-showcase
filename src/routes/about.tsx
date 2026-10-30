@@ -3,8 +3,8 @@ import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { HistoricalLicense, PageIntro } from "@/components/rang/CompanySections";
 
-const title = "История компании RANG — с 1993 года";
-const description = "История компании RANG, архивные материалы и историческая лицензия 1994 года.";
+const title = "История компании РАНГ — с 1993 года";
+const description = "История компании РАНГ, архивные материалы и историческая лицензия 1994 года.";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -27,7 +27,7 @@ function AboutPage() {
       <main className="pt-20">
         <PageIntro
           eyebrow="О компании"
-          title="RANG работает с бизнесом с 1993 года"
+          title="РАНГ работает с бизнесом с 1993 года"
           description="Раздел объединяет только подтверждённые сведения и оригинальные исторические материалы компании. Новые этапы истории будут добавляться по мере предоставления документов и архивных фотографий."
         />
         <section className="container-rang pb-16 lg:pb-24">

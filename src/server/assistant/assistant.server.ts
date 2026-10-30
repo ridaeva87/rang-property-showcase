@@ -94,7 +94,7 @@ export async function answerAssistant(input: { question: string; premiseId?: str
       const hint = requestCategoryForQuestion(input.question);
       const categories = await db.select({ code: s.requestCategories.code, name: s.requestCategories.name }).from(s.requestCategories);
       const category = hint && categories.find((item) => item.code === hint.code);
-      const text = category ? `Для такого обращения подходит категория заявки «${category.name}». В личном кабинете её можно выбрать при подаче заявки.` : "По формулировке вопроса не удалось надёжно определить категорию. Передайте вопрос сотруднику RANG.";
+      const text = category ? `Для такого обращения подходит категория заявки «${category.name}». В личном кабинете её можно выбрать при подаче заявки.` : "По формулировке вопроса не удалось надёжно определить категорию. Передайте вопрос сотруднику РАНГ.";
       await logAssistant({ userId: user?.id, source, intent, sources: [ASSISTANT_KNOWLEDGE_SOURCES.requestCategories], resultCount: category ? 1 : 0 });
       return { text, links: user?.kind === "tenant" ? [{ label: "Подать заявку", href: "/account/#new-request" }] : [], sources: [ASSISTANT_KNOWLEDGE_SOURCES.requestCategories], transferRecommended: !category };
     }
@@ -132,7 +132,7 @@ export async function answerAssistant(input: { question: string; premiseId?: str
       const key = intent === "power_380" ? "power-380" : "power-increase";
       const characteristic = (await db.select({ valueText: s.premiseCharacteristics.valueText, valueNumber: s.premiseCharacteristics.valueNumber, unit: s.premiseCharacteristics.unit }).from(s.premiseCharacteristics).where(and(eq(s.premiseCharacteristics.premiseId, explicit.id), eq(s.premiseCharacteristics.key, key))).limit(1))[0];
       const confirmed = characteristic ? valueText(characteristic) : "";
-      const text = confirmed ? `${explicit.title}: ${intent === "power_380" ? "380 В" : "возможность увеличения мощности"} — ${confirmed}.` : `Для помещения «${explicit.title}» подтверждённое значение этой характеристики отсутствует. Передайте вопрос сотруднику RANG.`;
+      const text = confirmed ? `${explicit.title}: ${intent === "power_380" ? "380 В" : "возможность увеличения мощности"} — ${confirmed}.` : `Для помещения «${explicit.title}» подтверждённое значение этой характеристики отсутствует. Передайте вопрос сотруднику РАНГ.`;
       await logAssistant({ userId: user?.id, source, intent, sources: [ASSISTANT_KNOWLEDGE_SOURCES.characteristics], resultCount: confirmed ? 1 : 0 });
       return { text, links: [{ label: explicit.title, href: `/properties/${explicit.slug}` }], sources: [ASSISTANT_KNOWLEDGE_SOURCES.characteristics], transferRecommended: !confirmed, premiseId: explicit.id, objectId: explicit.objectId };
     }
@@ -154,14 +154,14 @@ export async function answerAssistant(input: { question: string; premiseId?: str
       const fallback = typeMatches.length ? typeMatches : available.filter((row) => !electricalIds || electricalIds.has(row.id));
       const selected = (exact.length ? exact : [...fallback].sort((a, b) => distance(a) - distance(b))).slice(0, 5);
       const criteria = [requestedType, area.min ? `от ${area.min} м²` : "", area.max ? `до ${area.max} м²` : "", wants380 ? "380 В" : "", wants220 ? "220 В" : ""].filter(Boolean).join(", ");
-      const text = selected.length ? `${exact.length ? "Найдены подходящие помещения" : "Точного совпадения нет; ближайшие реальные варианты с отличием по типу или площади"}${criteria ? ` (${criteria})` : ""}: ${selected.map((row) => `${row.title} — ${row.type}, ${Number(row.area).toLocaleString("ru-RU")} м²`).join("; ")}.` : "По заданным подтверждённым критериям свободных помещений не найдено. Я не буду предлагать отсутствующие варианты; вопрос можно передать сотруднику RANG.";
+      const text = selected.length ? `${exact.length ? "Найдены подходящие помещения" : "Точного совпадения нет; ближайшие реальные варианты с отличием по типу или площади"}${criteria ? ` (${criteria})` : ""}: ${selected.map((row) => `${row.title} — ${row.type}, ${Number(row.area).toLocaleString("ru-RU")} м²`).join("; ")}.` : "По заданным подтверждённым критериям свободных помещений не найдено. Я не буду предлагать отсутствующие варианты; вопрос можно передать сотруднику РАНГ.";
       await logAssistant({ userId: user?.id, source, intent, sources: [ASSISTANT_KNOWLEDGE_SOURCES.catalog, ...(wants380 || wants220 ? [ASSISTANT_KNOWLEDGE_SOURCES.characteristics] : [])], resultCount: selected.length });
       const first = selected[0];
       return { text, links: selected.map((row) => ({ label: `${row.title} · ${Number(row.area).toLocaleString("ru-RU")} м²`, href: `/properties/${row.slug}` })), sources: [ASSISTANT_KNOWLEDGE_SOURCES.catalog], transferRecommended: !exact.length, ...(first ? { premiseId: first.id, objectId: first.objectId } : {}) };
     }
 
     const faq = APPROVED_FAQ.find((item) => normalizeAssistantText(input.question).includes(normalizeAssistantText(item.question)));
-    const text = faq?.answer || "В подтверждённой базе знаний нет достоверного ответа на этот вопрос. Я могу передать его сотруднику RANG.";
+    const text = faq?.answer || "В подтверждённой базе знаний нет достоверного ответа на этот вопрос. Я могу передать его сотруднику РАНГ.";
     await logAssistant({ userId: user?.id, source, intent, sources: faq ? ["Утверждённый FAQ RANG"] : [], resultCount: faq ? 1 : 0 });
     return { text, links: [], sources: faq ? ["Утверждённый FAQ RANG"] : [], transferRecommended: !faq, ...(explicit ? { premiseId: explicit.id, objectId: explicit.objectId } : {}) };
   } catch (error) {

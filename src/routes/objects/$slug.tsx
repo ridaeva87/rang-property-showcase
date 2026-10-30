@@ -16,8 +16,8 @@ export const Route = createFileRoute("/objects/$slug")({
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { object } = loaderData;
-    const title = `${object.name}, ${object.address} — RANG`;
-    const description = object.description ?? `Объект компании RANG по адресу ${object.address}.`;
+    const title = `${object.name}, ${object.address} — РАНГ`;
+    const description = object.description ?? `Объект компании РАНГ по адресу ${object.address}.`;
     const canonical = `https://rangpro.ru/objects/${object.slug}`;
     return {
       meta: [

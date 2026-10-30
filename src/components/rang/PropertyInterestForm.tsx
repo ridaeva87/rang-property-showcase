@@ -50,7 +50,7 @@ export function PropertyInterestForm({
           <h2 className="mt-3 text-3xl font-semibold text-primary-foreground">
             Уточнить условия помещения
           </h2>
-          <p className="mt-4 text-primary-foreground/70">Оставьте контакты — сотрудник RANG свяжется с вами по выбранному помещению.</p>
+          <p className="mt-4 text-primary-foreground/70">Оставьте контакты — сотрудник РАНГ свяжется с вами по выбранному помещению.</p>
         </div>
         <form
           onSubmit={submit}

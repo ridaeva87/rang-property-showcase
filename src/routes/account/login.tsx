@@ -44,7 +44,7 @@ function LoginPage() {
           РАНГ
         </a>
         <h1 className="mt-8 text-2xl font-semibold">Личный кабинет</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{mode === "employee" ? "Вход для сотрудников RANG" : "Вход для действующих арендаторов"}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{mode === "employee" ? "Вход для сотрудников РАНГ" : "Вход для действующих арендаторов"}</p>
         <label className="mt-6 block text-sm font-medium">
           Электронная почта
           <input
@@ -77,7 +77,7 @@ function LoginPage() {
           {busy ? "Входим…" : "Войти"}
         </button>
         <p className="mt-5 text-center text-sm text-muted-foreground">
-          Нет доступа? Обратитесь к сотруднику RANG.
+          Нет доступа? Обратитесь к сотруднику РАНГ.
         </p>
       </form>
     </main>
