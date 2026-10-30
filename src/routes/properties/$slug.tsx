@@ -14,12 +14,15 @@ import { getPropertyObject } from "@/data/rang";
 import { useFavorites } from "@/hooks/use-favorites";
 import { loadCatalogProperty } from "@/lib/catalog.loaders";
 import { trackPublicAnalytics } from "@/lib/admin.functions";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/properties/$slug")({
   loader: async ({ params }) => {
     const property = await loadCatalogProperty(params.slug);
     if (!property) throw notFound();
-    return property;
+    const seo = await loadPageSeo({ data: { pageKey: `premise:${property.id}` } });
+    return { ...property, seo };
   },
   head: ({ loaderData: property }) => {
     if (!property) return {};
@@ -31,20 +34,8 @@ export const Route = createFileRoute("/properties/$slug")({
     const address = property.objectAddress ?? object?.address;
     const description =
       property.description ?? `${property.type}${address ? `, ${address}` : ""}.${statusLabel}`;
-    const canonical = `https://rangpro.ru/properties/${property.slug}`;
     const mainPhoto = property.photos[0];
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "website" },
-        { property: "og:url", content: canonical },
-        ...(mainPhoto ? [{ property: "og:image", content: mainPhoto.src }] : []),
-      ],
-      links: [{ rel: "canonical", href: canonical }],
-    };
+    return buildSeoHead({ title, description, path: `/properties/${property.slug}`, ...(mainPhoto ? { image: mainPhoto.src } : {}) }, property.seo);
   },
   component: PropertyPage,
 });

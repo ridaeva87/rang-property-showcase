@@ -12,6 +12,8 @@ import {
 } from "@/data/rang";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { loadCatalogProperties } from "@/lib/catalog.loaders";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
 type RentPropertyType = (typeof PROPERTY_TYPES)[number];
 type CatalogSearch = { type?: RentPropertyType };
@@ -23,31 +25,14 @@ export const Route = createFileRoute("/properties/")({
       ? { type: type as RentPropertyType }
       : {};
   },
-  loader: () => loadCatalogProperties({ offerType: "rent" }),
-  head: () => ({
-    meta: [
-      { title: "Каталог коммерческих помещений — Ранг" },
-      {
-        name: "description",
-        content:
-          "Свободные и скоро освобождающиеся офисы, склады и комбинированные помещения компании «Ранг» в Казани.",
-      },
-      { property: "og:title", content: "Каталог коммерческих помещений — Ранг" },
-      {
-        property: "og:description",
-        content:
-          "Помещения компании «Ранг» с фильтрами по площади, стоимости, объекту и характеристикам.",
-      },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "https://rangpro.ru/properties" }],
-  }),
+  loader: async () => ({ properties: await loadCatalogProperties({ offerType: "rent" }), seo: await loadPageSeo({ data: { pageKey: "static:properties" } }) }),
+  head: ({ loaderData }) => buildSeoHead({ title: "Каталог коммерческих помещений — РАНГ", description: "Свободные и скоро освобождающиеся офисы, склады и комбинированные помещения компании «РАНГ» в Казани.", path: "/properties" }, loaderData?.seo),
   component: PropertiesPage,
 });
 
 function PropertiesPage() {
   const search = Route.useSearch();
-  const catalogProperties = Route.useLoaderData();
+  const { properties: catalogProperties } = Route.useLoaderData();
   const [filters, setFilters] = useState<Filters>({
     ...INITIAL_PROPERTY_FILTERS,
     type: search.type ?? "",

@@ -3,6 +3,8 @@ import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { ObjectCard, ObjectsMapPlaceholder, PageIntro } from "@/components/rang/CompanySections";
 import { loadCatalogObjects, loadCatalogProperties } from "@/lib/catalog.loaders";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
 const title = "Объекты компании РАНГ — Казань";
 const description =
@@ -10,22 +12,14 @@ const description =
 
 export const Route = createFileRoute("/objects/")({
   loader: async () => {
-    const [objects, properties] = await Promise.all([
+    const [objects, properties, seo] = await Promise.all([
       loadCatalogObjects(),
       loadCatalogProperties({ offerType: "rent" }),
+      loadPageSeo({ data: { pageKey: "static:objects" } }),
     ]);
-    return { objects, properties };
+    return { objects, properties, seo };
   },
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "https://rangpro.ru/objects" }],
-  }),
+  head: ({ loaderData }) => buildSeoHead({ title, description, path: "/objects" }, loaderData?.seo),
   component: ObjectsPage,
 });
 

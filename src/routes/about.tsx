@@ -2,21 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { HistoricalLicense, PageIntro } from "@/components/rang/CompanySections";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
 const title = "История компании РАНГ — с 1993 года";
 const description = "История компании РАНГ, архивные материалы и историческая лицензия 1994 года.";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "https://rangpro.ru/about" }],
-  }),
+  loader: () => loadPageSeo({ data: { pageKey: "static:about" } }),
+  head: ({ loaderData }) => buildSeoHead({ title, description, path: "/about" }, loaderData),
   component: AboutPage,
 });
 

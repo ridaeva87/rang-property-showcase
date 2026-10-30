@@ -4,22 +4,16 @@ import { Footer } from "@/components/rang/Footer";
 import { Header } from "@/components/rang/Header";
 import { PageIntro, RequestIntegrationNotice } from "@/components/rang/CompanySections";
 import { PROPERTY_TYPES } from "@/data/rang";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
-const title = "Аренда коммерческих помещений — Ранг";
+const title = "Аренда коммерческих помещений — РАНГ";
 const description =
-  "Долгосрочная и краткосрочная аренда офисов, складов и других коммерческих помещений компании «Ранг» в Казани.";
+  "Долгосрочная и краткосрочная аренда офисов, складов и других коммерческих помещений компании «РАНГ» в Казани.";
 
 export const Route = createFileRoute("/rent")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "https://rangpro.ru/rent" }],
-  }),
+  loader: () => loadPageSeo({ data: { pageKey: "static:rent" } }),
+  head: ({ loaderData }) => buildSeoHead({ title, description, path: "/rent" }, loaderData),
   component: RentPage,
 });
 

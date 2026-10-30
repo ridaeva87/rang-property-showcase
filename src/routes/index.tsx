@@ -24,30 +24,24 @@ import { Footer } from "@/components/rang/Footer";
 import { AiAssistant } from "@/components/rang/AiAssistant";
 import { loadCatalogObjects, loadCatalogProperties } from "@/lib/catalog.loaders";
 import { loadPublicFaq } from "@/lib/faq.functions";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
-const title = "Ранг — аренда офисов и складов в Казани с 1993 года";
+const title = "РАНГ — аренда офисов и складов в Казани с 1993 года";
 const description =
   "Коммерческие помещения в Казани: офисы, склады и помещения «офис + склад» в аренду и на продажу. Свободные помещения, объекты компании и услуги для арендаторов.";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [properties, objects, faq] = await Promise.all([
+    const [properties, objects, faq, seo] = await Promise.all([
       loadCatalogProperties({ offerType: "rent" }),
       loadCatalogObjects(),
       loadPublicFaq(),
+      loadPageSeo({ data: { pageKey: "static:home" } }),
     ]);
-    return { properties, objects, faq };
+    return { properties, objects, faq, seo };
   },
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: ({ loaderData }) => buildSeoHead({ title, description, path: "/" }, loaderData?.seo),
   component: Index,
 });
 

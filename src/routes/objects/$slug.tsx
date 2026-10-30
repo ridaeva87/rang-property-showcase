@@ -5,32 +5,25 @@ import { Header } from "@/components/rang/Header";
 import { PropertyCard } from "@/components/rang/PropertyCard";
 import { ResponsiveImage } from "@/components/rang/ResponsiveImage";
 import { loadCatalogObject, loadCatalogProperties } from "@/lib/catalog.loaders";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/objects/$slug")({
   loader: async ({ params }) => {
     const object = await loadCatalogObject(params.slug);
     if (!object) throw notFound();
-    const properties = await loadCatalogProperties({ offerType: "rent", objectId: object.id });
-    return { object, properties };
+    const [properties, seo] = await Promise.all([
+      loadCatalogProperties({ offerType: "rent", objectId: object.id }),
+      loadPageSeo({ data: { pageKey: `object:${object.id}` } }),
+    ]);
+    return { object, properties, seo };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { object } = loaderData;
     const title = `${object.name}, ${object.address} — РАНГ`;
     const description = object.description ?? `Объект компании РАНГ по адресу ${object.address}.`;
-    const canonical = `https://rangpro.ru/objects/${object.slug}`;
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "website" },
-        { property: "og:url", content: canonical },
-        ...(object.photos[0] ? [{ property: "og:image", content: object.photos[0].src }] : []),
-      ],
-      links: [{ rel: "canonical", href: canonical }],
-    };
+    return buildSeoHead({ title, description, path: `/objects/${object.slug}`, ...(object.photos[0] ? { image: object.photos[0].src } : {}) }, loaderData.seo);
   },
   component: ObjectPage,
 });

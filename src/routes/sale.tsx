@@ -5,27 +5,20 @@ import { Header } from "@/components/rang/Header";
 import { PropertyCard } from "@/components/rang/PropertyCard";
 import { PageIntro, RequestIntegrationNotice } from "@/components/rang/CompanySections";
 import { loadCatalogProperties } from "@/lib/catalog.loaders";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
-const title = "Недвижимость на продажу — Ранг";
-const description = "Объекты недвижимости компании «Ранг», доступные для покупки в Казани.";
+const title = "Недвижимость на продажу — РАНГ";
+const description = "Объекты недвижимости компании «РАНГ», доступные для покупки в Казани.";
 
 export const Route = createFileRoute("/sale")({
-  loader: () => loadCatalogProperties({ offerType: "sale" }),
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "https://rangpro.ru/sale" }],
-  }),
+  loader: async () => ({ properties: await loadCatalogProperties({ offerType: "sale" }), seo: await loadPageSeo({ data: { pageKey: "static:sale" } }) }),
+  head: ({ loaderData }) => buildSeoHead({ title, description, path: "/sale" }, loaderData?.seo),
   component: SalePage,
 });
 
 function SalePage() {
-  const saleProperties = Route.useLoaderData();
+  const { properties: saleProperties } = Route.useLoaderData();
 
   return (
     <div className="min-h-screen bg-background">

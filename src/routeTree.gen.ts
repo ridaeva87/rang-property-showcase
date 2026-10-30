@@ -17,6 +17,7 @@ import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RentRouteImport } from './routes/rent'
 import { Route as SaleRouteImport } from './routes/sale'
 import { Route as ServicesRouteImport } from './routes/services'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AccountIndexRouteImport } from './routes/account/index'
 import { Route as AccountActivateRouteImport } from './routes/account/activate'
 import { Route as AccountChangePasswordRouteImport } from './routes/account/change-password'
@@ -27,6 +28,7 @@ import { Route as AccountUtilitiesRouteImport } from './routes/account/utilities
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdsRouteImport } from './routes/admin/ads'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin/announcements'
+import { Route as AdminAuditLogRouteImport } from './routes/admin/audit-log'
 import { Route as AdminDeliveryLogRouteImport } from './routes/admin/delivery-log'
 import { Route as AdminDocumentsRouteImport } from './routes/admin/documents'
 import { Route as AdminEmployeesRouteImport } from './routes/admin/employees'
@@ -36,6 +38,7 @@ import { Route as AdminMailingsRouteImport } from './routes/admin/mailings'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as AdminPremisesRouteImport } from './routes/admin/premises'
 import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
+import { Route as AdminSeoRouteImport } from './routes/admin/seo'
 import { Route as AdminServicesRouteImport } from './routes/admin/services'
 import { Route as AdminStatisticsRouteImport } from './routes/admin/statistics'
 import { Route as AdminSupportRouteImport } from './routes/admin/support'
@@ -93,6 +96,11 @@ const ServicesRoute = ServicesRouteImport.update({
   path: '/services',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountIndexRoute = AccountIndexRouteImport.update({
   id: '/account/',
   path: '/account/',
@@ -143,6 +151,11 @@ const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   path: '/admin/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAuditLogRoute = AdminAuditLogRouteImport.update({
+  id: '/admin/audit-log',
+  path: '/admin/audit-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDeliveryLogRoute = AdminDeliveryLogRouteImport.update({
   id: '/admin/delivery-log',
   path: '/admin/delivery-log',
@@ -186,6 +199,11 @@ const AdminPremisesRoute = AdminPremisesRouteImport.update({
 const AdminRequestsRoute = AdminRequestsRouteImport.update({
   id: '/admin/requests',
   path: '/admin/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSeoRoute = AdminSeoRouteImport.update({
+  id: '/admin/seo',
+  path: '/admin/seo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminServicesRoute = AdminServicesRouteImport.update({
@@ -278,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/account/activate': typeof AccountActivateRoute
   '/account/change-password': typeof AccountChangePasswordRoute
   '/account/forgot-password': typeof AccountForgotPasswordRoute
@@ -286,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
@@ -295,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/premises': typeof AdminPremisesRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/statistics': typeof AdminStatisticsRoute
   '/admin/support': typeof AdminSupportRoute
@@ -323,6 +344,7 @@ export interface FileRoutesByTo {
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/account/activate': typeof AccountActivateRoute
   '/account/change-password': typeof AccountChangePasswordRoute
   '/account/forgot-password': typeof AccountForgotPasswordRoute
@@ -331,6 +353,7 @@ export interface FileRoutesByTo {
   '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
@@ -340,6 +363,7 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/premises': typeof AdminPremisesRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/statistics': typeof AdminStatisticsRoute
   '/admin/support': typeof AdminSupportRoute
@@ -369,6 +393,7 @@ export interface FileRoutesById {
   '/rent': typeof RentRoute
   '/sale': typeof SaleRoute
   '/services': typeof ServicesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/account/activate': typeof AccountActivateRoute
   '/account/change-password': typeof AccountChangePasswordRoute
   '/account/forgot-password': typeof AccountForgotPasswordRoute
@@ -377,6 +402,7 @@ export interface FileRoutesById {
   '/account/utilities': typeof AccountUtilitiesRoute
   '/admin/ads': typeof AdminAdsRouteWithChildren
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/delivery-log': typeof AdminDeliveryLogRoute
   '/admin/documents': typeof AdminDocumentsRouteWithChildren
   '/admin/employees': typeof AdminEmployeesRoute
@@ -386,6 +412,7 @@ export interface FileRoutesById {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/premises': typeof AdminPremisesRouteWithChildren
   '/admin/requests': typeof AdminRequestsRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/statistics': typeof AdminStatisticsRoute
   '/admin/support': typeof AdminSupportRoute
@@ -416,6 +443,7 @@ export interface FileRouteTypes {
     | '/rent'
     | '/sale'
     | '/services'
+    | '/sitemap.xml'
     | '/account/activate'
     | '/account/change-password'
     | '/account/forgot-password'
@@ -424,6 +452,7 @@ export interface FileRouteTypes {
     | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
+    | '/admin/audit-log'
     | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
@@ -433,6 +462,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/premises'
     | '/admin/requests'
+    | '/admin/seo'
     | '/admin/services'
     | '/admin/statistics'
     | '/admin/support'
@@ -461,6 +491,7 @@ export interface FileRouteTypes {
     | '/rent'
     | '/sale'
     | '/services'
+    | '/sitemap.xml'
     | '/account/activate'
     | '/account/change-password'
     | '/account/forgot-password'
@@ -469,6 +500,7 @@ export interface FileRouteTypes {
     | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
+    | '/admin/audit-log'
     | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
@@ -478,6 +510,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/premises'
     | '/admin/requests'
+    | '/admin/seo'
     | '/admin/services'
     | '/admin/statistics'
     | '/admin/support'
@@ -506,6 +539,7 @@ export interface FileRouteTypes {
     | '/rent'
     | '/sale'
     | '/services'
+    | '/sitemap.xml'
     | '/account/activate'
     | '/account/change-password'
     | '/account/forgot-password'
@@ -514,6 +548,7 @@ export interface FileRouteTypes {
     | '/account/utilities'
     | '/admin/ads'
     | '/admin/announcements'
+    | '/admin/audit-log'
     | '/admin/delivery-log'
     | '/admin/documents'
     | '/admin/employees'
@@ -523,6 +558,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/premises'
     | '/admin/requests'
+    | '/admin/seo'
     | '/admin/services'
     | '/admin/statistics'
     | '/admin/support'
@@ -552,6 +588,7 @@ export interface RootRouteChildren {
   RentRoute: typeof RentRoute
   SaleRoute: typeof SaleRoute
   ServicesRoute: typeof ServicesRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AccountActivateRoute: typeof AccountActivateRoute
   AccountChangePasswordRoute: typeof AccountChangePasswordRoute
   AccountForgotPasswordRoute: typeof AccountForgotPasswordRoute
@@ -560,6 +597,7 @@ export interface RootRouteChildren {
   AccountUtilitiesRoute: typeof AccountUtilitiesRoute
   AdminAdsRoute: typeof AdminAdsRouteWithChildren
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminAuditLogRoute: typeof AdminAuditLogRoute
   AdminDeliveryLogRoute: typeof AdminDeliveryLogRoute
   AdminDocumentsRoute: typeof AdminDocumentsRouteWithChildren
   AdminEmployeesRoute: typeof AdminEmployeesRoute
@@ -569,6 +607,7 @@ export interface RootRouteChildren {
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPremisesRoute: typeof AdminPremisesRouteWithChildren
   AdminRequestsRoute: typeof AdminRequestsRoute
+  AdminSeoRoute: typeof AdminSeoRoute
   AdminServicesRoute: typeof AdminServicesRoute
   AdminStatisticsRoute: typeof AdminStatisticsRoute
   AdminSupportRoute: typeof AdminSupportRoute
@@ -644,6 +683,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account/': {
       id: '/account/'
       path: '/account'
@@ -714,6 +760,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/audit-log': {
+      id: '/admin/audit-log'
+      path: '/admin/audit-log'
+      fullPath: '/admin/audit-log'
+      preLoaderRoute: typeof AdminAuditLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/delivery-log': {
       id: '/admin/delivery-log'
       path: '/admin/delivery-log'
@@ -775,6 +828,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/requests'
       fullPath: '/admin/requests'
       preLoaderRoute: typeof AdminRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/seo': {
+      id: '/admin/seo'
+      path: '/admin/seo'
+      fullPath: '/admin/seo'
+      preLoaderRoute: typeof AdminSeoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/services': {
@@ -937,6 +997,7 @@ const rootRouteChildren: RootRouteChildren = {
   RentRoute: RentRoute,
   SaleRoute: SaleRoute,
   ServicesRoute: ServicesRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   AccountActivateRoute: AccountActivateRoute,
   AccountChangePasswordRoute: AccountChangePasswordRoute,
   AccountForgotPasswordRoute: AccountForgotPasswordRoute,
@@ -945,6 +1006,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountUtilitiesRoute: AccountUtilitiesRoute,
   AdminAdsRoute: AdminAdsRouteWithChildren,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminAuditLogRoute: AdminAuditLogRoute,
   AdminDeliveryLogRoute: AdminDeliveryLogRoute,
   AdminDocumentsRoute: AdminDocumentsRouteWithChildren,
   AdminEmployeesRoute: AdminEmployeesRoute,
@@ -954,6 +1016,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPremisesRoute: AdminPremisesRouteWithChildren,
   AdminRequestsRoute: AdminRequestsRoute,
+  AdminSeoRoute: AdminSeoRoute,
   AdminServicesRoute: AdminServicesRoute,
   AdminStatisticsRoute: AdminStatisticsRoute,
   AdminSupportRoute: AdminSupportRoute,

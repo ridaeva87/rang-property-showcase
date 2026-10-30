@@ -584,6 +584,21 @@ export const faqItems = pgTable(
   ],
 );
 
+export const seoPageSettings = pgTable(
+  "seo_page_settings",
+  {
+    id: text("id").primaryKey(),
+    pageKey: text("page_key").notNull(),
+    title: text("title"),
+    description: text("description"),
+    ogTitle: text("og_title"),
+    ogDescription: text("og_description"),
+    ogImageUrl: text("og_image_url"),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex("seo_page_settings_page_key_uq").on(table.pageKey)],
+);
+
 export const requests = pgTable(
   "requests",
   {

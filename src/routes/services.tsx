@@ -6,22 +6,16 @@ import { Header } from "@/components/rang/Header";
 import { PageIntro, RequestIntegrationNotice } from "@/components/rang/CompanySections";
 import { ADDITIONAL_SERVICES } from "@/data/rang";
 import { trackPublicAnalytics } from "@/lib/admin.functions";
+import { loadPageSeo } from "@/lib/seo.functions";
+import { buildSeoHead } from "@/lib/seo";
 
-const title = "Дополнительные услуги — Ранг";
+const title = "Дополнительные услуги — РАНГ";
 const description =
   "Структура дополнительных работ для помещений РАНГ. Перечень, стоимость и условия уточняются компанией.";
 
 export const Route = createFileRoute("/services")({
-  head: () => ({
-    meta: [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "canonical", href: "https://rangpro.ru/services" }],
-  }),
+  loader: () => loadPageSeo({ data: { pageKey: "static:services" } }),
+  head: ({ loaderData }) => buildSeoHead({ title, description, path: "/services" }, loaderData),
   component: ServicesPage,
 });
 
