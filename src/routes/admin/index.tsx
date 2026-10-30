@@ -36,7 +36,7 @@ function Page(){
       ["Закрытые заявки",requestDashboard.closed],
     ] as const:[]),
   ];
-  return <AdminShell title="Административная система" sections={nav.sections}>
+  return <AdminShell title="Главная админки" sections={nav.sections}>
     {!!metrics.length&&<section>
       <h2 className="font-display text-2xl font-bold">Основные показатели</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{metrics.map(([label,value])=><article key={label} className="border bg-background p-5"><p className="text-sm text-muted-foreground">{label}</p><strong className="mt-2 block text-3xl">{value}</strong></article>)}</div>

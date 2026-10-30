@@ -45,7 +45,7 @@ function AdminPage() {
     if (result.emailSent === false) setMessage("Арендатор сохранён. Отправка email не настроена."); else location.reload();
   }
   return (
-    <AdminShell title="Управление арендаторами" sections={data.nav}>
+    <AdminShell title="Арендаторы" sections={data.nav}>
       <div className="mb-4 flex justify-end">
         <button
           onClick={async () => {

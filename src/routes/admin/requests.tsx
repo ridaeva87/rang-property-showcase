@@ -48,7 +48,7 @@ function RequestsAdminPage() {
     location.reload();
   }
   return (
-    <AdminShell title="Заявки арендаторов" sections={nav.sections}>
+    <AdminShell title="Заявки" sections={nav.sections}>
       <a href="/admin/tenants" className="mb-4 inline-block border px-3 py-2 text-sm">
         Арендаторы
       </a>
