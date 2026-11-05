@@ -5,7 +5,7 @@ import * as s from "@/server/db/schema";
 import { requirePermission } from "@/server/portal/portal.server";
 import { assertMailingCanSend, deliverMailingEmails, finalMailingStatus, mailingAttemptLog } from "./mailing-delivery";
 import { aggregateMailingDeliveryResults } from "@/components/portal/mailing-results";
-import { assertServiceCommunicationBasis } from "@/lib/service-communications";
+import { assertServiceCommunicationBasis, effectiveServiceCommunicationCategory } from "@/lib/service-communications";
 
 export type Audience = { scope: "all" | "tenant" | "group" | "object" | "type"; id?: string | undefined };
 export type Channel = "in_app" | "email" | "telegram" | "sms";
@@ -108,6 +108,7 @@ export async function saveCommunication(input: {
 }) {
   const actor = await requirePermission(permissionFor(input.kind));
   const db = getDatabase(), id = input.id || randomUUID(), now = new Date();
+  const effectiveCategory = effectiveServiceCommunicationCategory({ kind: input.kind, category: input.category });
   const existing = input.id ? (await db.select().from(s.announcements).where(eq(s.announcements.id, input.id)).limit(1))[0] : null;
   if (input.send && input.kind === "mailing") assertMailingCanSend(existing?.status);
   else if(input.send&&existing?.status==="sent")throw new Error("Это уведомление уже отправлено");
@@ -117,7 +118,7 @@ export async function saveCommunication(input: {
     throw new Error("Получателя персонального уведомления из листа ожидания изменять нельзя");
   const effectiveAudience = waitlistRecipientId ? { scope: "tenant" as const, id: waitlistRecipientId } : input.audience;
   if (input.send) assertServiceCommunicationBasis({
-    category: input.category,
+    category: effectiveCategory,
     audience: effectiveAudience,
     systemLinkedRecipient: Boolean(waitlistRecipientId),
   });
@@ -126,7 +127,7 @@ export async function saveCommunication(input: {
   const storedAudience = { scope: effectiveAudience.scope, id: effectiveAudience.id || null, ...(existingAudience?.["waitlistId"] ? { waitlistId: existingAudience["waitlistId"] } : {}) };
   const recipients = [...new Map((await resolveRecipients(effectiveAudience)).map((recipient) => [recipient.id, recipient])).values()];
   if (input.send && recipients.length === 0) throw new Error("Для выбранного сегмента нет доступных получателей");
-  const values = { title: input.title, subject: input.subject || input.title, body: input.body, category: input.category || null,
+  const values = { title: input.title, subject: input.subject || input.title, body: input.body, category: effectiveCategory || null,
     audience: storedAudience, channels: input.channels, status, startsAt: input.startsAt ? new Date(input.startsAt) : null,
     endsAt: input.endsAt ? new Date(input.endsAt) : null, publishedAt: input.kind === "announcement" && input.send ? now : null,
     sentAt: input.send && !tracksMailingEmailResult ? now : null, updatedAt: now };

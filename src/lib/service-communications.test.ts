@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { assertServiceCommunicationBasis } from "./service-communications";
+import { assertServiceCommunicationBasis, effectiveServiceCommunicationCategory } from "./service-communications";
 
 describe("service communication basis", () => {
+  it("uses the existing default service basis when the mailing form omits the selector", () => {
+    expect(effectiveServiceCommunicationCategory({ kind: "mailing" })).toBe("Технические работы");
+    expect(effectiveServiceCommunicationCategory({ kind: "announcement" })).toBeUndefined();
+  });
+
   it("allows a mass operational message with an approved existing category", () => {
     expect(() => assertServiceCommunicationBasis({
       category: "Плановые работы",

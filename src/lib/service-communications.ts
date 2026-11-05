@@ -8,6 +8,14 @@ export const serviceCommunicationCategories = [
   "Движение по территории",
 ] as const;
 
+export const defaultServiceCommunicationCategory = "Технические работы";
+
+export function effectiveServiceCommunicationCategory(input: { kind: string; category?: string | undefined }) {
+  return input.kind === "mailing" && !input.category
+    ? defaultServiceCommunicationCategory
+    : input.category;
+}
+
 type ServiceCommunicationBasis = {
   category?: string | undefined;
   audience: { scope: "all" | "tenant" | "group" | "object" | "type" };
