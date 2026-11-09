@@ -13,6 +13,7 @@ function recipient(overrides: Partial<RequestNotificationRecipient> = {}): Reque
     userId: "user-1",
     email: "employee@example.test",
     isActive: true,
+    receiveRequestNotifications: true,
     roles: ["rental_manager"],
     permissions: ["requests.manage"],
     ...overrides,
@@ -23,9 +24,27 @@ describe("request notification access", () => {
   it("allows only active employees with permission and direction access", () => {
     expect(canReceiveRequestNotification(recipient(), "management")).toBe(true);
     expect(canReceiveRequestNotification(recipient({ isActive: false }), "management")).toBe(false);
+    expect(canReceiveRequestNotification(recipient({ receiveRequestNotifications: false }), "management")).toBe(false);
     expect(canReceiveRequestNotification(recipient({ permissions: [] }), "management")).toBe(false);
     expect(canReceiveRequestNotification(recipient(), "accounting")).toBe(false);
     expect(canReceiveRequestNotification(recipient({ roles: ["admin"], permissions: [] }), "legal")).toBe(true);
+  });
+
+  it("applies notification preference and direction access for rental and technical requests", () => {
+    const admin = recipient({ roles: ["admin"], permissions: [] });
+    const rentalManager = recipient({ roles: ["rental_manager"], permissions: ["requests.manage"] });
+    const technician = recipient({ roles: ["technician"], permissions: ["requests.manage"] });
+    const testAdmin = recipient({ roles: ["admin"], permissions: [], receiveRequestNotifications: false });
+
+    expect(canReceiveRequestNotification(admin, "management")).toBe(true);
+    expect(canReceiveRequestNotification(rentalManager, "management")).toBe(true);
+    expect(canReceiveRequestNotification(technician, "management")).toBe(false);
+    expect(canReceiveRequestNotification(testAdmin, "management")).toBe(false);
+
+    expect(canReceiveRequestNotification(admin, "technical")).toBe(true);
+    expect(canReceiveRequestNotification(rentalManager, "technical")).toBe(false);
+    expect(canReceiveRequestNotification(technician, "technical")).toBe(true);
+    expect(canReceiveRequestNotification(testAdmin, "technical")).toBe(false);
   });
 });
 

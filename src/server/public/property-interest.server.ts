@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { currentUser } from "@/server/portal/portal.server";
-import { createRequestFromIntake } from "@/server/requests/intake.server";
+import { createUnassignedPublicRequestFromIntake } from "@/server/requests/intake.server";
 import { requirePersonalDataConsent } from "@/lib/consents";
 
 export type PublicInterestType = "viewing" | "application" | "release-notification" | "details" | "question";
@@ -42,15 +42,7 @@ export async function submitPropertyInterest(input: {
   const personalDataConsent = requirePersonalDataConsent(input.personalDataConsent, `public_form:${descriptor.source}`);
   const user = await currentUser();
   const organization = user?.kind === "tenant" ? (await db.select({ id: s.organizationUsers.organizationId }).from(s.organizationUsers).where(eq(s.organizationUsers.userId, user.id)).limit(1))[0] : null;
-  const assignee = (await db.select({ id: s.employees.id })
-    .from(s.employees)
-    .innerJoin(s.users, eq(s.employees.userId, s.users.id))
-    .innerJoin(s.userRoles, eq(s.userRoles.userId, s.users.id))
-    .innerJoin(s.roles, eq(s.userRoles.roleId, s.roles.id))
-    .where(and(eq(s.roles.code, "rental_manager"), eq(s.users.isActive, true)))
-    .orderBy(s.employees.createdAt)
-    .limit(1))[0];
-  const request = await createRequestFromIntake({
+  const request = await createUnassignedPublicRequestFromIntake({
     idempotencyKey: input.idempotencyKey,
     idempotencyScope: user
       ? `user:${user.id}:property:${premise.id}:${input.type}`
@@ -66,7 +58,6 @@ export async function submitPropertyInterest(input: {
     organizationId: organization?.id || null,
     createdByUserId: user?.kind === "tenant" ? user.id : null,
     actorUserId: user?.id || null,
-    assigneeEmployeeId: assignee?.id || null,
     personalDataConsent,
   });
   if (request.created) await db.transaction(async (tx) => {
@@ -89,7 +80,7 @@ export async function submitPropertyInterest(input: {
       after: { source: descriptor.source, cta: descriptor.cta, premiseId: premise.id },
     });
   });
-  return { ok: true, id: request.id, assigned: Boolean(assignee) };
+  return { ok: true, id: request.id, assigned: false };
 }
 
 const PUBLIC_REQUEST_SOURCES = {
@@ -112,16 +103,10 @@ export async function submitPublicRequest(input: {
   const db = getDatabase();
   const service = input.serviceId ? (await db.select({ id: s.additionalServices.id, title: s.additionalServices.title }).from(s.additionalServices).where(and(eq(s.additionalServices.id, input.serviceId), eq(s.additionalServices.publicationStatus, "published"))).limit(1))[0] : null;
   if (input.serviceId && !service) throw new Error("Услуга недоступна");
-  const assignee = (await db.select({ id: s.employees.id }).from(s.employees)
-    .innerJoin(s.users, eq(s.employees.userId, s.users.id))
-    .innerJoin(s.userRoles, eq(s.userRoles.userId, s.users.id))
-    .innerJoin(s.roles, eq(s.userRoles.roleId, s.roles.id))
-    .where(and(eq(s.roles.code, "rental_manager"), eq(s.users.isActive, true)))
-    .orderBy(s.employees.createdAt).limit(1))[0];
   const source = PUBLIC_REQUEST_SOURCES[input.source];
   const personalDataConsent = requirePersonalDataConsent(input.personalDataConsent, `public_form:${source}`);
   const interest = service?.title || input.subject;
-  const request = await createRequestFromIntake({
+  const request = await createUnassignedPublicRequestFromIntake({
     idempotencyKey: input.idempotencyKey,
     idempotencyScope: `public:${input.phone.trim()}:${input.email?.trim().toLowerCase() || "-"}:${input.source}:${service?.id || "general"}`,
     source,
@@ -132,7 +117,6 @@ export async function submitPublicRequest(input: {
     contactPhone: input.phone,
     contactEmail: input.email || null,
     serviceId: service?.id || null,
-    assigneeEmployeeId: assignee?.id || null,
     personalDataConsent,
   });
   if (request.created) await db.insert(s.analyticsEvents).values({

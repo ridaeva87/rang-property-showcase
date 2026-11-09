@@ -42,6 +42,18 @@ export type RequestIntakeInput = {
   };
 };
 
+export function unassignedPublicRequestInput(
+  input: Omit<RequestIntakeInput, "assigneeEmployeeId">,
+): RequestIntakeInput {
+  return { ...input, assigneeEmployeeId: null };
+}
+
+export async function createUnassignedPublicRequestFromIntake(
+  input: Omit<RequestIntakeInput, "assigneeEmployeeId">,
+) {
+  return createRequestFromIntake(unassignedPublicRequestInput(input));
+}
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function requestIdempotencyDigest(scope: string, key: string) {

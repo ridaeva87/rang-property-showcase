@@ -15,6 +15,7 @@ export type RequestNotificationRecipient = {
   userId: string;
   email: string | null;
   isActive: boolean;
+  receiveRequestNotifications: boolean;
   roles: string[];
   permissions: string[];
 };
@@ -23,7 +24,7 @@ export function canReceiveRequestNotification(
   recipient: RequestNotificationRecipient,
   directionCode: string,
 ) {
-  if (!recipient.isActive || !recipient.email?.trim()) return false;
+  if (!recipient.isActive || !recipient.receiveRequestNotifications || !recipient.email?.trim()) return false;
   if (!hasPermission(recipient.roles, recipient.permissions, "requests.manage")) return false;
   const scope = requestDirectionScope(recipient.roles);
   return scope === null || scope.includes(directionCode);
@@ -61,6 +62,7 @@ async function eligibleRecipients(input: {
       userId: schema.users.id,
       email: schema.users.email,
       isActive: schema.users.isActive,
+      receiveRequestNotifications: schema.employees.receiveRequestNotifications,
     })
     .from(schema.employees)
     .innerJoin(schema.users, eq(schema.employees.userId, schema.users.id))

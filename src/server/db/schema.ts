@@ -417,6 +417,7 @@ export const employees = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
     jobTitle: text("job_title"),
+    receiveRequestNotifications: boolean("receive_request_notifications").default(true).notNull(),
     ...timestamps,
   },
   (table) => [uniqueIndex("employees_user_uq").on(table.userId)],

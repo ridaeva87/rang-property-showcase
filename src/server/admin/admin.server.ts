@@ -34,14 +34,14 @@ export async function adminNavigation() {
 export async function employeesAdmin() {
   await requirePermission("employees.manage");
   const db = getDatabase();
-  const users = await db.select({ id:s.users.id,name:s.users.displayName,email:s.users.email,active:s.users.isActive,jobTitle:s.employees.jobTitle })
+  const users = await db.select({ id:s.users.id,name:s.users.displayName,email:s.users.email,active:s.users.isActive,jobTitle:s.employees.jobTitle,receiveRequestNotifications:s.employees.receiveRequestNotifications })
     .from(s.users).innerJoin(s.employees,eq(s.employees.userId,s.users.id)).orderBy(s.users.displayName);
   const links = await db.select({ userId:s.userRoles.userId,role:s.roles.code }).from(s.userRoles).innerJoin(s.roles,eq(s.userRoles.roleId,s.roles.id));
   const roles = await db.select({ id:s.roles.id,code:s.roles.code,name:s.roles.name }).from(s.roles).where(sql`${s.roles.code}<>'tenant'`).orderBy(s.roles.name);
   return { employees: users.map(u=>({...u,roles:links.filter(x=>x.userId===u.id).map(x=>x.role)})),roles };
 }
 
-export async function saveEmployeeAdmin(input:{id?:string|undefined;name:string;email:string;jobTitle?:string|undefined;active:boolean;roleCodes:string[]}) {
+export async function saveEmployeeAdmin(input:{id?:string|undefined;name:string;email:string;jobTitle?:string|undefined;active:boolean;receiveRequestNotifications:boolean;roleCodes:string[]}) {
   const actor=await requirePermission("employees.manage"); const db=getDatabase(); const id=input.id||randomUUID(); const email=input.email.trim().toLowerCase();
   const allowed=await db.select({id:s.roles.id,code:s.roles.code}).from(s.roles).where(inArray(s.roles.code,input.roleCodes));
   if(!allowed.length||allowed.some(r=>r.code==="tenant")) throw new Error("Выберите роль сотрудника");
@@ -51,10 +51,10 @@ export async function saveEmployeeAdmin(input:{id?:string|undefined;name:string;
   await db.transaction(async tx=>{
     if(input.id) await tx.update(s.users).set({displayName:input.name,email,isActive:input.active,updatedAt:new Date()}).where(and(eq(s.users.id,id),eq(s.users.kind,"employee")));
     else { await tx.insert(s.users).values({id,kind:"employee",displayName:input.name,email,isActive:input.active}); token=createOpaqueToken(); await tx.insert(s.userAccessTokens).values({id:randomUUID(),userId:id,purpose:"activation",tokenHash:hashToken(token),expiresAt:new Date(Date.now()+72*3600000)}); }
-    await tx.insert(s.employees).values({id:`employee-${id}`,userId:id,jobTitle:input.jobTitle||null}).onConflictDoUpdate({target:s.employees.userId,set:{jobTitle:input.jobTitle||null,updatedAt:new Date()}});
+    await tx.insert(s.employees).values({id:`employee-${id}`,userId:id,jobTitle:input.jobTitle||null,receiveRequestNotifications:input.receiveRequestNotifications}).onConflictDoUpdate({target:s.employees.userId,set:{jobTitle:input.jobTitle||null,receiveRequestNotifications:input.receiveRequestNotifications,updatedAt:new Date()}});
     await tx.delete(s.userRoles).where(eq(s.userRoles.userId,id)); await tx.insert(s.userRoles).values(allowed.map(r=>({userId:id,roleId:r.id})));
     if(!input.active) await tx.update(s.userSessions).set({revokedAt:new Date()}).where(and(eq(s.userSessions.userId,id),sql`${s.userSessions.revokedAt} is null`));
-    await tx.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:input.id?"employee.updated":"employee.created",entityType:"user",entityId:id,after:{roles:input.roleCodes,active:input.active}});
+    await tx.insert(s.auditLogs).values({id:randomUUID(),actorUserId:actor.id,action:input.id?"employee.updated":"employee.created",entityType:"user",entityId:id,after:{roles:input.roleCodes,active:input.active,receiveRequestNotifications:input.receiveRequestNotifications}});
   });
   let emailSent:boolean|undefined;
   if(token){const {sendAccessEmail}=await import("@/server/portal/email.server");try{emailSent=await sendAccessEmail({email,name:input.name,token,purpose:"activation"});}catch{emailSent=false;}}

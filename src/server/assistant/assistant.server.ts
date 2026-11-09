@@ -4,7 +4,7 @@ import { getDatabase } from "@/server/db/client";
 import * as s from "@/server/db/schema";
 import { currentUser } from "@/server/portal/portal.server";
 import { publicRequestStatus } from "@/server/portal/security";
-import { createRequestFromIntake } from "@/server/requests/intake.server";
+import { createUnassignedPublicRequestFromIntake } from "@/server/requests/intake.server";
 import { requirePersonalDataConsent } from "@/lib/consents";
 import {
   APPROVED_FAQ,
@@ -183,10 +183,9 @@ export async function transferAssistantQuestion(input: { idempotencyKey: string;
   const premise = input.premiseId ? (await db.select({ id: s.premises.id, objectId: s.premises.objectId, title: s.premises.title }).from(s.premises).where(eq(s.premises.id, input.premiseId)).limit(1))[0] : undefined;
   const service = input.serviceId ? (await db.select({ id: s.additionalServices.id, title: s.additionalServices.title }).from(s.additionalServices).where(eq(s.additionalServices.id, input.serviceId)).limit(1))[0] : undefined;
   const organization = tenant ? (await db.select({ id: s.organizationUsers.organizationId }).from(s.organizationUsers).where(eq(s.organizationUsers.userId, tenant.id)).limit(1))[0] : null;
-  const assignee = (await db.select({ id: s.employees.id }).from(s.employees).innerJoin(s.users, eq(s.employees.userId, s.users.id)).innerJoin(s.userRoles, eq(s.userRoles.userId, s.users.id)).innerJoin(s.roles, eq(s.userRoles.roleId, s.roles.id)).where(and(eq(s.roles.code, "rental_manager"), eq(s.users.isActive, true))).orderBy(s.employees.createdAt).limit(1))[0];
   const note = [`CTA: Передать вопрос сотруднику`, `Вопрос: ${input.question.trim()}`, service ? `Услуга: ${service.title}` : "", input.context ? `Контекст диалога:\n${input.context.trim().slice(-2000)}` : ""].filter(Boolean).join("\n\n");
   const source = input.source === "tenant_portal" ? "Помощник RANG — личный кабинет" : "Помощник RANG";
-  const request = await createRequestFromIntake({
+  const request = await createUnassignedPublicRequestFromIntake({
     idempotencyKey: input.idempotencyKey,
     idempotencyScope: tenant
       ? `user:${tenant.id}:assistant:${premise?.id || service?.id || "general"}`
@@ -203,7 +202,6 @@ export async function transferAssistantQuestion(input: { idempotencyKey: string;
     organizationId: organization?.id || null,
     createdByUserId: tenant?.id || null,
     actorUserId: tenant?.id || null,
-    assigneeEmployeeId: assignee?.id || null,
     ...(personalDataConsent ? { personalDataConsent } : {}),
   });
   if (request.created) {

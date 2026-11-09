@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requestCategoryForIntake, requestIdempotencyDigest } from "./intake.server";
+import { requestCategoryForIntake, requestIdempotencyDigest, unassignedPublicRequestInput } from "./intake.server";
 
 describe("request intake routing", () => {
   it.each([
@@ -45,5 +45,19 @@ describe("request idempotency scope", () => {
     expect(() => requestIdempotencyDigest("public:form", "not-a-uuid")).toThrow(
       "Некорректный ключ отправки заявки",
     );
+  });
+});
+
+describe("public request assignment", () => {
+  it("always prepares a new public request without an assignee", () => {
+    const input = unassignedPublicRequestInput({
+      idempotencyKey: "0199d7c0-2eb5-7fb8-8f65-5c3890ced001",
+      idempotencyScope: "public:form",
+      source: "Публичный сайт — аренда",
+      subject: "Заявка на аренду",
+      description: "Тест без отправки",
+    });
+
+    expect(input.assigneeEmployeeId).toBeNull();
   });
 });
