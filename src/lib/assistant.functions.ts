@@ -15,8 +15,7 @@ export const askRangAssistant = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => (await import("@/server/assistant/assistant.server")).answerAssistant(data));
 
-export const transferRangAssistantQuestion = createServerFn({ method: "POST" })
-  .validator(z.object({
+export const transferRangAssistantQuestionSchema = z.object({
     idempotencyKey: z.string().uuid(),
     question: z.string().trim().min(2).max(2000),
     context: z.string().max(3000).optional(),
@@ -27,5 +26,13 @@ export const transferRangAssistantQuestion = createServerFn({ method: "POST" })
     phone: z.string().trim().max(40).optional(),
     email: z.string().email().optional().or(z.literal("")),
     source: z.enum(["public", "tenant_portal"]).default("public"),
-  }))
+    personalDataConsent: z.boolean().optional(),
+  }).superRefine((value, context) => {
+    if (value.source === "public" && value.personalDataConsent !== true) {
+      context.addIssue({ code: "custom", path: ["personalDataConsent"], message: "Подтвердите согласие на обработку персональных данных" });
+    }
+  });
+
+export const transferRangAssistantQuestion = createServerFn({ method: "POST" })
+  .validator(transferRangAssistantQuestionSchema)
   .handler(async ({ data }) => (await import("@/server/assistant/assistant.server")).transferAssistantQuestion(data));
