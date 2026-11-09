@@ -7,24 +7,16 @@ import { PropertyCard } from "@/components/rang/PropertyCard";
 import { PropertyFilters } from "@/components/rang/PropertyFilters";
 import {
   INITIAL_PROPERTY_FILTERS,
-  PROPERTY_TYPES,
   type PropertyFilters as Filters,
 } from "@/data/rang";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
 import { loadCatalogProperties } from "@/lib/catalog.loaders";
 import { loadPageSeo } from "@/lib/seo.functions";
 import { buildSeoHead } from "@/lib/seo";
-
-type RentPropertyType = (typeof PROPERTY_TYPES)[number];
-type CatalogSearch = { type?: RentPropertyType };
+import { propertyFiltersFromSearch, type PropertyCatalogSearch } from "@/lib/property-search";
 
 export const Route = createFileRoute("/properties/")({
-  validateSearch: (search: Record<string, unknown>): CatalogSearch => {
-    const type = search["type"];
-    return typeof type === "string" && PROPERTY_TYPES.includes(type as RentPropertyType)
-      ? { type: type as RentPropertyType }
-      : {};
-  },
+  validateSearch: (search: Record<string, unknown>): PropertyCatalogSearch => search,
   loader: async () => ({ properties: await loadCatalogProperties({ offerType: "rent" }), seo: await loadPageSeo({ data: { pageKey: "static:properties" } }) }),
   head: ({ loaderData }) => buildSeoHead({ title: "Каталог коммерческих помещений — РАНГ", description: "Свободные и скоро освобождающиеся офисы, склады и комбинированные помещения компании «РАНГ» в Казани.", path: "/properties" }, loaderData?.seo),
   component: PropertiesPage,
@@ -33,10 +25,7 @@ export const Route = createFileRoute("/properties/")({
 function PropertiesPage() {
   const search = Route.useSearch();
   const { properties: catalogProperties } = Route.useLoaderData();
-  const [filters, setFilters] = useState<Filters>({
-    ...INITIAL_PROPERTY_FILTERS,
-    type: search.type ?? "",
-  });
+  const [filters, setFilters] = useState<Filters>(() => propertyFiltersFromSearch(search));
   const [chatOpen, setChatOpen] = useState(false);
   const properties = filterProperties(catalogProperties, filters);
 

@@ -1,15 +1,22 @@
 import heroImage from "@/assets/hero-property.jpg";
-import { formatObjectFilterLabel, type PropertyFilters, type PropertyObject } from "@/data/rang";
+import {
+  PROPERTY_STATUSES,
+  formatObjectFilterLabel,
+  type PropertyFilters,
+  type PropertyObject,
+} from "@/data/rang";
 
 export function Hero({
   filters,
   onFiltersChange,
   onSearch,
+  onReset,
   objects,
 }: {
   filters: PropertyFilters;
   onFiltersChange: (filters: PropertyFilters) => void;
   onSearch: () => void;
+  onReset: () => void;
   objects: PropertyObject[];
 }) {
   const update = <K extends keyof PropertyFilters>(key: K, value: PropertyFilters[K]) => {
@@ -49,9 +56,8 @@ export function Hero({
             onSubmit={(e) => {
               e.preventDefault();
               onSearch();
-              document.querySelector("#free")?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="grid gap-5 md:grid-cols-2 xl:grid-cols-[1fr_1.25fr_1.2fr_1fr_auto] xl:items-end"
+            className="grid gap-5 md:grid-cols-2 xl:grid-cols-[1fr_1.25fr_1.2fr_1fr_1fr] xl:items-end"
           >
             <Field label="Тип помещения">
               <select
@@ -117,12 +123,34 @@ export function Hero({
               </select>
             </Field>
 
-            <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row xl:col-span-1">
+            <Field label="Статус">
+              <select
+                value={filters.status}
+                onChange={(e) => update("status", e.target.value)}
+                className="h-12 w-full border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-accent"
+              >
+                <option value="">Все статусы</option>
+                {PROPERTY_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row xl:col-span-5">
               <button
                 type="submit"
                 className="h-12 bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-accent"
               >
                 Подобрать помещение
+              </button>
+              <button
+                type="button"
+                onClick={onReset}
+                className="h-12 border border-border px-6 text-sm font-semibold text-primary transition-colors hover:border-primary"
+              >
+                Сбросить фильтры
               </button>
               <a
                 href="#cta"

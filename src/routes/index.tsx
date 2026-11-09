@@ -26,6 +26,7 @@ import { loadCatalogObjects, loadCatalogProperties } from "@/lib/catalog.loaders
 import { loadPublicFaq } from "@/lib/faq.functions";
 import { loadPageSeo } from "@/lib/seo.functions";
 import { buildSeoHead } from "@/lib/seo";
+import { propertyCatalogUrl } from "@/lib/property-search";
 
 const title = "РАНГ — аренда офисов и складов в Казани с 1993 года";
 const description =
@@ -49,11 +50,9 @@ function Index() {
   const { properties, objects, faq } = Route.useLoaderData();
   const [chatOpen, setChatOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(INITIAL_PROPERTY_FILTERS);
 
   const resetFilters = () => {
     setDraftFilters(INITIAL_PROPERTY_FILTERS);
-    setAppliedFilters(INITIAL_PROPERTY_FILTERS);
   };
 
   return (
@@ -63,10 +62,11 @@ function Index() {
         <Hero
           filters={draftFilters}
           onFiltersChange={setDraftFilters}
-          onSearch={() => setAppliedFilters(draftFilters)}
+          onSearch={() => window.location.assign(propertyCatalogUrl(draftFilters))}
+          onReset={resetFilters}
           objects={objects}
         />
-        <FreePremises filters={appliedFilters} onReset={resetFilters} properties={properties} />
+        <FreePremises filters={INITIAL_PROPERTY_FILTERS} onReset={resetFilters} properties={properties} />
         <ComingSoon properties={properties} />
         <PremiseTypes properties={properties} />
         <Objects objects={objects} />
