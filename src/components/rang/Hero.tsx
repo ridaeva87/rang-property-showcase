@@ -152,15 +152,16 @@ export function Hero({
               >
                 Сбросить фильтры
               </button>
-              <a
-                href="#cta"
-                className="flex h-12 items-center justify-center border border-border px-6 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
-              >
-                Получить консультацию
-              </a>
             </div>
           </form>
         </div>
+        <a
+          href="#cta"
+          className="reveal mt-4 flex h-12 w-full items-center justify-center border border-primary-foreground/60 px-6 text-sm font-medium text-primary-foreground transition-colors hover:border-primary-foreground hover:bg-primary-foreground/10 sm:w-fit"
+          style={{ animationDelay: "160ms" }}
+        >
+          Оставить заявку
+        </a>
       </div>
     </section>
   );

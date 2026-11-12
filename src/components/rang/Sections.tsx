@@ -637,6 +637,7 @@ export function AiTransition({ onOpen }: { onOpen: () => void }) {
 /* 17. CTA */
 export function CtaForm() {
   const [sending, setSending] = useState(false);
+  const [personalDataConsent, setPersonalDataConsent] = useState(false);
   const sendingRef = useRef(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -657,11 +658,12 @@ export function CtaForm() {
         subject: "Подбор помещения",
         name: String(data.get("name") || ""),
         phone: String(data.get("phone") || ""),
-        personalDataConsent: data.get("personalDataConsent") === "on",
+        personalDataConsent,
         message: [`Тип помещения: ${premiseType}`, area ? `Желаемая площадь: ${area} м²` : "", comment].filter(Boolean).join("\n"),
       } });
       clearRequestIdempotencyKey(scope, idempotencyKey);
       form.reset();
+      setPersonalDataConsent(false);
       toast.success("Заявка отправлена");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось отправить заявку");
@@ -705,7 +707,12 @@ export function CtaForm() {
                 className="w-full border border-input bg-background p-3 text-sm outline-none focus:border-accent"
               />
             </label>
-            <PersonalDataConsentField className="sm:col-span-2" />
+            <div
+              className="sm:col-span-2"
+              onChange={(event) => setPersonalDataConsent((event.target as HTMLInputElement).checked)}
+            >
+              <PersonalDataConsentField />
+            </div>
             <button
               type="submit"
               disabled={sending}
