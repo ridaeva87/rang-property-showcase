@@ -102,9 +102,8 @@ export function FreePremises({
     <section id="free" className="container-rang py-20 lg:py-28">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <SectionHead
-          eyebrow="Каталог"
           title="Свободные помещения"
-          subtitle="Помещения, доступные для аренды прямо сейчас"
+          subtitle="Доступные для аренды прямо сейчас."
         />
         <a
           href="/properties"
