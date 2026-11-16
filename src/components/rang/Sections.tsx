@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/accordion";
 import {
   ADDITIONAL_SERVICES,
+  INITIAL_PROPERTY_FILTERS,
   PREMISE_TYPES,
   type Property,
   type PropertyFilters,
@@ -36,6 +37,7 @@ import {
 } from "@/data/rang";
 import type { PublicFaqItem } from "@/lib/faq";
 import { filterProperties, hasActivePropertyFilters } from "@/lib/properties";
+import { propertyCatalogUrl } from "@/lib/property-search";
 import { PropertyCard } from "@/components/rang/PropertyCard";
 import { ResponsiveImage } from "@/components/rang/ResponsiveImage";
 import { PersonalDataConsentField } from "@/components/rang/PersonalDataConsentField";
@@ -156,12 +158,23 @@ export function ComingSoon({ properties }: { properties: Property[] }) {
   return (
     <section className="bg-graphite py-20 lg:py-28">
       <div className="container-rang">
-        <SectionHead
-          eyebrow="Предварительная заявка"
-          title="Скоро освободятся"
-          subtitle="Помещения, на которые уже можно оставить предварительную заявку"
-          tone="dark"
-        />
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <SectionHead
+            title="Скоро освободятся"
+            subtitle="Успейте забронировать: освобождение в ближайшее время"
+            tone="dark"
+          />
+          <a
+            href={propertyCatalogUrl({
+              ...INITIAL_PROPERTY_FILTERS,
+              status: "Скоро освободится",
+            })}
+            className="group inline-flex items-center gap-2 text-sm font-semibold text-primary-foreground"
+          >
+            Смотреть все помещения
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+          </a>
+        </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {comingSoon.map((property) => (
             <PropertyCard key={property.id} property={property} dark />
