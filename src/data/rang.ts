@@ -187,29 +187,29 @@ export type Property = {
 export const PROPERTIES: Property[] = [];
 
 export const PREMISE_TYPES = [
-  { type: "Офис", title: "Офисы", text: "Помещения для команд разного размера", image: typeOffice },
+  { type: "Офис", title: "Офисы", text: "Рабочие пространства для сотрудников.", image: typeOffice },
   {
     type: "Склад",
     title: "Склады",
-    text: "Хранение, комплектация, отгрузка",
+    text: "Производственные, распределительные, сезонного хранения, резервные.",
     image: typeWarehouse,
   },
   {
     type: "Офис + склад",
     title: "Офис + склад",
-    text: "Один адрес для офиса и склада",
+    text: "Организация всего рабочего пространства в одной локации.",
     image: typeCombined,
   },
   {
     type: "Другое помещение",
     title: "Другие помещения",
-    text: "Под задачи вашего направления",
+    text: "Боксы, морские контейнеры и др.",
     image: typeOther,
   },
   {
     type: "Земельный участок",
     title: "Земельные участки",
-    text: "Варианты для задач вашего бизнеса",
+    text: "Открытое хранение.",
     image: objLumumby,
   },
 ] satisfies Array<{ type: PropertyType; title: string; text: string; image: string }>;

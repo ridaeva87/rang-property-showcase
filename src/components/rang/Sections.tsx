@@ -189,7 +189,7 @@ export function ComingSoon({ properties }: { properties: Property[] }) {
 export function PremiseTypes({ properties }: { properties: Property[] }) {
   return (
     <section className="container-rang py-20 lg:py-28">
-      <SectionHead eyebrow="Типы помещений" title="Подберите помещение под задачи бизнеса" />
+      <SectionHead title="Подберите помещение в аренду с учётом задач вашего бизнеса" />
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {PREMISE_TYPES.map((t) => (
           <a

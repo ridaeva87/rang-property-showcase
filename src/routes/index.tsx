@@ -66,9 +66,9 @@ function Index() {
           onReset={resetFilters}
           objects={objects}
         />
+        <PremiseTypes properties={properties} />
         <FreePremises filters={INITIAL_PROPERTY_FILTERS} onReset={resetFilters} properties={properties} />
         <ComingSoon properties={properties} />
-        <PremiseTypes properties={properties} />
         <Objects objects={objects} />
         <RentSection />
         <SaleSection />
