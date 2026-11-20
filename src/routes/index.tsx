@@ -12,7 +12,6 @@ import {
   AiTransition,
   FreePremises,
   HowTo,
-  Objects,
   PremiseTypes,
   RentSection,
   SaleSection,
@@ -69,7 +68,6 @@ function Index() {
         <PremiseTypes properties={properties} />
         <FreePremises filters={INITIAL_PROPERTY_FILTERS} onReset={resetFilters} properties={properties} />
         <ComingSoon properties={properties} />
-        <Objects objects={objects} />
         <RentSection />
         <SaleSection />
         <Services />
