@@ -271,12 +271,20 @@ const RENT_OPTIONS = [
   {
     icon: CalendarRange,
     title: "Долгосрочная аренда",
-    text: "Стабильные условия для развития бизнеса",
+    text: "Стабильные условия для развития вашего бизнеса",
   },
-  { icon: Clock, title: "Краткосрочная аренда", text: "Помещение на ограниченный срок" },
-  { icon: Building2, title: "Офисы", text: "Рабочие пространства разной площади" },
-  { icon: Warehouse, title: "Склады", text: "Хранение и обработка товара" },
-  { icon: Layers, title: "Офис + склад", text: "Офис и склад в одном месте" },
+  { icon: Clock, title: "Краткосрочная аренда", text: "Аренда помещений от одних суток" },
+  { icon: Building2, title: "Прозрачность", text: "Ясная структура платежей" },
+  {
+    icon: Warehouse,
+    title: "Юридическая чистота объекта",
+    text: "Объект в собственности, без обременений",
+  },
+  {
+    icon: Layers,
+    title: "Комплексный сервис",
+    text: "Закрываем потребности арендатора: от документов и доступа до бытовых и технических вопросов.",
+  },
   {
     icon: SquareStack,
     title: "Аренда части помещения",
@@ -293,7 +301,7 @@ export function RentSection() {
             <SectionHead
               eyebrow="Аренда"
               title="Аренда для бизнеса"
-              subtitle="Мы предлагаем помещения под конкретные задачи: от небольшого офиса до складского блока с отдельным входом. Возможна аренда части помещения и комбинированные варианты."
+              subtitle="Коммерческие помещения под ваши задачи: гибкие форматы аренды"
               tone="dark"
             />
             <a
@@ -307,7 +315,7 @@ export function RentSection() {
             {RENT_OPTIONS.map((o) => (
               <div
                 key={o.title}
-                className="bg-primary p-6 transition-colors hover:bg-primary-foreground/5"
+                className="bg-primary p-6"
               >
                 <o.icon className="size-6 text-accent" />
                 <h3 className="mt-4 text-lg font-semibold text-primary-foreground">{o.title}</h3>
