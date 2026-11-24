@@ -15,7 +15,6 @@ import {
   PremiseTypes,
   RentSection,
   SaleSection,
-  Services,
   Tenants,
   Videos,
 } from "@/components/rang/Sections";
@@ -70,7 +69,6 @@ function Index() {
         <ComingSoon properties={properties} />
         <RentSection />
         <SaleSection />
-        <Services />
         <Videos />
         <Tenants />
         <About />
