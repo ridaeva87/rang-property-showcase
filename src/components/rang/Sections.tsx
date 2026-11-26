@@ -493,18 +493,6 @@ export function Tenants() {
             </article>
           ))}
         </div>
-
-        <div className="mt-8 flex flex-col gap-6 bg-primary p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
-          <p className="max-w-2xl text-lg font-semibold text-primary-foreground sm:text-xl">
-            Новым арендаторам — первый месяц размещения информации о бизнесе на сайте бесплатно
-          </p>
-          <button
-            onClick={demo("Демонстрационный режим: заявка пока не отправляется")}
-            className="w-fit bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
-          >
-            Разместить бизнес
-          </button>
-        </div>
       </div>
     </section>
   );
